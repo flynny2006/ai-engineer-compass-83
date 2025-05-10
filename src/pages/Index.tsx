@@ -4,13 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Toggle } from "@/components/ui/toggle";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const Index = () => {
-  const { theme, setTheme } = useTheme();
-  const [code, setCode] = useState<string>(`<!DOCTYPE html>
+const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -42,7 +51,13 @@ const Index = () => {
     <p>This is a simple web page. Try describing changes you'd like to make.</p>
   </div>
 </body>
-</html>`);
+</html>`;
+
+const Index = () => {
+  const { theme, setTheme } = useTheme();
+  const [code, setCode] = useState<string>(() => {
+    return localStorage.getItem("saved_code") || DEFAULT_CODE;
+  });
   const [userPrompt, setUserPrompt] = useState<string>("");
   const [messages, setMessages] = useState<Array<{role: string, content: string}>>([
     { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
@@ -52,13 +67,17 @@ const Index = () => {
     return localStorage.getItem("gemini_api_key") || "";
   });
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => !localStorage.getItem("gemini_api_key"));
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const codeEditorRef = useRef<HTMLTextAreaElement>(null);
 
   // Update the preview when code changes
   useEffect(() => {
     updatePreview();
+    // Save code to localStorage
+    localStorage.setItem("saved_code", code);
   }, [code]);
 
   // Save messages to localStorage
@@ -129,6 +148,23 @@ const Index = () => {
     }
   };
 
+  const resetProject = () => {
+    setCode(DEFAULT_CODE);
+    setMessages([
+      { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
+    ]);
+    localStorage.removeItem("chat_history");
+    localStorage.setItem("saved_code", DEFAULT_CODE);
+    toast({
+      title: "Project Reset",
+      description: "Your project has been reset to its default state."
+    });
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -147,12 +183,10 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      // Create system prompt
+      // Create enhanced system prompt
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current code:
-\`\`\`
 ${code}
-\`\`\`
 
 User request: "${userPrompt}"
 
@@ -170,7 +204,17 @@ Follow these rules:
 7. Follow best practices for HTML, CSS, and JavaScript
 8. Make sure your code is clean, organized, and well-documented
 9. Implement responsive design elements when possible
-10. Consider accessibility in your implementations`;
+10. Consider accessibility in your implementations
+11. Use modern design principles for beautiful interfaces
+12. Create visually appealing color schemes and typography
+13. Utilize smooth animations and transitions when appropriate
+14. Ensure proper spacing and layout for optimal user experience
+15. Implement intuitive navigation and user interaction patterns
+16. Use consistent design language throughout the interface
+17. Add appropriate hover states and interactive elements
+18. Design with a focus on user experience and usability
+19. Consider performance optimizations in your implementations
+20. Maintain semantic HTML structure`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -244,6 +288,27 @@ Follow these rules:
           <h1 className="text-xl font-semibold">AI Code Engineer</h1>
         </div>
         <div className="flex gap-2 items-center">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Project</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will reset your project to its default state. All your code changes and chat history will be lost. Are you sure you want to continue?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={resetProject} className="bg-destructive text-destructive-foreground">
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Toggle
             aria-label="Toggle theme"
             pressed={theme === "dark"}
@@ -264,12 +329,13 @@ Follow these rules:
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Code Editor */}
-        <div className="w-1/2 border-r h-full flex flex-col">
+        <div className={`${isFullscreen ? 'hidden' : 'w-1/2'} border-r h-full flex flex-col`}>
           <div className="p-2 bg-muted flex items-center">
             <Code className="h-4 w-4 mr-2" />
             <span className="text-sm font-medium">Code Editor</span>
           </div>
           <textarea
+            ref={codeEditorRef}
             className="flex-1 p-4 font-mono text-sm bg-background resize-none overflow-auto w-full border-0 focus:outline-none"
             value={code}
             onChange={(e) => setCode(e.target.value)}
@@ -278,12 +344,22 @@ Follow these rules:
         </div>
 
         {/* Right Panel - Chat and Preview */}
-        <div className="w-1/2 h-full flex flex-col">
+        <div className={`${isFullscreen ? 'w-full' : 'w-1/2'} h-full flex flex-col`}>
           {/* Preview Section */}
           <div className="h-1/2 border-b flex flex-col">
-            <div className="p-2 bg-muted flex items-center">
-              <Eye className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">Preview</span>
+            <div className="p-2 bg-muted flex items-center justify-between">
+              <div className="flex items-center">
+                <Eye className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">Preview</span>
+              </div>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={toggleFullscreen}
+                title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
+              >
+                <Maximize className="h-4 w-4" />
+              </Button>
             </div>
             <div className="flex-1 bg-white">
               <iframe 
@@ -296,7 +372,7 @@ Follow these rules:
           </div>
 
           {/* Chat Section */}
-          <div className="h-1/2 flex flex-col">
+          <div className={`${isFullscreen ? 'h-1/2' : 'h-1/2'} flex flex-col`}>
             <div className="p-2 bg-muted flex items-center justify-between">
               <div className="flex items-center">
                 <MessageSquare className="h-4 w-4 mr-2" />
