@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
+import { Toggle } from "@/components/ui/toggle";
 
 const Index = () => {
+  const { theme, setTheme } = useTheme();
   const [code, setCode] = useState<string>(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,15 +48,40 @@ const Index = () => {
     { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [apiKey, setApiKey] = useState<string>("");
-  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(true);
+  const [apiKey, setApiKey] = useState<string>(() => {
+    return localStorage.getItem("gemini_api_key") || "";
+  });
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => !localStorage.getItem("gemini_api_key"));
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Update the preview when code changes
   useEffect(() => {
     updatePreview();
   }, [code]);
+
+  // Save messages to localStorage
+  useEffect(() => {
+    if (messages.length > 1) {
+      localStorage.setItem("chat_history", JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  // Load messages from localStorage
+  useEffect(() => {
+    const savedMessages = localStorage.getItem("chat_history");
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+          setMessages(parsedMessages);
+        }
+      } catch (error) {
+        console.error("Error parsing saved messages:", error);
+      }
+    }
+  }, []);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -74,6 +102,30 @@ const Index = () => {
         iframeDoc.write(code);
         iframeDoc.close();
       }
+    }
+  };
+
+  const saveApiKey = () => {
+    if (apiKey) {
+      localStorage.setItem("gemini_api_key", apiKey);
+      setShowApiKeyInput(false);
+      toast({
+        title: "API Key Saved",
+        description: "Your API key has been saved for future sessions."
+      });
+    }
+  };
+
+  const clearChatHistory = () => {
+    if (window.confirm("Are you sure you want to clear the chat history?")) {
+      setMessages([
+        { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
+      ]);
+      localStorage.removeItem("chat_history");
+      toast({
+        title: "Chat History Cleared",
+        description: "Your conversation history has been cleared."
+      });
     }
   };
 
@@ -104,13 +156,21 @@ ${code}
 
 User request: "${userPrompt}"
 
+Previous conversation:
+${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
 Analyze the code and the user's request. Then, respond with the full updated code that incorporates the requested changes.
 Follow these rules:
 1. Return ONLY the complete HTML code with your changes implemented
 2. Don't include explanations, just the code
 3. Maintain the structure of the original code
 4. Make sure all styles and scripts are included in the HTML
-5. Don't include markdown formatting or code blocks, just the raw code`;
+5. Don't include markdown formatting or code blocks, just the raw code
+6. Be creative and implement visual enhancements when appropriate
+7. Follow best practices for HTML, CSS, and JavaScript
+8. Make sure your code is clean, organized, and well-documented
+9. Implement responsive design elements when possible
+10. Consider accessibility in your implementations`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -154,7 +214,7 @@ Follow these rules:
         }]);
         
         if (showApiKeyInput) {
-          setShowApiKeyInput(false);
+          saveApiKey();
         }
       } else {
         throw new Error("Invalid response format from API");
@@ -176,14 +236,25 @@ Follow these rules:
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className={`flex flex-col h-screen bg-background ${theme}`}>
       {/* Header */}
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
           <h1 className="text-xl font-semibold">AI Code Engineer</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Toggle
+            aria-label="Toggle theme"
+            pressed={theme === "dark"}
+            onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Toggle>
           <Button size="sm" variant="outline" onClick={() => updatePreview()}>
             <Play className="h-4 w-4 mr-2" /> Run Preview
           </Button>
@@ -226,9 +297,19 @@ Follow these rules:
 
           {/* Chat Section */}
           <div className="h-1/2 flex flex-col">
-            <div className="p-2 bg-muted flex items-center">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">Chat</span>
+            <div className="p-2 bg-muted flex items-center justify-between">
+              <div className="flex items-center">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">Chat</span>
+              </div>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={clearChatHistory}
+                title="Clear chat history"
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* API Key Input */}
@@ -244,17 +325,9 @@ Follow these rules:
                   />
                   <Button 
                     size="sm" 
-                    onClick={() => {
-                      if (apiKey) {
-                        setShowApiKeyInput(false);
-                        toast({
-                          title: "API Key Saved",
-                          description: "Your API key has been saved for this session."
-                        });
-                      }
-                    }}
+                    onClick={saveApiKey}
                   >
-                    Save
+                    <Save className="h-4 w-4 mr-2" /> Save
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -264,7 +337,7 @@ Follow these rules:
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
               <div className="space-y-4">
                 {messages.map((msg, i) => (
                   <div 
