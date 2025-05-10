@@ -152,6 +152,35 @@
   }
 }
 
+/* Pulse animation */
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 1.5s linear infinite;
+}
+
 /* Glass effect styling for cards */
 .glass-card {
   background: rgba(255, 255, 255, 0.1);
@@ -165,6 +194,39 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Modern UI Effects */
+.neon-border {
+  border: 1px solid rgba(77, 171, 245, 0.5);
+  box-shadow: 0 0 10px rgba(77, 171, 245, 0.5);
+}
+
+.dark .neon-border {
+  border: 1px solid rgba(56, 182, 255, 0.3);
+  box-shadow: 0 0 8px rgba(56, 182, 255, 0.3);
+}
+
+/* Gradient backgrounds */
+.bg-gradient-blue {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.bg-gradient-purple {
+  background: linear-gradient(135deg, #8254e5 0%, #4a00e0 100%);
+}
+
+.bg-gradient-sunset {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+/* Button hover effects */
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
 /* Code syntax highlighting placeholder - could be replaced with a proper syntax highlighter */
 .code-token-keyword {
   color: #569cd6;
@@ -176,4 +238,56 @@
 
 .code-token-comment {
   color: #6a9955;
+}
+
+/* Loading dots animation */
+.loading-dots:after {
+  content: '.';
+  animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60% { content: '...'; }
+  80% { content: '....'; }
+  100% { content: '.....'; }
+}
+
+/* Modern cards */
+.modern-card {
+  @apply rounded-xl shadow-lg overflow-hidden transition-all duration-300;
+}
+
+.modern-card:hover {
+  @apply shadow-xl transform -translate-y-1;
+}
+
+/* Futuristic UI elements */
+.futuristic-border {
+  clip-path: polygon(
+    0% 20px, 20px 0%, calc(100% - 20px) 0%, 100% 20px,
+    100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0% calc(100% - 20px)
+  );
+}
+
+/* Soft shadows */
+.soft-shadow {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+}
+
+.dark .soft-shadow {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+}
+
+/* 3D button effect */
+.button-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 0 theme('colors.blue.700');
+}
+
+.button-3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 theme('colors.blue.700');
 }
