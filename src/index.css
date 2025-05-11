@@ -97,9 +97,46 @@
 }
 
 .code-editor {
-  font-family: Arial, sans-serif;
+  font-family: Arial, monospace;
   line-height: 1.5;
   tab-size: 2;
+}
+
+/* File Explorer Styles */
+.file-explorer-item {
+  @apply flex items-center gap-1 px-2 py-1 rounded cursor-pointer transition-colors;
+}
+
+.file-explorer-item:hover {
+  @apply bg-muted/50;
+}
+
+.file-explorer-item.active {
+  @apply bg-accent text-accent-foreground;
+}
+
+.file-folder {
+  @apply text-amber-500;
+}
+
+.file-html {
+  @apply text-orange-500;
+}
+
+.file-css {
+  @apply text-blue-500;
+}
+
+.file-js {
+  @apply text-yellow-500;
+}
+
+.file-ts, .file-tsx {
+  @apply text-blue-600;
+}
+
+.file-json {
+  @apply text-gray-500;
 }
 
 /* Scrollbar styling */
@@ -412,11 +449,54 @@
   background-image: linear-gradient(#374151 1px, transparent 1px), linear-gradient(to right, #374151 1px, transparent 1px);
 }
 
-/* Modern cards */
-.card-modern {
-  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 transition-all duration-300;
+/* Modern color palettes */
+.color-palette-1 {
+  --primary-color: #2563eb;
+  --secondary-color: #4ade80;
+  --accent-color: #f59e0b;
+  --background-color: #f8fafc;
+  --text-color: #1e293b;
 }
 
-.card-modern:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+.color-palette-2 {
+  --primary-color: #8b5cf6;
+  --secondary-color: #ec4899;
+  --accent-color: #f43f5e;
+  --background-color: #fdf4ff;
+  --text-color: #581c87;
+}
+
+.color-palette-3 {
+  --primary-color: #06b6d4;
+  --secondary-color: #6366f1;
+  --accent-color: #14b8a6;
+  --background-color: #ecfeff;
+  --text-color: #164e63;
+}
+
+.color-palette-4 {
+  --primary-color: #f97316;
+  --secondary-color: #84cc16;
+  --accent-color: #eab308;
+  --background-color: #fff7ed;
+  --text-color: #7c2d12;
+}
+
+/* File explorer theme colors */
+.file-explorer {
+  --explorer-bg: #fafafa;
+  --explorer-text: #333;
+  --explorer-border: #e5e5e5;
+  --explorer-hover: #f0f0f0;
+  --explorer-active: #e6f2ff;
+  --explorer-active-text: #0066cc;
+}
+
+.dark .file-explorer {
+  --explorer-bg: #1e1e1e;
+  --explorer-text: #d4d4d4;
+  --explorer-border: #333333;
+  --explorer-hover: #2a2a2a;
+  --explorer-active: #094771;
+  --explorer-active-text: #ffffff;
 }

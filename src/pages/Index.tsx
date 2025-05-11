@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Toggle } from "@/components/ui/toggle";
 import {
@@ -18,6 +19,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,6 +36,8 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import FileExplorer from "@/components/FileExplorer";
+import { packageJsonContent } from "@/data/packageJson";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -68,7 +77,12 @@ const DEFAULT_CODE = `<!DOCTYPE html>
 const initialFiles = [
   { name: "index.html", content: DEFAULT_CODE, type: "html" },
   { name: "styles.css", content: "/* Add your CSS styles here */", type: "css" },
-  { name: "script.js", content: "// Add your JavaScript code here", type: "js" }
+  { name: "script.js", content: "// Add your JavaScript code here", type: "js" },
+  { name: "package.json", content: packageJsonContent, type: "json" }
+];
+
+const initialMessages = [
+  { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
 ];
 
 const Index = () => {
@@ -82,15 +96,17 @@ const Index = () => {
     return lastFile || "index.html";
   });
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{role: string, content: string}>>([
-    { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
-  ]);
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>(() => {
+    const savedMessages = localStorage.getItem("chat_history");
+    return savedMessages ? JSON.parse(savedMessages) : initialMessages;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>(() => {
     return localStorage.getItem("gemini_api_key") || "";
   });
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => !localStorage.getItem("gemini_api_key"));
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [editorView, setEditorView] = useState<"code" | "files">("code");
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -122,25 +138,10 @@ const Index = () => {
 
   // Save messages to localStorage
   useEffect(() => {
-    if (messages.length > 1) {
+    if (messages.length > 0) {
       localStorage.setItem("chat_history", JSON.stringify(messages));
     }
   }, [messages]);
-
-  // Load messages from localStorage
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("chat_history");
-    if (savedMessages) {
-      try {
-        const parsedMessages = JSON.parse(savedMessages);
-        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-          setMessages(parsedMessages);
-        }
-      } catch (error) {
-        console.error("Error parsing saved messages:", error);
-      }
-    }
-  }, []);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -198,9 +199,7 @@ const Index = () => {
 
   const clearChatHistory = () => {
     if (window.confirm("Are you sure you want to clear the chat history?")) {
-      setMessages([
-        { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
-      ]);
+      setMessages(initialMessages);
       localStorage.removeItem("chat_history");
       toast({
         title: "Chat History Cleared",
@@ -212,12 +211,11 @@ const Index = () => {
   const resetProject = () => {
     setFiles(initialFiles);
     setCurrentFile("index.html");
-    setMessages([
-      { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
-    ]);
+    setMessages(initialMessages);
     localStorage.removeItem("chat_history");
     localStorage.setItem("project_files", JSON.stringify(initialFiles));
     localStorage.setItem("current_file", "index.html");
+    setEditorView("code");
     toast({
       title: "Project Reset",
       description: "Your project has been reset to its default state."
@@ -458,7 +456,7 @@ Full file content here
               <AlertDialogHeader>
                 <AlertDialogTitle>Reset Project</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will reset your project to its default state. All your code changes and chat history will be lost. Are you sure you want to continue?
+                  This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -495,41 +493,57 @@ Full file content here
         <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
           <div className="border-r h-full flex flex-col">
             <div className="p-2 bg-muted flex items-center justify-between">
-              <div className="flex items-center">
-                <Code className="h-4 w-4 mr-2" />
-                <span className="text-sm font-medium">Code Editor</span>
-              </div>
+              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
+                <TabsList className="grid w-60 grid-cols-2">
+                  <TabsTrigger value="code">Editor</TabsTrigger>
+                  <TabsTrigger value="files">File Explorer</TabsTrigger>
+                </TabsList>
+              </Tabs>
               
-              {/* File selector dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="ml-auto">
-                    {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {files.map((file) => (
-                    <DropdownMenuItem 
-                      key={file.name}
-                      onClick={() => setCurrentFile(file.name)}
-                      className={cn(
-                        "cursor-pointer",
-                        currentFile === file.name && "bg-accent"
-                      )}
-                    >
-                      {file.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {editorView === "code" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="ml-auto">
+                      {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {files.map((file) => (
+                      <DropdownMenuItem 
+                        key={file.name}
+                        onClick={() => setCurrentFile(file.name)}
+                        className={cn(
+                          "cursor-pointer",
+                          currentFile === file.name && "bg-accent"
+                        )}
+                      >
+                        {file.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-            <textarea
-              ref={codeEditorRef}
-              className="flex-1 p-4 font-mono text-sm bg-background resize-none overflow-auto w-full border-0 focus:outline-none code-editor"
-              value={getCurrentFileContent()}
-              onChange={(e) => updateFileContent(e.target.value)}
-              spellCheck={false}
-            />
+            
+            <TabsContent value="code" className="flex-1 mt-0">
+              <textarea
+                ref={codeEditorRef}
+                className="flex-1 p-4 font-mono text-sm bg-background resize-none overflow-auto w-full h-full border-0 focus:outline-none code-editor"
+                value={getCurrentFileContent()}
+                onChange={(e) => updateFileContent(e.target.value)}
+                spellCheck={false}
+                style={{ fontFamily: 'Arial, monospace' }}
+              />
+            </TabsContent>
+            
+            <TabsContent value="files" className="flex-1 mt-0 overflow-hidden">
+              <FileExplorer 
+                files={files} 
+                setFiles={setFiles} 
+                currentFile={currentFile} 
+                setCurrentFile={setCurrentFile} 
+              />
+            </TabsContent>
           </div>
         </ResizablePanel>
 
