@@ -580,7 +580,7 @@ Full file content here
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
-          <h1 className="text-xl font-semibold">AI Code Engineer</h1>
+          <h1 className="text-xl font-semibold">Boongle AI - Software Engineer</h1>
         </div>
         <div className="flex gap-4 items-center">
           <Navigation />
