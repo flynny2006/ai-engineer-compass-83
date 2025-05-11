@@ -1,6 +1,5 @@
-
-import React, { useState } from "react";
-import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp, FolderPlus, Move } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,12 +28,17 @@ interface FileExplorerProps {
 const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFile, setCurrentFile }) => {
   const [expandedFolders, setExpandedFolders] = useState<{ [key: string]: boolean }>({});
   const [newFileDialogOpen, setNewFileDialogOpen] = useState<boolean>(false);
+  const [newFolderDialogOpen, setNewFolderDialogOpen] = useState<boolean>(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState<boolean>(false);
   const [newFileName, setNewFileName] = useState<string>("");
   const [newFileContent, setNewFileContent] = useState<string>("");
   const [renameFile, setRenameFile] = useState<string>("");
   const [newName, setNewName] = useState<string>("");
-
+  const [newFolderName, setNewFolderName] = useState<string>("");
+  const [currentPath, setCurrentPath] = useState<string>("/");
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  
   // Extract folders from file names
   const getFolderStructure = () => {
     const structure: { [folder: string]: FileItem[] } = { "/": [] };
@@ -54,7 +58,26 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
     return structure;
   };
 
+  // Get all folder paths
+  const getAllFolders = () => {
+    const folders = new Set<string>(["/"]); // Root folder always exists
+    
+    files.forEach(file => {
+      const pathSegments = file.name.split('/');
+      pathSegments.pop(); // Remove filename
+      
+      let currentPath = "";
+      pathSegments.forEach(segment => {
+        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+        folders.add(currentPath);
+      });
+    });
+    
+    return Array.from(folders);
+  };
+
   const folderStructure = getFolderStructure();
+  const allFolders = getAllFolders();
 
   // Toggle folder expanded state
   const toggleFolder = (folderPath: string) => {
@@ -81,7 +104,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
       return;
     }
     
-    if (files.some(file => file.name === newFileName)) {
+    const fullPath = currentPath === "/" 
+      ? newFileName 
+      : `${currentPath}/${newFileName}`;
+    
+    if (files.some(file => file.name === fullPath)) {
       toast({
         title: "Error",
         description: "A file with this name already exists",
@@ -100,20 +127,69 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
     else if (extension === "json") fileType = "json";
     
     const newFile = {
-      name: newFileName,
+      name: fullPath,
       content: newFileContent || "",
       type: fileType
     };
     
     setFiles(prev => [...prev, newFile]);
-    setCurrentFile(newFileName);
+    setCurrentFile(fullPath);
     setNewFileDialogOpen(false);
     setNewFileName("");
     setNewFileContent("");
     
     toast({
       title: "Success",
-      description: `File "${newFileName}" created`
+      description: `File "${fullPath}" created`
+    });
+  };
+
+  // Create new folder
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) {
+      toast({
+        title: "Error",
+        description: "Folder name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const fullPath = currentPath === "/" 
+      ? newFolderName 
+      : `${currentPath}/${newFolderName}`;
+    
+    // Check if folder already exists
+    if (allFolders.includes(fullPath)) {
+      toast({
+        title: "Error",
+        description: "A folder with this name already exists",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create an empty file as placeholder to establish folder structure
+    // This is just a way to represent the folder since we're tracking folders through files
+    const placeholderFile = {
+      name: `${fullPath}/.gitkeep`,
+      content: "",
+      type: "txt"
+    };
+    
+    setFiles(prev => [...prev, placeholderFile]);
+    setNewFolderDialogOpen(false);
+    setNewFolderName("");
+    
+    // Expand the parent folder
+    setExpandedFolders(prev => ({
+      ...prev,
+      [currentPath]: true,
+    }));
+    
+    toast({
+      title: "Success",
+      description: `Folder "${fullPath}" created`
     });
   };
 
@@ -132,6 +208,19 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
       toast({
         title: "Success",
         description: `File "${fullPath}" deleted`
+      });
+    }
+  };
+
+  // Delete folder
+  const handleDeleteFolder = (folderPath: string) => {
+    if (confirm(`Are you sure you want to delete folder "${folderPath}" and all its contents?`)) {
+      // Delete all files that start with this folder path
+      setFiles(prev => prev.filter(f => !f.name.startsWith(`${folderPath}/`)));
+      
+      toast({
+        title: "Success",
+        description: `Folder "${folderPath}" deleted`
       });
     }
   };
@@ -182,68 +271,235 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
       description: `File renamed to "${newName}"`
     });
   };
+  
+  // Drag and drop handlers
+  const handleDragStart = (fullPath: string) => {
+    setDraggedItem(fullPath);
+  };
+  
+  const handleDragOver = (e: React.DragEvent, folderPath: string) => {
+    e.preventDefault();
+    setDragOverFolder(folderPath);
+  };
+  
+  const handleDragLeave = () => {
+    setDragOverFolder(null);
+  };
+  
+  const handleDrop = (e: React.DragEvent, targetFolder: string) => {
+    e.preventDefault();
+    setDragOverFolder(null);
+    
+    if (!draggedItem) return;
+    
+    // Check if we're trying to move an item into itself
+    if (targetFolder === draggedItem || targetFolder.startsWith(`${draggedItem}/`)) {
+      toast({
+        title: "Error",
+        description: "Cannot move a folder into itself",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Determine if we're moving a file or folder
+    const isFolder = files.some(file => file.name.startsWith(`${draggedItem}/`));
+    
+    if (isFolder) {
+      // Move folder and all its contents
+      const newFiles = [...files];
+      const foldersToUpdate = files.filter(file => file.name.startsWith(`${draggedItem}/`));
+      
+      foldersToUpdate.forEach(file => {
+        const relativePath = file.name.substring(draggedItem.length + 1);
+        const newPath = targetFolder === "/" 
+          ? `${targetFolder}${draggedItem.split("/").pop()}/${relativePath}` 
+          : `${targetFolder}/${draggedItem.split("/").pop()}/${relativePath}`;
+        
+        const fileIndex = newFiles.findIndex(f => f.name === file.name);
+        if (fileIndex !== -1) {
+          newFiles[fileIndex] = { ...file, name: newPath };
+        }
+      });
+      
+      setFiles(newFiles);
+    } else {
+      // Move a single file
+      const fileName = draggedItem.split("/").pop() || "";
+      const newPath = targetFolder === "/" 
+        ? fileName 
+        : `${targetFolder}/${fileName}`;
+      
+      if (files.some(file => file.name === newPath)) {
+        toast({
+          title: "Error",
+          description: "A file with this name already exists in the target folder",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setFiles(prev => 
+        prev.map(file => 
+          file.name === draggedItem 
+          ? { ...file, name: newPath } 
+          : file
+        )
+      );
+      
+      if (currentFile === draggedItem) {
+        setCurrentFile(newPath);
+      }
+    }
+    
+    toast({
+      title: "Success",
+      description: `Moved item to ${targetFolder}`
+    });
+    
+    setDraggedItem(null);
+  };
 
   // Render folder and its contents
   const renderFolder = (folderPath: string, files: FileItem[]) => {
     const isExpanded = expandedFolders[folderPath] ?? true;
     const folderName = folderPath === "/" ? "Root" : folderPath.split('/').pop() || folderPath;
     
+    // Sort items: folders first, then files alphabetically
+    const sortedItems = [...files].sort((a, b) => {
+      const isAFolder = files.some(file => file.name.startsWith(`${folderPath === "/" ? "" : folderPath + "/"}${a.name}/`));
+      const isBFolder = files.some(file => file.name.startsWith(`${folderPath === "/" ? "" : folderPath + "/"}${b.name}/`));
+      
+      if (isAFolder && !isBFolder) return -1;
+      if (!isAFolder && isBFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    
     return (
-      <div key={folderPath} className="mb-1">
+      <div 
+        key={folderPath} 
+        className="mb-1"
+        onDragOver={(e) => handleDragOver(e, folderPath)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, folderPath)}
+      >
         <div 
           onClick={() => toggleFolder(folderPath)}
-          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm font-medium"
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm font-medium",
+            dragOverFolder === folderPath && "bg-accent"
+          )}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            if (folderPath !== "/") {
+              handleDeleteFolder(folderPath);
+            }
+          }}
         >
           {isExpanded ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />}
           <Folder className="h-4 w-4 text-amber-500" />
           <span>{folderName}</span>
+          
+          <div className="ml-auto flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPath(folderPath);
+                setNewFileDialogOpen(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPath(folderPath);
+                setNewFolderDialogOpen(true);
+              }}
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
         
         {isExpanded && (
           <div className="pl-4 border-l border-muted ml-2 mt-1">
-            {files.map(file => (
-              <div 
-                key={file.name}
-                className={cn(
-                  "flex items-center justify-between gap-1 px-2 py-1 rounded text-sm",
-                  currentFile === (folderPath === "/" ? file.name : `${folderPath}/${file.name}`) 
-                    ? "bg-accent text-accent-foreground" 
-                    : "hover:bg-muted"
-                )}
-              >
+            {sortedItems.map(file => {
+              // Skip .gitkeep files
+              if (file.name === ".gitkeep") return null;
+              
+              const fullPath = folderPath === "/" ? file.name : `${folderPath}/${file.name}`;
+              const isFileFolder = allFolders.includes(fullPath);
+              
+              // If it's a folder, render a folder component
+              if (isFileFolder) {
+                const folderFiles = files.filter(f => {
+                  const pathParts = f.name.split('/');
+                  return pathParts.length > 1 && pathParts[0] === file.name;
+                }).map(f => {
+                  const nameParts = f.name.split('/');
+                  return {
+                    ...f,
+                    name: nameParts.slice(1).join('/')
+                  };
+                });
+                
+                return renderFolder(fullPath, folderFiles);
+              }
+              
+              // Otherwise render a file
+              return (
                 <div 
-                  className="flex items-center gap-1 cursor-pointer flex-grow"
-                  onClick={() => handleFileClick(folderPath, file)}
+                  key={file.name}
+                  className={cn(
+                    "flex items-center justify-between gap-1 px-2 py-1 rounded text-sm",
+                    currentFile === (folderPath === "/" ? file.name : `${folderPath}/${file.name}`) 
+                      ? "bg-accent text-accent-foreground" 
+                      : "hover:bg-muted"
+                  )}
+                  draggable
+                  onDragStart={() => handleDragStart(fullPath)}
                 >
-                  <FileIcon type={file.type} />
-                  <span className="truncate">{file.name}</span>
-                </div>
-                <div className="flex items-center">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRenameFileClick(folderPath, file);
-                    }}
+                  <div 
+                    className="flex items-center gap-1 cursor-pointer flex-grow"
+                    onClick={() => handleFileClick(folderPath, file)}
                   >
-                    <Edit className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteFile(folderPath, file);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                    <FileIcon type={file.type} />
+                    <span className="truncate">{file.name}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRenameFileClick(folderPath, file);
+                      }}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFile(folderPath, file);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -270,9 +526,22 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
     <div className="h-full overflow-auto">
       <div className="p-2 flex justify-between items-center sticky top-0 bg-background z-10 border-b">
         <h3 className="text-sm font-medium">Files</h3>
-        <Button variant="ghost" size="sm" onClick={() => setNewFileDialogOpen(true)}>
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={() => {
+            setCurrentPath("/");
+            setNewFolderDialogOpen(true);
+          }}>
+            <FolderPlus className="h-4 w-4 mr-1" />
+            Folder
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => {
+            setCurrentPath("/");
+            setNewFileDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-1" />
+            File
+          </Button>
+        </div>
       </div>
       
       <div className="p-2">
@@ -288,6 +557,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
             <DialogTitle>Create New File</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="folderpath" className="text-sm font-medium">Location</label>
+              <Input
+                id="folderpath"
+                value={currentPath}
+                readOnly
+                disabled
+              />
+            </div>
             <div className="space-y-2">
               <label htmlFor="filename" className="text-sm font-medium">File Name</label>
               <Input
@@ -311,6 +589,39 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewFileDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateFile}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Create Folder Dialog */}
+      <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Folder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="folderPathParent" className="text-sm font-medium">Location</label>
+              <Input
+                id="folderPathParent"
+                value={currentPath}
+                readOnly
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="foldername" className="text-sm font-medium">Folder Name</label>
+              <Input
+                id="foldername"
+                placeholder="my-folder"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewFolderDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateFolder}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

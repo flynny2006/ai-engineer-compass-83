@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Toggle } from "@/components/ui/toggle";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +47,8 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import FileExplorer from "@/components/FileExplorer";
+import CodeEditor from "@/components/CodeEditor";
+import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
@@ -123,8 +125,10 @@ const Index = () => {
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const codeEditorRef = useRef<HTMLTextAreaElement>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+  const [mainPreviewFile, setMainPreviewFile] = useState<string>(() => {
+    return localStorage.getItem("main_preview_file") || "index.html";
+  });
   
   // Credits system
   const [credits, setCredits] = useState<number>(() => {
@@ -149,10 +153,19 @@ const Index = () => {
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
 
-  // Get current file content
+  // Get current file content and language
   const getCurrentFileContent = () => {
     const file = files.find(f => f.name === currentFile);
     return file ? file.content : "";
+  };
+
+  const getCurrentFileLanguage = () => {
+    if (currentFile.endsWith('.html')) return 'html';
+    if (currentFile.endsWith('.css')) return 'css';
+    if (currentFile.endsWith('.js')) return 'js';
+    if (currentFile.endsWith('.ts') || currentFile.endsWith('.tsx')) return 'ts';
+    if (currentFile.endsWith('.json')) return 'json';
+    return 'text';
   };
 
   // Update file content
@@ -210,7 +223,8 @@ const Index = () => {
     // Save files to localStorage
     localStorage.setItem("project_files", JSON.stringify(files));
     localStorage.setItem("current_file", currentFile);
-  }, [files, currentFile, lastRefreshTime]);
+    localStorage.setItem("main_preview_file", mainPreviewFile);
+  }, [files, currentFile, mainPreviewFile, lastRefreshTime]);
 
   // Save messages to localStorage
   useEffect(() => {
@@ -234,7 +248,8 @@ const Index = () => {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
       
       if (iframeDoc) {
-        const htmlFile = files.find(f => f.name === "index.html");
+        const htmlFile = files.find(f => f.name === mainPreviewFile) || 
+                         files.find(f => f.name === "index.html");
         const cssFile = files.find(f => f.name === "styles.css");
         const jsFile = files.find(f => f.name === "script.js");
         
@@ -285,19 +300,30 @@ const Index = () => {
   };
 
   const resetProject = () => {
+    // Store current credits before reset
+    const currentCredits = credits;
+    const isUnlimited = hasUnlimitedCredits;
+    
     setFiles(initialFiles);
     setCurrentFile("index.html");
+    setMainPreviewFile("index.html");
     setMessages(initialMessages);
     localStorage.removeItem("chat_history");
     localStorage.setItem("project_files", JSON.stringify(initialFiles));
     localStorage.setItem("current_file", "index.html");
+    localStorage.setItem("main_preview_file", "index.html");
     setEditorView("code");
+    
+    // Restore credits after reset
+    setCredits(currentCredits);
+    setHasUnlimitedCredits(isUnlimited);
+    
     toast({
       title: "Project Reset",
-      description: "Your project has been reset to its default state."
+      description: "Your project has been reset to its default state. Credits were preserved."
     });
+    
     setLastRefreshTime(Date.now());
-    // Don't reset credits when resetting project
   };
 
   const toggleFullscreen = () => {
@@ -656,40 +682,46 @@ Full file content here
                 </TabsList>
               </Tabs>
               
-              {editorView === "code" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="ml-auto">
-                      {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {files.map((file) => (
-                      <DropdownMenuItem 
-                        key={file.name}
-                        onClick={() => setCurrentFile(file.name)}
-                        className={cn(
-                          "cursor-pointer",
-                          currentFile === file.name && "bg-accent"
-                        )}
-                      >
-                        {file.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              <div className="flex items-center gap-2">
+                {editorView === "code" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {files.map((file) => (
+                        <DropdownMenuItem 
+                          key={file.name}
+                          onClick={() => setCurrentFile(file.name)}
+                          className={cn(
+                            "cursor-pointer",
+                            currentFile === file.name && "bg-accent"
+                          )}
+                        >
+                          {file.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                <PreviewSettings
+                  files={files}
+                  mainFile={mainPreviewFile}
+                  setMainFile={setMainPreviewFile}
+                />
+              </div>
             </div>
             
             <div className="flex-1 h-full">
               <Tabs value={editorView} className="h-full">
                 <TabsContent value="code" className="h-full mt-0">
-                  <textarea
-                    ref={codeEditorRef}
-                    className="flex-1 p-4 font-mono text-sm bg-background resize-none overflow-auto w-full h-full border-0 focus:outline-none code-editor"
+                  <CodeEditor
                     value={getCurrentFileContent()}
-                    onChange={(e) => updateFileContent(e.target.value)}
-                    spellCheck={false}
+                    onChange={updateFileContent}
+                    language={getCurrentFileLanguage()}
                   />
                 </TabsContent>
                 
@@ -717,7 +749,7 @@ Full file content here
                 <div className="p-2 bg-muted flex items-center justify-between">
                   <div className="flex items-center">
                     <Eye className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Preview</span>
+                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
                   </div>
                   <Button 
                     size="sm" 

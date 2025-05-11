@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,6 +42,18 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Syntax highlighting variables */
+    --syntax-keyword: 222.2 47.4% 50.2%;
+    --syntax-string: 24.6 95% 53.1%;
+    --syntax-comment: 142.1 76.2% 36.3%;
+    --syntax-number: 182.1 43.8% 40.2%;
+    --syntax-class: 291.1 64.2% 42.2%;
+    --syntax-property: 221.2 83.2% 53.3%;
+    --syntax-tag: 330.3 81.2% 60.2%;
+    --syntax-attribute: 160.1 84.1% 39.2%;
+    --syntax-operator: 60 54% 50%;
+    --syntax-function: 41.2 88.5% 47.5%;
   }
 
   .dark {
@@ -83,6 +94,18 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Syntax highlighting variables for dark mode */
+    --syntax-keyword: 198 93% 60%;
+    --syntax-string: 41 85% 57%;
+    --syntax-comment: 110 18% 45%;
+    --syntax-number: 151 80% 60%;
+    --syntax-class: 269 85% 69%;
+    --syntax-property: 201 79% 65%;
+    --syntax-tag: 330 78% 70%;
+    --syntax-attribute: 160 70% 42%;
+    --syntax-operator: 38 90% 60%;
+    --syntax-function: 41 90% 60%;
   }
 }
 
@@ -96,7 +119,7 @@
   }
 }
 
-/* Code editor styles with syntax highlighting */
+/* Code editor styles with enhanced syntax highlighting */
 .code-editor {
   font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
   line-height: 1.5;
@@ -105,51 +128,116 @@
 
 /* Syntax highlighting for code editor */
 .code-editor .keyword {
-  color: #569cd6;
+  color: hsl(var(--syntax-keyword));
 }
 
 .code-editor .string {
-  color: #ce9178;
+  color: hsl(var(--syntax-string));
 }
 
 .code-editor .comment {
-  color: #6a9955;
-}
-
-.code-editor .function {
-  color: #dcdcaa;
+  color: hsl(var(--syntax-comment));
+  font-style: italic;
 }
 
 .code-editor .number {
-  color: #b5cea8;
+  color: hsl(var(--syntax-number));
 }
 
 .code-editor .tag {
-  color: #569cd6;
+  color: hsl(var(--syntax-tag));
 }
 
 .code-editor .attribute {
-  color: #9cdcfe;
+  color: hsl(var(--syntax-attribute));
 }
 
 .code-editor .bracket {
-  color: #d4d4d4;
+  color: hsl(var(--foreground));
 }
 
 .code-editor .operator {
-  color: #d4d4d4;
+  color: hsl(var(--syntax-operator));
 }
 
 .code-editor .variable {
-  color: #9cdcfe;
+  color: hsl(var(--syntax-property));
 }
 
 .code-editor .property {
-  color: #9cdcfe;
+  color: hsl(var(--syntax-property));
 }
 
 .code-editor .punctuation {
-  color: #d4d4d4;
+  color: hsl(var(--foreground));
+}
+
+.code-editor .function {
+  color: hsl(var(--syntax-function));
+}
+
+.code-editor .class {
+  color: hsl(var(--syntax-class));
+}
+
+/* HTML syntax highlighting */
+.code-editor .html-tag {
+  color: hsl(var(--syntax-tag));
+}
+
+.code-editor .html-attr {
+  color: hsl(var(--syntax-attribute));
+}
+
+.code-editor .html-string {
+  color: hsl(var(--syntax-string));
+}
+
+/* CSS syntax highlighting */
+.code-editor .css-property {
+  color: hsl(var(--syntax-property));
+}
+
+.code-editor .css-value {
+  color: hsl(var(--syntax-string));
+}
+
+.code-editor .css-selector {
+  color: hsl(var(--syntax-tag));
+}
+
+.code-editor .css-unit {
+  color: hsl(var(--syntax-number));
+}
+
+/* JavaScript syntax highlighting */
+.code-editor .js-keyword {
+  color: hsl(var(--syntax-keyword));
+}
+
+.code-editor .js-string {
+  color: hsl(var(--syntax-string));
+}
+
+.code-editor .js-number {
+  color: hsl(var(--syntax-number));
+}
+
+.code-editor .js-function {
+  color: hsl(var(--syntax-function));
+}
+
+/* JSON syntax highlighting */
+.code-editor .json-key {
+  color: hsl(var(--syntax-property));
+}
+
+.code-editor .json-value {
+  color: hsl(var(--syntax-string));
+}
+
+.code-editor .json-number {
+  color: hsl(var(--syntax-number));
 }
 
 /* File Explorer Styles */
@@ -189,7 +277,30 @@
   @apply text-gray-500;
 }
 
-/* Scrollbar styling */
+/* VS Code-like styles for editor */
+.vs-code-editor {
+  @apply font-mono text-sm leading-normal;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.line-numbers {
+  @apply text-right pr-2 select-none;
+  user-select: none;
+  color: #858585;
+  background-color: #1e1e1e;
+  border-right: 1px solid #3c3c3c;
+  min-width: 40px;
+  height: 100%;
+  padding-top: 4px;
+}
+
+.editor-search-box {
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+}
+
+/* Enhanced scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -550,3 +661,45 @@
   --explorer-active: #094771;
   --explorer-active-text: #ffffff;
 }
+
+/* VS Code-like search and find UI */
+.search-panel {
+  @apply flex items-center p-2 gap-2 border-b;
+  background-color: var(--background);
+}
+
+.search-input {
+  @apply flex-1 p-1 px-2 rounded border;
+}
+
+.folder-structure-line {
+  @apply border-l-2 border-gray-200 dark:border-gray-700 ml-2 pl-2;
+}
+
+/* JSX/TSX syntax highlighting */
+.code-editor .jsx-tag {
+  color: hsl(var(--syntax-tag));
+}
+
+.code-editor .jsx-attr {
+  color: hsl(var(--syntax-attribute));
+}
+
+.code-editor .jsx-expression {
+  color: hsl(var(--syntax-function));
+}
+
+/* Syntax highlighting for different languages */
+.language-html .tag { color: hsl(var(--syntax-tag)); }
+.language-html .attr { color: hsl(var(--syntax-attribute)); }
+.language-html .string { color: hsl(var(--syntax-string)); }
+
+.language-css .property { color: hsl(var(--syntax-property)); }
+.language-css .value { color: hsl(var(--syntax-string)); }
+.language-css .selector { color: hsl(var(--syntax-tag)); }
+.language-css .unit { color: hsl(var(--syntax-number)); }
+
+.language-js .keyword { color: hsl(var(--syntax-keyword)); }
+.language-js .string { color: hsl(var(--syntax-string)); }
+.language-js .number { color: hsl(var(--syntax-number)); }
+.language-js .function { color: hsl(var(--syntax-function)); }
