@@ -3,7 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, CurrencyDollar } from "lucide-react";
+import { Check, DollarSign } from "lucide-react";
 
 const PricingPage = () => {
   const pricingPlans = [
@@ -83,7 +83,7 @@ const PricingPage = () => {
             </CardContent>
             <CardFooter>
               <Button className={`w-full ${plan.popular ? '' : 'bg-muted-foreground hover:bg-muted-foreground/90'}`}>
-                <CurrencyDollar className="h-4 w-4 mr-2" /> {plan.buttonText}
+                <DollarSign className="h-4 w-4 mr-2" /> {plan.buttonText}
               </Button>
             </CardFooter>
           </Card>
