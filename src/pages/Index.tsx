@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Toggle } from "@/components/ui/toggle";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,15 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import FileExplorer from "@/components/FileExplorer";
 import { packageJsonContent } from "@/data/packageJson";
@@ -85,6 +95,9 @@ const initialMessages = [
   { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
 ];
 
+const DAILY_CREDIT_LIMIT = 25;
+const UNLIMITED_CODE = "3636";
+
 const Index = () => {
   const { theme, setTheme } = useTheme();
   const [files, setFiles] = useState(() => {
@@ -112,6 +125,29 @@ const Index = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const codeEditorRef = useRef<HTMLTextAreaElement>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+  
+  // Credits system
+  const [credits, setCredits] = useState<number>(() => {
+    const savedCredits = localStorage.getItem("daily_credits");
+    if (savedCredits) {
+      const { value, lastReset } = JSON.parse(savedCredits);
+      
+      // Check if we need to reset credits (new day)
+      const today = new Date().setHours(0, 0, 0, 0);
+      const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
+      
+      if (today > lastResetDate) {
+        return DAILY_CREDIT_LIMIT;
+      }
+      return value;
+    }
+    return DAILY_CREDIT_LIMIT;
+  });
+  const [hasUnlimitedCredits, setHasUnlimitedCredits] = useState<boolean>(() => {
+    return localStorage.getItem("unlimited_credits") === "true";
+  });
+  const [claimCode, setClaimCode] = useState<string>("");
+  const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
 
   // Get current file content
   const getCurrentFileContent = () => {
@@ -127,6 +163,46 @@ const Index = () => {
     setFiles(updatedFiles);
     localStorage.setItem("project_files", JSON.stringify(updatedFiles));
   };
+
+  // Save credits to localStorage
+  useEffect(() => {
+    const creditsData = {
+      value: credits,
+      lastReset: new Date().toISOString()
+    };
+    localStorage.setItem("daily_credits", JSON.stringify(creditsData));
+  }, [credits]);
+
+  // Save unlimited credits status
+  useEffect(() => {
+    if (hasUnlimitedCredits) {
+      localStorage.setItem("unlimited_credits", "true");
+    }
+  }, [hasUnlimitedCredits]);
+
+  // Reset credits at midnight
+  useEffect(() => {
+    const checkAndResetCredits = () => {
+      const savedCredits = localStorage.getItem("daily_credits");
+      if (savedCredits) {
+        const { lastReset } = JSON.parse(savedCredits);
+        const today = new Date().setHours(0, 0, 0, 0);
+        const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
+        
+        if (today > lastResetDate) {
+          setCredits(DAILY_CREDIT_LIMIT);
+        }
+      }
+    };
+    
+    // Set up interval to check credits reset (every minute)
+    const interval = setInterval(checkAndResetCredits, 60000);
+    
+    // Check on component mount
+    checkAndResetCredits();
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Update the preview when files change
   useEffect(() => {
@@ -221,10 +297,28 @@ const Index = () => {
       description: "Your project has been reset to its default state."
     });
     setLastRefreshTime(Date.now());
+    // Don't reset credits when resetting project
   };
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  const handleClaimCode = () => {
+    if (claimCode === UNLIMITED_CODE) {
+      setHasUnlimitedCredits(true);
+      setShowClaimDialog(false);
+      toast({
+        title: "Unlimited Credits Activated!",
+        description: "You now have unlimited credits to use the AI."
+      });
+    } else {
+      toast({
+        title: "Invalid Code",
+        description: "The code you entered is invalid.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -239,10 +333,25 @@ const Index = () => {
       return;
     }
     
+    // Check if user has credits available
+    if (credits <= 0 && !hasUnlimitedCredits) {
+      toast({
+        title: "Daily Limit Reached",
+        description: "You've reached your daily credit limit. Please wait until tomorrow or claim an unlimited code.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const userMessage = { role: "user", content: userPrompt };
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
     setIsLoading(true);
+    
+    // Deduct credit if not unlimited
+    if (!hasUnlimitedCredits) {
+      setCredits(prev => prev - 1);
+    }
 
     try {
       // Create enhanced system prompt
@@ -437,6 +546,8 @@ Full file content here
     }
   };
 
+  const creditPercentage = (credits / DAILY_CREDIT_LIMIT) * 100;
+
   return (
     <div className={`flex flex-col h-screen bg-background ${theme}`}>
       {/* Header */}
@@ -446,6 +557,24 @@ Full file content here
           <h1 className="text-xl font-semibold">AI Code Engineer</h1>
         </div>
         <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2 mr-4">
+            <span className="text-sm font-medium">
+              Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
+            </span>
+            {!hasUnlimitedCredits && (
+              <Progress
+                value={creditPercentage}
+                className="w-24 h-2"
+              />
+            )}
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => setShowClaimDialog(true)}
+            >
+              <Gift className="h-4 w-4 mr-2" /> Claim Code
+            </Button>
+          </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button size="sm" variant="outline">
@@ -486,6 +615,33 @@ Full file content here
           </Button>
         </div>
       </header>
+
+      {/* Claim Code Dialog */}
+      <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Claim Unlimited Credits</DialogTitle>
+            <DialogDescription>
+              Enter your code to claim unlimited credits
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 items-center">
+            <Input 
+              placeholder="Enter code..." 
+              value={claimCode} 
+              onChange={(e) => setClaimCode(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClaimDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleClaimCode}>
+              Activate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Content */}
       <ResizablePanelGroup direction="horizontal" className="flex-1">
@@ -534,7 +690,6 @@ Full file content here
                     value={getCurrentFileContent()}
                     onChange={(e) => updateFileContent(e.target.value)}
                     spellCheck={false}
-                    style={{ fontFamily: 'Arial, monospace' }}
                   />
                 </TabsContent>
                 
@@ -657,10 +812,13 @@ Full file content here
                     placeholder="Describe the changes you want to make..."
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
-                    disabled={isLoading}
+                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
                     className="flex-1"
                   />
-                  <Button type="submit" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                  >
                     {isLoading ? (
                       <div className="flex items-center">
                         <div className="w-5 h-5 relative">

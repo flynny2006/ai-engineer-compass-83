@@ -96,10 +96,60 @@
   }
 }
 
+/* Code editor styles with syntax highlighting */
 .code-editor {
-  font-family: Arial, monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
   line-height: 1.5;
   tab-size: 2;
+}
+
+/* Syntax highlighting for code editor */
+.code-editor .keyword {
+  color: #569cd6;
+}
+
+.code-editor .string {
+  color: #ce9178;
+}
+
+.code-editor .comment {
+  color: #6a9955;
+}
+
+.code-editor .function {
+  color: #dcdcaa;
+}
+
+.code-editor .number {
+  color: #b5cea8;
+}
+
+.code-editor .tag {
+  color: #569cd6;
+}
+
+.code-editor .attribute {
+  color: #9cdcfe;
+}
+
+.code-editor .bracket {
+  color: #d4d4d4;
+}
+
+.code-editor .operator {
+  color: #d4d4d4;
+}
+
+.code-editor .variable {
+  color: #9cdcfe;
+}
+
+.code-editor .property {
+  color: #9cdcfe;
+}
+
+.code-editor .punctuation {
+  color: #d4d4d4;
 }
 
 /* File Explorer Styles */
