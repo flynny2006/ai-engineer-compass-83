@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -262,6 +261,7 @@ Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
 Analyze the code and the user's request. Then, respond with the full updated files that incorporates the requested changes.
+
 Follow these rules:
 1. Return all files that need to be modified in this format:
 --- filename.ext ---
@@ -290,7 +290,42 @@ Full file content here
 22. Ensure JavaScript code is properly added and functional
 23. Use modern CSS features like flexbox, grid, and custom properties
 24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
+25. Create stunning visual designs with gradients, shadows, and modern UI elements
+26. Use color theory principles to create harmonious color schemes (complementary, analogous, triadic)
+27. Implement skeuomorphic design elements when appropriate for added realism
+28. Consider microinteractions to enhance user engagement
+29. Use parallax effects and subtle animations for depth
+30. Implement neumorphic design elements for a modern look
+31. Use glassmorphism effects for elegant, translucent interfaces
+32. Incorporate well-designed typography hierarchies with proper sizing and spacing
+33. Create visually balanced layouts using the rule of thirds
+34. Ensure contrast ratios meet WCAG accessibility standards
+35. Use whitespace effectively to create visual hierarchy and improve readability
+36. Implement dark mode considerations in all designs
+37. Use CSS variables for themeable components
+38. Create responsive layouts that work across all device sizes
+39. Implement proper loading states and transitions
+40. Use subtle hover animations to indicate interactivity
+41. Create cohesive UI component systems with consistent styling
+42. Use proper heading structures for semantic HTML
+43. Implement proper meta tags for SEO optimization
+44. Use image optimization techniques for better performance
+45. Create beautiful, custom form elements that maintain accessibility
+46. Use clean, scalable SVG icons where appropriate
+47. Implement proper focus states for keyboard navigation
+48. Use progressive enhancement principles in your implementations
+49. Consider the psychological impact of color choices in your designs
+50. Implement custom scrollbar styling that matches the design theme
+51. Maintain proper content hierarchy for better user understanding
+52. Use typography to establish a strong visual identity
+53. Create custom cursor effects for enhanced interactivity
+54. Implement data visualization with clean, minimal designs
+55. Use grid systems for consistent spacing and alignment
+56. Incorporate loading skeleton screens instead of spinners when possible
+57. Use proper transitions between interactive states
+58. Consider cultural color associations in your design choices
+59. Implement motion designs that respect users' motion preferences
+60. Use proper column widths and line lengths for optimal readability`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
