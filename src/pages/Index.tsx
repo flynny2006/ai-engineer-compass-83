@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +49,7 @@ import FileExplorer from "@/components/FileExplorer";
 import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
+import Navigation from "@/components/Navigation";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -582,63 +582,66 @@ Full file content here
           <Code className="h-6 w-6" />
           <h1 className="text-xl font-semibold">AI Code Engineer</h1>
         </div>
-        <div className="flex gap-2 items-center">
-          <div className="flex items-center gap-2 mr-4">
-            <span className="text-sm font-medium">
-              Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
-            </span>
-            {!hasUnlimitedCredits && (
-              <Progress
-                value={creditPercentage}
-                className="w-24 h-2"
-              />
-            )}
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={() => setShowClaimDialog(true)}
+        <div className="flex gap-4 items-center">
+          <Navigation />
+          <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2 mr-4">
+              <span className="text-sm font-medium">
+                Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
+              </span>
+              {!hasUnlimitedCredits && (
+                <Progress
+                  value={creditPercentage}
+                  className="w-24 h-2"
+                />
+              )}
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setShowClaimDialog(true)}
+              >
+                <Gift className="h-4 w-4 mr-2" /> Claim Code
+              </Button>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset Project</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={resetProject} className="bg-destructive text-destructive-foreground">
+                    Reset
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Toggle
+              aria-label="Toggle theme"
+              pressed={theme === "dark"}
+              onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
             >
-              <Gift className="h-4 w-4 mr-2" /> Claim Code
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Toggle>
+            <Button size="sm" variant="outline" onClick={() => {
+              updatePreview();
+              setLastRefreshTime(Date.now());
+            }}>
+              <Play className="h-4 w-4 mr-2" /> Run Preview
             </Button>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset Project</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={resetProject} className="bg-destructive text-destructive-foreground">
-                  Reset
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Toggle
-            aria-label="Toggle theme"
-            pressed={theme === "dark"}
-            onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </Toggle>
-          <Button size="sm" variant="outline" onClick={() => {
-            updatePreview();
-            setLastRefreshTime(Date.now());
-          }}>
-            <Play className="h-4 w-4 mr-2" /> Run Preview
-          </Button>
         </div>
       </header>
 
