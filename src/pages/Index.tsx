@@ -525,27 +525,29 @@ Full file content here
               )}
             </div>
             
-            <Tabs value={editorView} className="flex-1">
-              <TabsContent value="code" className="flex-1 mt-0 h-full">
-                <textarea
-                  ref={codeEditorRef}
-                  className="flex-1 p-4 font-mono text-sm bg-background resize-none overflow-auto w-full h-full border-0 focus:outline-none code-editor"
-                  value={getCurrentFileContent()}
-                  onChange={(e) => updateFileContent(e.target.value)}
-                  spellCheck={false}
-                  style={{ fontFamily: 'Arial, monospace' }}
-                />
-              </TabsContent>
-              
-              <TabsContent value="files" className="flex-1 mt-0 overflow-hidden h-full">
-                <FileExplorer 
-                  files={files} 
-                  setFiles={setFiles} 
-                  currentFile={currentFile} 
-                  setCurrentFile={setCurrentFile} 
-                />
-              </TabsContent>
-            </Tabs>
+            <div className="flex-1 h-full">
+              <Tabs value={editorView} className="h-full">
+                <TabsContent value="code" className="h-full mt-0">
+                  <textarea
+                    ref={codeEditorRef}
+                    className="flex-1 p-4 font-mono text-sm bg-background resize-none overflow-auto w-full h-full border-0 focus:outline-none code-editor"
+                    value={getCurrentFileContent()}
+                    onChange={(e) => updateFileContent(e.target.value)}
+                    spellCheck={false}
+                    style={{ fontFamily: 'Arial, monospace' }}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  <FileExplorer 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
         </ResizablePanel>
 
