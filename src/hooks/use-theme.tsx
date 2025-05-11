@@ -15,22 +15,27 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check for saved theme preference in localStorage
-    const savedTheme = localStorage.getItem("theme") as Theme;
-    
-    // Check for system preference if no saved preference
-    if (!savedTheme) {
-      const systemPreference = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-      return systemPreference;
+    // Check for saved theme preference in localStorage or use system preference
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme") as Theme;
+      
+      if (!savedTheme) {
+        const systemPreference = window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+        return systemPreference;
+      }
+      
+      return savedTheme || "light";
     }
     
-    return savedTheme || "light";
+    return "light";
   });
 
   // Apply theme class to document
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
@@ -101,8 +106,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [theme]);
 
-  // Listen for system preference changes
+  // Listen for system preference changes with safety checks
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     
     const handleChange = () => {
