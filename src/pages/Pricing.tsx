@@ -3,11 +3,9 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, DollarSign, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Check, DollarSign } from "lucide-react";
 
 const PricingPage = () => {
-  const navigate = useNavigate();
   const pricingPlans = [
     {
       name: "Free",
@@ -49,16 +47,6 @@ const PricingPage = () => {
 
   return (
     <div className="container mx-auto py-16 px-4">
-      <div className="flex justify-start mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(-1)} 
-          className="flex items-center gap-1"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-      </div>
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Simple, transparent pricing</h1>
         <p className="text-lg text-muted-foreground">

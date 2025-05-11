@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import EnhancedFileExplorer from "@/components/EnhancedFileExplorer";
+import FileExplorer from "@/components/FileExplorer";
 import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
@@ -95,7 +94,7 @@ const initialFiles = [
 ];
 
 const initialMessages = [
-  { role: "assistant", content: "Welcome! Im Boongle AI. Describe the Project you want to build and i'll build it in no time! If you need later any changes, just tell me!" }
+  { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
 ];
 
 const DAILY_CREDIT_LIMIT = 25;
@@ -730,7 +729,7 @@ Full file content here
                 </TabsContent>
                 
                 <TabsContent value="files" className="h-full mt-0 overflow-hidden">
-                  <EnhancedFileExplorer
+                  <FileExplorer 
                     files={files} 
                     setFiles={setFiles} 
                     currentFile={currentFile} 
