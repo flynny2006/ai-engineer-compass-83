@@ -7,6 +7,7 @@ import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize,
 import { useTheme } from "@/hooks/use-theme";
 import { Toggle } from "@/components/ui/toggle";
 import { Progress } from "@/components/ui/progress";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,14 +95,21 @@ const initialFiles = [
 ];
 
 const initialMessages = [
-  { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
+  { role: "assistant", content: "Welcome! Im Boongle AI. Describe the Project you want to build and i'll build it in no time! If you need later any changes, just tell me!" }
 ];
 
 const DAILY_CREDIT_LIMIT = 25;
 const UNLIMITED_CODE = "3636";
+// New claim codes for lifetime credits
+const CLAIM_CODES = {
+  "56722": 100,
+  "757874": 500,
+  "776561": 1600
+};
 
 const Index = () => {
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
   const [files, setFiles] = useState(() => {
     const savedFiles = localStorage.getItem("project_files");
     return savedFiles ? JSON.parse(savedFiles) : initialFiles;
@@ -147,6 +155,9 @@ const Index = () => {
     }
     return DAILY_CREDIT_LIMIT;
   });
+  const [lifetimeCredits, setLifetimeCredits] = useState<number>(() => {
+    return parseInt(localStorage.getItem("lifetime_credits") || "0", 10);
+  });
   const [hasUnlimitedCredits, setHasUnlimitedCredits] = useState<boolean>(() => {
     return localStorage.getItem("unlimited_credits") === "true";
   });
@@ -185,6 +196,11 @@ const Index = () => {
     };
     localStorage.setItem("daily_credits", JSON.stringify(creditsData));
   }, [credits]);
+
+  // Save lifetime credits to localStorage
+  useEffect(() => {
+    localStorage.setItem("lifetime_credits", lifetimeCredits.toString());
+  }, [lifetimeCredits]);
 
   // Save unlimited credits status
   useEffect(() => {
@@ -302,6 +318,7 @@ const Index = () => {
   const resetProject = () => {
     // Store current credits before reset
     const currentCredits = credits;
+    const currentLifetimeCredits = lifetimeCredits;
     const isUnlimited = hasUnlimitedCredits;
     
     setFiles(initialFiles);
@@ -316,6 +333,7 @@ const Index = () => {
     
     // Restore credits after reset
     setCredits(currentCredits);
+    setLifetimeCredits(currentLifetimeCredits);
     setHasUnlimitedCredits(isUnlimited);
     
     toast({
@@ -338,6 +356,18 @@ const Index = () => {
         title: "Unlimited Credits Activated!",
         description: "You now have unlimited credits to use the AI."
       });
+      return;
+    }
+    
+    // Check if code is valid for lifetime credits
+    if (CLAIM_CODES[claimCode as keyof typeof CLAIM_CODES]) {
+      const bonusCredits = CLAIM_CODES[claimCode as keyof typeof CLAIM_CODES];
+      setLifetimeCredits(prev => prev + bonusCredits);
+      setShowClaimDialog(false);
+      toast({
+        title: `${bonusCredits} Lifetime Credits Added!`,
+        description: `You now have ${lifetimeCredits + bonusCredits} lifetime credits.`
+      });
     } else {
       toast({
         title: "Invalid Code",
@@ -345,6 +375,26 @@ const Index = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const getTotalAvailableCredits = () => {
+    return credits + lifetimeCredits;
+  };
+
+  const useCredit = () => {
+    if (hasUnlimitedCredits) {
+      return true;
+    }
+    
+    if (credits > 0) {
+      setCredits(prev => prev - 1);
+      return true;
+    } else if (lifetimeCredits > 0) {
+      setLifetimeCredits(prev => prev - 1);
+      return true;
+    }
+    
+    return false;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -360,10 +410,11 @@ const Index = () => {
     }
     
     // Check if user has credits available
-    if (credits <= 0 && !hasUnlimitedCredits) {
+    const hasAvailableCredits = getTotalAvailableCredits() > 0 || hasUnlimitedCredits;
+    if (!hasAvailableCredits) {
       toast({
-        title: "Daily Limit Reached",
-        description: "You've reached your daily credit limit. Please wait until tomorrow or claim an unlimited code.",
+        title: "No Credits Available",
+        description: "You've used all your credits. Claim a code for more credits or wait until tomorrow.",
         variant: "destructive"
       });
       return;
@@ -374,10 +425,8 @@ const Index = () => {
     setUserPrompt("");
     setIsLoading(true);
     
-    // Deduct credit if not unlimited
-    if (!hasUnlimitedCredits) {
-      setCredits(prev => prev - 1);
-    }
+    // Deduct credit
+    useCredit();
 
     try {
       // Create enhanced system prompt
@@ -582,14 +631,16 @@ Full file content here
           <Code className="h-6 w-6" />
           <h1 className="text-xl font-semibold">Boongle AI - Software Engineer</h1>
         </div>
-        <div className="flex gap-4 items-center">
+        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-4'} items-center`}>
           <Navigation />
-          <div className="flex gap-2 items-center">
-            <div className="flex items-center gap-2 mr-4">
-              <span className="text-sm font-medium">
-                Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
+          <div className={`flex ${isMobile ? 'flex-wrap justify-end' : 'gap-2'} items-center`}>
+            <div className="flex items-center gap-2 mr-2">
+              <span className="text-sm font-medium whitespace-nowrap">
+                {hasUnlimitedCredits ? 
+                  "∞" : 
+                  `${lifetimeCredits > 0 ? `${credits}+${lifetimeCredits}` : credits}`}
               </span>
-              {!hasUnlimitedCredits && (
+              {!hasUnlimitedCredits && !isMobile && (
                 <Progress
                   value={creditPercentage}
                   className="w-24 h-2"
@@ -599,14 +650,17 @@ Full file content here
                 size="sm" 
                 variant="outline" 
                 onClick={() => setShowClaimDialog(true)}
+                className={isMobile ? "w-9 px-0" : ""}
               >
-                <Gift className="h-4 w-4 mr-2" /> Claim Code
+                <Gift className="h-4 w-4" />
+                {!isMobile && <span className="ml-1">Claim</span>}
               </Button>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
+                <Button size="sm" variant="outline" className={isMobile ? "w-9 px-0" : ""}>
+                  <RefreshCcw className="h-4 w-4" />
+                  {!isMobile && <span className="ml-1">Reset</span>}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -628,6 +682,7 @@ Full file content here
               aria-label="Toggle theme"
               pressed={theme === "dark"}
               onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
+              className={isMobile ? "w-9 px-0" : ""}
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -635,11 +690,17 @@ Full file content here
                 <Moon className="h-4 w-4" />
               )}
             </Toggle>
-            <Button size="sm" variant="outline" onClick={() => {
-              updatePreview();
-              setLastRefreshTime(Date.now());
-            }}>
-              <Play className="h-4 w-4 mr-2" /> Run Preview
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => {
+                updatePreview();
+                setLastRefreshTime(Date.now());
+              }}
+              className={isMobile ? "w-9 px-0" : ""}
+            >
+              <Play className="h-4 w-4" />
+              {!isMobile && <span className="ml-1">Run</span>}
             </Button>
           </div>
         </div>
@@ -649,17 +710,26 @@ Full file content here
       <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Claim Unlimited Credits</DialogTitle>
+            <DialogTitle>Claim Credits</DialogTitle>
             <DialogDescription>
-              Enter your code to claim unlimited credits
+              Enter your claim code to get bonus lifetime credits
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2 items-center">
-            <Input 
-              placeholder="Enter code..." 
-              value={claimCode} 
-              onChange={(e) => setClaimCode(e.target.value)}
-            />
+          <div className="flex flex-col gap-3">
+            <div className="text-sm text-muted-foreground">
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Lifetime credits don't expire</li>
+                <li>Daily credits reset every 24 hours</li>
+                <li>Code "3636" unlocks unlimited credits</li>
+              </ul>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Input 
+                placeholder="Enter code..." 
+                value={claimCode} 
+                onChange={(e) => setClaimCode(e.target.value)}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowClaimDialog(false)}>
@@ -673,27 +743,53 @@ Full file content here
       </Dialog>
 
       {/* Main Content */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Left Panel - Code Editor */}
-        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
-          <div className="border-r h-full flex flex-col">
-            <div className="p-2 bg-muted flex items-center justify-between">
-              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
-                <TabsList className="grid w-60 grid-cols-2">
-                  <TabsTrigger value="code">Editor</TabsTrigger>
-                  <TabsTrigger value="files">File Explorer</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              <div className="flex items-center gap-2">
-                {editorView === "code" && (
+      {isMobile ? (
+        // Mobile Layout
+        <div className="flex flex-col h-full">
+          <Tabs defaultValue="preview" className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="w-full justify-start px-2 pt-2 h-auto">
+              <TabsTrigger value="preview" className="flex-1">Preview</TabsTrigger>
+              <TabsTrigger value="editor" className="flex-1">Editor</TabsTrigger>
+              <TabsTrigger value="files" className="flex-1">Files</TabsTrigger>
+              <TabsTrigger value="chat" className="flex-1">Chat</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="preview" className="flex-1 overflow-hidden p-0">
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium truncate max-w-[150px]">
+                      {mainPreviewFile}
+                    </span>
+                  </div>
+                  <PreviewSettings
+                    files={files}
+                    mainFile={mainPreviewFile}
+                    setMainFile={setMainPreviewFile}
+                  />
+                </div>
+                <div className="flex-1 bg-white">
+                  <iframe 
+                    ref={previewIframeRef}
+                    title="Preview"
+                    className="w-full h-full"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="editor" className="flex-1 overflow-hidden p-0">
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="mr-2">
                         {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="start">
                       {files.map((file) => (
                         <DropdownMenuItem 
                           key={file.name}
@@ -708,171 +804,81 @@ Full file content here
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                )}
-                
-                <PreviewSettings
-                  files={files}
-                  mainFile={mainPreviewFile}
-                  setMainFile={setMainPreviewFile}
-                />
-              </div>
-            </div>
-            
-            <div className="flex-1 h-full">
-              <Tabs value={editorView} className="h-full">
-                <TabsContent value="code" className="h-full mt-0">
+                </div>
+                <div className="flex-1">
                   <CodeEditor
                     value={getCurrentFileContent()}
                     onChange={updateFileContent}
                     language={getCurrentFileLanguage()}
                   />
-                </TabsContent>
-                
-                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
-                  <FileExplorer 
-                    files={files} 
-                    setFiles={setFiles} 
-                    currentFile={currentFile} 
-                    setCurrentFile={setCurrentFile} 
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-        </ResizablePanel>
-
-        {isFullscreen ? null : <ResizableHandle withHandle />}
-
-        {/* Right Panel - Chat and Preview */}
-        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
-          <ResizablePanelGroup direction="vertical">
-            {/* Preview Section */}
-            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
-              <div className="h-full flex flex-col">
-                <div className="p-2 bg-muted flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Eye className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={toggleFullscreen}
-                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
-                  >
-                    <Maximize className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex-1 bg-white">
-                  <iframe 
-                    ref={previewIframeRef}
-                    title="Preview"
-                    className="w-full h-full"
-                    sandbox="allow-scripts allow-same-origin"
-                  />
                 </div>
               </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Chat Section */}
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <div className="h-full flex flex-col">
-                <div className="p-2 bg-muted flex items-center justify-between">
-                  <div className="flex items-center">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Chat</span>
+            </TabsContent>
+            
+            <TabsContent value="files" className="flex-1 overflow-hidden p-0">
+              <FileExplorer 
+                files={files} 
+                setFiles={setFiles} 
+                currentFile={currentFile} 
+                setCurrentFile={setCurrentFile} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="chat" className="flex-1 overflow-hidden p-0 flex flex-col">
+              {/* API Key Input */}
+              {showApiKeyInput && (
+                <div className="border-b p-3">
+                  <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      placeholder="AIza..."
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={saveApiKey}
+                    >
+                      <Save className="h-4 w-4 mr-2" /> Save
+                    </Button>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={clearChatHistory}
-                    title="Clear chat history"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your API key is stored locally and never sent to our servers.
+                  </p>
                 </div>
+              )}
 
-                {/* API Key Input */}
-                {showApiKeyInput && (
-                  <div className="border-b p-3">
-                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="password"
-                        placeholder="AIza..."
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                      />
-                      <Button 
-                        size="sm" 
-                        onClick={saveApiKey}
-                      >
-                        <Save className="h-4 w-4 mr-2" /> Save
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Your API key is stored locally and never sent to our servers.
-                    </p>
-                  </div>
-                )}
-
-                {/* Messages */}
-                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
-                  <div className="space-y-4">
-                    {messages.map((msg, i) => (
+              {/* Messages */}
+              <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                <div className="space-y-4">
+                  {messages.map((msg, i) => (
+                    <div 
+                      key={i} 
+                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
                       <div 
-                        key={i} 
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        className={`max-w-[85%] rounded-lg p-3 ${
+                          msg.role === "user" 
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted"
+                        }`}
                       >
-                        <div 
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            msg.role === "user" 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted"
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
                 </div>
-
-                {/* Input Area */}
-                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
-                  <Input
-                    placeholder="Describe the changes you want to make..."
-                    value={userPrompt}
-                    onChange={(e) => setUserPrompt(e.target.value)}
-                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center">
-                        <div className="w-5 h-5 relative">
-                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
-                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </form>
               </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
-  );
-};
 
-export default Index;
+              {/* Input Area */}
+              <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                <Input
+                  placeholder="Describe changes..."
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  disabled={isLoading || (!hasUnlimitedCredits && getTotalAvailableCredits() <= 0)}
+                  className="flex-1"
+                />
+                <Button

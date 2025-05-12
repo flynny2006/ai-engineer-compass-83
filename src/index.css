@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -57,14 +58,14 @@
   }
 
   .dark {
-    /* Refined dark blue theme */
-    --background: 225 25% 12%;
+    /* Refined completely black theme */
+    --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
-    --card: 225 25% 12%;
+    --card: 0 0% 0%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 225 25% 12%;
+    --popover: 0 0% 0%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 217.2 91.2% 59.8%;
@@ -86,7 +87,7 @@
     --input: 216 34% 17%;
     --ring: 224.3 76.3% 48%;
     
-    --sidebar-background: 220 47% 11%;
+    --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 217.2 91.2% 59.8%;
     --sidebar-primary-foreground: 0 0% 100%;
