@@ -3,7 +3,8 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, DollarSign } from "lucide-react";
+import { Check, DollarSign, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const PricingPage = () => {
   const pricingPlans = [
@@ -47,6 +48,14 @@ const PricingPage = () => {
 
   return (
     <div className="container mx-auto py-16 px-4">
+      <div className="mb-6">
+        <Link to="/">
+          <Button variant="outline" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Button>
+        </Link>
+      </div>
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Simple, transparent pricing</h1>
         <p className="text-lg text-muted-foreground">

@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from "react";
-import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp, FolderPlus, Move, Copy } from "lucide-react";
+import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp, FolderPlus, Move, Copy, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +38,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
   const [currentPath, setCurrentPath] = useState<string>("/");
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   
   // Extract folders from file names
   const getFolderStructure = () => {
@@ -59,6 +59,46 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
     return structure;
   };
 
+  // Filter files based on search query
+  const getFilteredFileStructure = () => {
+    if (!searchQuery.trim()) {
+      return getFolderStructure();
+    }
+    
+    const filteredStructure: { [folder: string]: FileItem[] } = { "/": [] };
+    const query = searchQuery.toLowerCase();
+    
+    files.forEach(file => {
+      if (file.name.toLowerCase().includes(query)) {
+        const pathSegments = file.name.split('/');
+        const fileName = pathSegments.pop() || file.name;
+        const folderPath = pathSegments.length > 0 ? pathSegments.join('/') : "/";
+        
+        if (!filteredStructure[folderPath]) {
+          filteredStructure[folderPath] = [];
+        }
+        
+        filteredStructure[folderPath].push({...file, name: fileName});
+        
+        // Ensure parent folders are included in structure
+        let currentPath = "";
+        pathSegments.forEach(segment => {
+          if (currentPath) {
+            currentPath += `/${segment}`;
+          } else {
+            currentPath = segment;
+          }
+          
+          if (!filteredStructure[currentPath]) {
+            filteredStructure[currentPath] = [];
+          }
+        });
+      }
+    });
+    
+    return filteredStructure;
+  };
+
   // Get all folder paths
   const getAllFolders = () => {
     const folders = new Set<string>(["/"]); // Root folder always exists
@@ -77,7 +117,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
     return Array.from(folders);
   };
 
-  const folderStructure = getFolderStructure();
+  const folderStructure = getFilteredFileStructure();
   const allFolders = getAllFolders();
 
   // Toggle folder expanded state
@@ -680,6 +720,29 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
             <Plus className="h-4 w-4 mr-1" />
             File
           </Button>
+        </div>
+      </div>
+      
+      {/* Search Bar */}
+      <div className="px-2 py-1.5 border-b">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="h-8 pl-8 text-sm"
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
       

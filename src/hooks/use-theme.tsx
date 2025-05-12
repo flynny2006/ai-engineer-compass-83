@@ -41,42 +41,42 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
 
-    // Apply custom CSS variables for the gray-black theme when in dark mode
+    // Apply custom CSS variables for the completely black theme when in dark mode
     if (theme === "dark") {
-      root.style.setProperty("--background", "222 18% 11%"); // Dark gray-black background
+      root.style.setProperty("--background", "0 0% 0%"); // Pure black background
       root.style.setProperty("--foreground", "210 40% 98%");
       
-      root.style.setProperty("--card", "222 18% 11%");
+      root.style.setProperty("--card", "0 0% 0%"); // Pure black card
       root.style.setProperty("--card-foreground", "210 40% 98%");
       
-      root.style.setProperty("--popover", "222 18% 11%");
+      root.style.setProperty("--popover", "0 0% 0%"); // Pure black popover
       root.style.setProperty("--popover-foreground", "210 40% 98%");
       
       root.style.setProperty("--primary", "210 40% 98%");
-      root.style.setProperty("--primary-foreground", "222 47.4% 11.2%");
+      root.style.setProperty("--primary-foreground", "0 0% 0%"); // Pure black primary foreground
       
-      root.style.setProperty("--secondary", "217 19% 27%"); // Darker gray for secondary elements
+      root.style.setProperty("--secondary", "0 0% 7%"); // Very dark gray for secondary elements
       root.style.setProperty("--secondary-foreground", "210 40% 98%");
       
-      root.style.setProperty("--muted", "217 19% 27%");
+      root.style.setProperty("--muted", "0 0% 7%"); // Very dark gray for muted elements
       root.style.setProperty("--muted-foreground", "215 20.2% 65.1%");
       
-      root.style.setProperty("--accent", "217 19% 27%");
+      root.style.setProperty("--accent", "0 0% 7%"); // Very dark gray for accent
       root.style.setProperty("--accent-foreground", "210 40% 98%");
       
       root.style.setProperty("--destructive", "0 62.8% 30.6%");
       root.style.setProperty("--destructive-foreground", "0 0% 98%");
       
-      root.style.setProperty("--border", "217 19% 27%");
-      root.style.setProperty("--input", "217 19% 27%");
+      root.style.setProperty("--border", "0 0% 12%"); // Darker border
+      root.style.setProperty("--input", "0 0% 12%"); // Darker input
       root.style.setProperty("--ring", "224.3 76.3% 48%");
       
-      // Update sidebar colors to match gray-black theme
-      root.style.setProperty("--sidebar-background", "222 30% 9%");
+      // Update sidebar colors to match completely black theme
+      root.style.setProperty("--sidebar-background", "0 0% 0%"); // Pure black sidebar
       root.style.setProperty("--sidebar-foreground", "210 40% 98%");
-      root.style.setProperty("--sidebar-accent", "217 19% 27%");
+      root.style.setProperty("--sidebar-accent", "0 0% 7%"); // Very dark gray for sidebar accent
       root.style.setProperty("--sidebar-accent-foreground", "210 40% 98%");
-      root.style.setProperty("--sidebar-border", "217 19% 27%");
+      root.style.setProperty("--sidebar-border", "0 0% 12%"); // Darker sidebar border
     } else {
       // Reset custom properties when in light mode
       root.style.removeProperty("--background");

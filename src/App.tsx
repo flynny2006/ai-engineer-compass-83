@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import Important from "./pages/Important";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/important" element={<Important />} />
             {/* Dynamic routes for pages that might be created by the AI */}
             <Route path="/:pageName" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
