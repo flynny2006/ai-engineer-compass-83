@@ -163,7 +163,7 @@ const Index = () => {
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
-
+  
   // Get current file content and language
   const getCurrentFileContent = () => {
     const file = files.find(f => f.name === currentFile);
