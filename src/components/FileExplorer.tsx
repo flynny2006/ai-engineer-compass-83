@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp, FolderPlus, Move, Copy, Search } from "lucide-react";
+import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp, FolderPlus, Move, Copy, Search, Download } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [downloadStarted, setDownloadStarted] = useState<boolean>(false);
   
   // Extract folders from file names
   const getFolderStructure = () => {
@@ -497,6 +498,70 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
     setDraggedItem(null);
   };
 
+  // Download a single file
+  const handleDownloadFile = (folder: string, file: FileItem) => {
+    const fullPath = folder === "/" ? file.name : `${folder}/${file.name}`;
+    const fileName = fullPath.split('/').pop() || "file";
+    
+    // Create blob from file content
+    const blob = new Blob([file.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create a temporary link element and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Show download started notification
+    setDownloadStarted(true);
+    setTimeout(() => setDownloadStarted(false), 3000);
+  };
+
+  // Download entire project as ZIP
+  const handleDownloadProject = () => {
+    import('jszip').then(({ default: JSZip }) => {
+      const zip = new JSZip();
+      
+      // Add all files to the zip
+      files.forEach(file => {
+        const filePath = file.name;
+        zip.file(filePath, file.content);
+      });
+      
+      // Generate the zip file
+      zip.generateAsync({ type: 'blob' }).then(content => {
+        // Create download link
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'project.zip';
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Show download started notification
+        setDownloadStarted(true);
+        setTimeout(() => setDownloadStarted(false), 3000);
+      });
+    }).catch(error => {
+      toast({
+        title: "Error",
+        description: "Failed to create ZIP file. Please try again.",
+        variant: "destructive"
+      });
+      console.error("ZIP error:", error);
+    });
+  };
+
   // Render folder and its contents
   const renderFolder = (folderPath: string, files: FileItem[]) => {
     const isExpanded = expandedFolders[folderPath] ?? true;
@@ -645,6 +710,18 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
                       className="h-6 w-6" 
                       onClick={(e) => {
                         e.stopPropagation();
+                        handleDownloadFile(folderPath, file);
+                      }}
+                      title="Download file"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={(e) => {
+                        e.stopPropagation();
                         handleDuplicateFile(folderPath, file);
                       }}
                       title="Duplicate file"
@@ -706,6 +783,16 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
       <div className="p-2 flex justify-between items-center sticky top-0 bg-background z-10 border-b">
         <h3 className="text-sm font-medium">Files</h3>
         <div className="flex gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleDownloadProject}
+            className="flex items-center gap-1"
+            title="Download entire project as ZIP"
+          >
+            <Download className="h-4 w-4" />
+            Project
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => {
             setCurrentPath("/");
             setNewFolderDialogOpen(true);
@@ -721,6 +808,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
             File
           </Button>
         </div>
+      </div>
+      
+      {/* Info text about open-source */}
+      <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-muted/30 italic">
+        Your Project is open-source and can be used anywhere. Thanks for using Boongle AI!
       </div>
       
       {/* Search Bar */}
@@ -848,6 +940,19 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFil
             <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleRenameFile}>Rename</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Download Started Lightbox */}
+      <Dialog open={downloadStarted} onOpenChange={setDownloadStarted}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Download Started</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 flex flex-col items-center justify-center space-y-4">
+            <Download className="h-12 w-12 text-primary animate-pulse" />
+            <p className="text-center">Your Download has been started!</p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

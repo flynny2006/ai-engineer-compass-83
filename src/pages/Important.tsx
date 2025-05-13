@@ -84,7 +84,7 @@ const ImportantPage = () => {
         <CardContent>
           <p className="mb-4">Want to Advertise your OWN Webpage here? Contact us on Discord, to get much users on your own Webpage!</p>
           <Button className="w-full">
-            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="w-full h-full flex items-center justify-center">
+            <a href="https://discord.gg/hrq9cjXr27" target="_blank" rel="noopener noreferrer" className="w-full h-full flex items-center justify-center">
               Join Our Discord
             </a>
           </Button>

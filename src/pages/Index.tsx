@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database, Plus, Image } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -124,7 +125,7 @@ const Index = () => {
     return lastFile || "index.html";
   });
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{role: string, content: string}>>(() => {
+  const [messages, setMessages] = useState<Array<{role: string, content: string, image?: string}>>(() => {
     const savedMessages = localStorage.getItem("chat_history");
     return savedMessages ? JSON.parse(savedMessages) : initialMessages;
   });
@@ -142,6 +143,10 @@ const Index = () => {
   const [mainPreviewFile, setMainPreviewFile] = useState<string>(() => {
     return localStorage.getItem("main_preview_file") || "index.html";
   });
+  const [imageUpload, setImageUpload] = useState<File | null>(null);
+  const [showImageUpload, setShowImageUpload] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [buildError, setBuildError] = useState<boolean>(false);
   
   // Credits system
   const [dailyCredits, setDailyCredits] = useState<number>(() => {
@@ -197,6 +202,29 @@ const Index = () => {
     );
     setFiles(updatedFiles);
     localStorage.setItem("project_files", JSON.stringify(updatedFiles));
+    
+    // Check for potential code errors
+    checkForCodeErrors(content);
+  };
+  
+  // Check for code errors like triple backticks
+  const checkForCodeErrors = (content: string) => {
+    // Check if content ends with backticks or contains double backticks
+    const endsWithBackticks = content.trim().endsWith('```');
+    const containsDoubleBackticks = content.includes('``````');
+    
+    if (endsWithBackticks || containsDoubleBackticks) {
+      setBuildError(true);
+    } else {
+      setBuildError(false);
+    }
+  };
+  
+  // Fix code errors
+  const handleFixCodeErrors = () => {
+    setUserPrompt("Fix the code syntax. It appears to contain markdown backticks (```) that should be removed.");
+    handleSubmit(new Event('submit') as unknown as React.FormEvent);
+    setBuildError(false);
   };
 
   // Save credits to localStorage
@@ -384,6 +412,241 @@ const Index = () => {
       });
     }
   };
+  
+  // Handle image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setImageUpload(file);
+      setShowImageUpload(true);
+    }
+  };
+  
+  // Convert image file to base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+  
+  // Confirm image upload
+  const confirmImageUpload = async () => {
+    if (imageUpload) {
+      try {
+        const base64Image = await convertToBase64(imageUpload);
+        
+        // Create a user message with the image
+        const userMessage = { 
+          role: "user", 
+          content: userPrompt || "Please build a website based on this image", 
+          image: base64Image 
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        setUserPrompt("");
+        setIsLoading(true);
+        setShowImageUpload(false);
+        setImageUpload(null);
+        
+        // Deduct credit if not unlimited
+        if (!hasUnlimitedCredits) {
+          if (lifetimeCredits > 0) {
+            setLifetimeCredits(prev => prev - 1);
+          } else {
+            setDailyCredits(prev => prev - 1);
+          }
+        }
+        
+        try {
+          // Create enhanced system prompt
+          const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
+Current project files:
+${files.map(file => `
+--- ${file.name} ---
+${file.content}
+`).join('\n')}
+
+User request: "${userPrompt || "Please build a website based on this image"}"
+User has uploaded an image, which you'll see in your input. Please analyze it and build a website based on it.
+
+Previous conversation:
+${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+Analyze the image and the user's request. Then, respond with the full updated files that incorporates the requested changes.
+
+Follow these rules:
+1. Return all files that need to be modified in this format:
+--- filename.ext ---
+Full file content here
+
+2. Always return the complete content for each file
+3. Don't include explanations, just the code files
+4. Make sure to include proper links between HTML, CSS, and JS files
+5. Don't include markdown formatting or code blocks, just the raw code
+6. Be creative and implement visual enhancements when appropriate
+7. Follow best practices for HTML, CSS, and JavaScript
+8. Make sure your code is clean, organized, and well-documented
+9. Implement responsive design elements when possible
+10. Consider accessibility in your implementations
+11. Create visually appealing color schemes and typography to match the uploaded image
+12. Recreate the design from the uploaded image as closely as possible
+13. Use the same colors, layout, and style as shown in the image
+14. Consider the context and purpose of the image when designing the site
+15. If the image contains text, try to incorporate that text into your design
+16. If the image shows a UI, recreate that UI in your code
+17. Use modern design principles for beautiful interfaces
+18. Utilize smooth animations and transitions when appropriate
+19. Ensure proper spacing and layout for optimal user experience
+20. Implement intuitive navigation and user interaction patterns`;
+
+          const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: systemPrompt },
+                    { inline_data: { mime_type: imageUpload.type, data: base64Image.split(',')[1] } }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                topK: 40
+              }
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          // Process response as in regular submission
+          if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            // Extract the generated code
+            const generatedText = data.candidates[0].content.parts[0].text;
+            
+            // Process the response to extract file contents
+            const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
+            
+            if (fileMatches && fileMatches.length > 0) {
+              const updatedFiles = [...files];
+              const newFiles = [];
+              
+              fileMatches.forEach(match => {
+                const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                  const fileName = fileNameMatch[1].trim();
+                  let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
+                  
+                  // Get file extension
+                  const fileExt = fileName.split('.').pop() || "";
+                  
+                  // Check if file already exists
+                  const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
+                  
+                  if (existingFileIndex >= 0) {
+                    // Update existing file
+                    updatedFiles[existingFileIndex].content = fileContent;
+                  } else {
+                    // Add new file
+                    newFiles.push({
+                      name: fileName,
+                      content: fileContent,
+                      type: fileExt
+                    });
+                  }
+                }
+              });
+              
+              // Add new files to the list
+              const combinedFiles = [...updatedFiles, ...newFiles];
+              setFiles(combinedFiles);
+              
+              // Show toast for new files
+              if (newFiles.length > 0) {
+                toast({
+                  title: `Created ${newFiles.length} new file(s)`,
+                  description: `Added: ${newFiles.map(f => f.name).join(', ')}`
+                });
+              }
+            } else {
+              // If no file structure detected, treat it as changes to the current file
+              updateFileContent(generatedText);
+            }
+            
+            // Add assistant response
+            setMessages(prev => [...prev, { 
+              role: "assistant", 
+              content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results." 
+            }]);
+            
+            if (showApiKeyInput) {
+              saveApiKey();
+            }
+            
+            // Update preview
+            setLastRefreshTime(Date.now());
+          } else {
+            throw new Error("Invalid response format from API");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          setMessages(prev => [...prev, { 
+            role: "assistant", 
+            content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
+          }]);
+        } finally {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Image conversion error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to process the image. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+  
+  // Cancel image upload
+  const cancelImageUpload = () => {
+    setShowImageUpload(false);
+    setImageUpload(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -466,62 +729,7 @@ Full file content here
 22. Ensure JavaScript code is properly added and functional
 23. Use modern CSS features like flexbox, grid, and custom properties
 24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements
-26. Use color theory principles to create harmonious color schemes (complementary, analogous, triadic)
-27. Implement skeuomorphic design elements when appropriate for added realism
-28. Consider microinteractions to enhance user engagement
-29. Use parallax effects and subtle animations for depth
-30. Implement neumorphic design elements for a modern look
-31. Use glassmorphism effects for elegant, translucent interfaces
-32. Incorporate well-designed typography hierarchies with proper sizing and spacing
-33. Create visually balanced layouts using the rule of thirds
-34. Ensure contrast ratios meet WCAG accessibility standards
-35. Use whitespace effectively to create visual hierarchy and improve readability
-36. Implement dark mode considerations in all designs
-37. Use CSS variables for themeable components
-38. Create responsive layouts that work across all device sizes
-39. Implement proper loading states and transitions
-40. Use subtle hover animations to indicate interactivity
-41. Create cohesive UI component systems with consistent styling
-42. Use proper heading structures for semantic HTML
-43. Implement proper meta tags for SEO optimization
-44. Use image optimization techniques for better performance
-45. Create beautiful, custom form elements that maintain accessibility
-46. Use clean, scalable SVG icons where appropriate
-47. Implement proper focus states for keyboard navigation
-48. Use progressive enhancement principles in your implementations
-49. Consider the psychological impact of color choices in your designs
-50. Implement custom scrollbar styling that matches the design theme
-51. Maintain proper content hierarchy for better user understanding
-52. Use typography to establish a strong visual identity
-53. Create custom cursor effects for enhanced interactivity
-54. Implement data visualization with clean, minimal designs
-55. Use grid systems for consistent spacing and alignment
-56. Incorporate loading skeleton screens instead of spinners when possible
-57. Use proper transitions between interactive states
-58. Consider cultural color associations in your design choices
-59. Implement motion designs that respect users' motion preferences
-60. Use proper column widths and line lengths for optimal readability
-61. Create tactile and satisfying feedback for interactive elements
-62. Consider mobile-first design principles for responsive interfaces
-63. Use conditional loading techniques to improve performance on mobile
-64. Implement responsive touch targets for mobile users (minimum 44x44px)
-65. Optimize typography for readability on small screens
-66. Consider thumb reachability zones on mobile interfaces
-67. Use bottom navigation patterns for mobile interfaces
-68. Implement swipe gestures for natural mobile interaction
-69. Consider device-specific features like haptic feedback
-70. Adapt form inputs for optimal mobile experience
-71. Use viewport units for responsive sizing
-72. Consider landscape and portrait orientations
-73. Implement appropriate keyboard behavior on mobile
-74. Consider offline usage patterns for mobile users
-75. Optimize image loading and scaling for mobile devices
-76. Implement responsive spacing systems that adapt to screen sizes
-77. Consider reduced motion preferences for animations
-78. Use appropriate color contrasts for outdoor visibility
-79. Implement proper touch feedback states for mobile elements
-80. Consider mobile-specific UI patterns for complex interactions`;
+25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -783,6 +991,45 @@ Full file content here
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Image Upload</DialogTitle>
+            <DialogDescription>
+              Upload an image to generate a website design
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {imageUpload && (
+              <div className="border rounded-md p-2 flex justify-center">
+                <img 
+                  src={URL.createObjectURL(imageUpload)} 
+                  alt="Uploaded" 
+                  className="max-h-[300px] object-contain"
+                />
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Add a description (optional)</label>
+              <Input 
+                placeholder="Describe what you want to build..." 
+                value={userPrompt} 
+                onChange={(e) => setUserPrompt(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelImageUpload}>
+              Cancel
+            </Button>
+            <Button onClick={confirmImageUpload}>
+              Generate Website
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Main Content */}
       <ResizablePanelGroup direction="horizontal" className="flex-1">
@@ -945,6 +1192,15 @@ Full file content here
                               : "bg-muted"
                           }`}
                         >
+                          {msg.image && (
+                            <div className="mb-3">
+                              <img 
+                                src={msg.image} 
+                                alt="User uploaded" 
+                                className="max-w-full rounded-md max-h-[200px]" 
+                              />
+                            </div>
+                          )}
                           <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                         </div>
                       </div>
@@ -952,9 +1208,47 @@ Full file content here
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
+                
+                {/* Build Error Message */}
+                {buildError && (
+                  <div className="border-t p-3 bg-destructive/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-destructive">Build Unsuccessful</span>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={handleFixCodeErrors}
+                      >
+                        Fix
+                      </Button>
+                    </div>
+                    <p className="text-sm mt-1 text-muted-foreground">
+                      The code contains syntax errors. There might be markdown backticks (```) in the code.
+                    </p>
+                  </div>
+                )}
 
                 {/* Input Area */}
                 <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                  <div className="flex items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      ref={fileInputRef}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                      title="Upload image"
+                    >
+                      <Image className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Input
                     placeholder="Describe the changes you want to make..."
                     value={userPrompt}
