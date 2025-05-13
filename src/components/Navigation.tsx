@@ -1,26 +1,51 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Database, FileText, Gift } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navigation = () => {
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <Link to="/pricing">
-            <NavigationMenuLink
-              className={cn(
-                "block select-none rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-              )}
-            >
-              Pricing
-            </NavigationMenuLink>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "h-9 w-9 p-0" : ""}>
+          <FileText className="h-4 w-4" />
+          {!isMobile && <span className="ml-1">Menu</span>}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link to="/" className="flex items-center cursor-pointer">
+            Home
           </Link>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/pricing" className="flex items-center cursor-pointer">
+            <Gift className="h-4 w-4 mr-2" /> Pricing
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/important" className="flex items-center cursor-pointer">
+            Important
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/supabase" className="flex items-center cursor-pointer">
+            <Database className="h-4 w-4 mr-2" /> Supabase
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +52,7 @@ import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
 import { Link } from "react-router-dom";
+import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -1088,7 +1088,7 @@ Full file content here
                 </TabsContent>
                 
                 <TabsContent value="files" className="h-full mt-0 overflow-hidden">
-                  <FileExplorer 
+                  <FileExplorerEnhanced 
                     files={files} 
                     setFiles={setFiles} 
                     currentFile={currentFile} 
