@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { Settings, Info, Eye } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Settings, Info } from "lucide-react";
 
 interface PreviewSettingsProps {
   files: Array<{ name: string; content: string; type: string }>;
@@ -20,7 +19,6 @@ const PreviewSettings: React.FC<PreviewSettingsProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(mainFile);
-  const isMobile = useIsMobile();
   
   // Get all HTML files
   const htmlFiles = files.filter(file => file.name.endsWith('.html'));
@@ -34,19 +32,20 @@ const PreviewSettings: React.FC<PreviewSettingsProps> = ({
   return (
     <div className="flex space-x-2">
       <Link to="/important">
-        <Button variant="outline" size="sm" className={isMobile ? "w-9 px-0" : ""}>
-          <Info className="h-4 w-4" />
-          {!isMobile && <span className="ml-2">Important Info</span>}
+        <Button variant="outline" size="sm">
+          <Info className="h-4 w-4 mr-2" />
+          Important Info
         </Button>
       </Link>
       
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className={isMobile ? "w-9 px-0" : ""}>
-            <Eye className="h-4 w-4" />
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4 mr-2" />
+            Preview Settings
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Preview Settings</DialogTitle>
           </DialogHeader>

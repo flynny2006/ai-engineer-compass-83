@@ -7,18 +7,50 @@ import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize,
 import { useTheme } from "@/hooks/use-theme";
 import { Toggle } from "@/components/ui/toggle";
 import { Progress } from "@/components/ui/progress";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import FileExplorer from "@/components/FileExplorer";
 import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
+
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -54,41 +86,22 @@ const DEFAULT_CODE = `<!DOCTYPE html>
 </html>`;
 
 // Define initial files structure
-const initialFiles = [{
-  name: "index.html",
-  content: DEFAULT_CODE,
-  type: "html"
-}, {
-  name: "styles.css",
-  content: "/* Add your CSS styles here */",
-  type: "css"
-}, {
-  name: "script.js",
-  content: "// Add your JavaScript code here",
-  type: "js"
-}, {
-  name: "package.json",
-  content: packageJsonContent,
-  type: "json"
-}];
-const initialMessages = [{
-  role: "assistant",
-  content: "Welcome! Im Boongle AI. Describe the Project you want to build and i'll build it in no time! If you need later any changes, just tell me!"
-}];
+const initialFiles = [
+  { name: "index.html", content: DEFAULT_CODE, type: "html" },
+  { name: "styles.css", content: "/* Add your CSS styles here */", type: "css" },
+  { name: "script.js", content: "// Add your JavaScript code here", type: "js" },
+  { name: "package.json", content: packageJsonContent, type: "json" }
+];
+
+const initialMessages = [
+  { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
+];
+
 const DAILY_CREDIT_LIMIT = 25;
 const UNLIMITED_CODE = "3636";
-// New claim codes for lifetime credits
-const CLAIM_CODES = {
-  "56722": 100,
-  "757874": 500,
-  "776561": 1600
-};
+
 const Index = () => {
-  const {
-    theme,
-    setTheme
-  } = useTheme();
-  const isMobile = useIsMobile();
+  const { theme, setTheme } = useTheme();
   const [files, setFiles] = useState(() => {
     const savedFiles = localStorage.getItem("project_files");
     return savedFiles ? JSON.parse(savedFiles) : initialFiles;
@@ -98,10 +111,7 @@ const Index = () => {
     return lastFile || "index.html";
   });
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{
-    role: string;
-    content: string;
-  }>>(() => {
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>(() => {
     const savedMessages = localStorage.getItem("chat_history");
     return savedMessages ? JSON.parse(savedMessages) : initialMessages;
   });
@@ -119,28 +129,23 @@ const Index = () => {
   const [mainPreviewFile, setMainPreviewFile] = useState<string>(() => {
     return localStorage.getItem("main_preview_file") || "index.html";
   });
-
+  
   // Credits system
   const [credits, setCredits] = useState<number>(() => {
     const savedCredits = localStorage.getItem("daily_credits");
     if (savedCredits) {
-      const {
-        value,
-        lastReset
-      } = JSON.parse(savedCredits);
-
+      const { value, lastReset } = JSON.parse(savedCredits);
+      
       // Check if we need to reset credits (new day)
       const today = new Date().setHours(0, 0, 0, 0);
       const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
+      
       if (today > lastResetDate) {
         return DAILY_CREDIT_LIMIT;
       }
       return value;
     }
     return DAILY_CREDIT_LIMIT;
-  });
-  const [lifetimeCredits, setLifetimeCredits] = useState<number>(() => {
-    return parseInt(localStorage.getItem("lifetime_credits") || "0", 10);
   });
   const [hasUnlimitedCredits, setHasUnlimitedCredits] = useState<boolean>(() => {
     return localStorage.getItem("unlimited_credits") === "true";
@@ -153,6 +158,7 @@ const Index = () => {
     const file = files.find(f => f.name === currentFile);
     return file ? file.content : "";
   };
+
   const getCurrentFileLanguage = () => {
     if (currentFile.endsWith('.html')) return 'html';
     if (currentFile.endsWith('.css')) return 'css';
@@ -164,10 +170,9 @@ const Index = () => {
 
   // Update file content
   const updateFileContent = (content: string) => {
-    const updatedFiles = files.map(file => file.name === currentFile ? {
-      ...file,
-      content
-    } : file);
+    const updatedFiles = files.map(file => 
+      file.name === currentFile ? { ...file, content } : file
+    );
     setFiles(updatedFiles);
     localStorage.setItem("project_files", JSON.stringify(updatedFiles));
   };
@@ -181,11 +186,6 @@ const Index = () => {
     localStorage.setItem("daily_credits", JSON.stringify(creditsData));
   }, [credits]);
 
-  // Save lifetime credits to localStorage
-  useEffect(() => {
-    localStorage.setItem("lifetime_credits", lifetimeCredits.toString());
-  }, [lifetimeCredits]);
-
   // Save unlimited credits status
   useEffect(() => {
     if (hasUnlimitedCredits) {
@@ -198,22 +198,22 @@ const Index = () => {
     const checkAndResetCredits = () => {
       const savedCredits = localStorage.getItem("daily_credits");
       if (savedCredits) {
-        const {
-          lastReset
-        } = JSON.parse(savedCredits);
+        const { lastReset } = JSON.parse(savedCredits);
         const today = new Date().setHours(0, 0, 0, 0);
         const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
+        
         if (today > lastResetDate) {
           setCredits(DAILY_CREDIT_LIMIT);
         }
       }
     };
-
+    
     // Set up interval to check credits reset (every minute)
     const interval = setInterval(checkAndResetCredits, 60000);
-
+    
     // Check on component mount
     checkAndResetCredits();
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -237,23 +237,25 @@ const Index = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
   const updatePreview = () => {
     if (previewIframeRef.current) {
       const iframe = previewIframeRef.current;
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      
       if (iframeDoc) {
-        const htmlFile = files.find(f => f.name === mainPreviewFile) || files.find(f => f.name === "index.html");
+        const htmlFile = files.find(f => f.name === mainPreviewFile) || 
+                         files.find(f => f.name === "index.html");
         const cssFile = files.find(f => f.name === "styles.css");
         const jsFile = files.find(f => f.name === "script.js");
-
+        
         // Construct the HTML with linked CSS and JS
         let htmlContent = htmlFile ? htmlFile.content : DEFAULT_CODE;
-
+        
         // Ensure the HTML structure is complete and add style/script tags if needed
         if (htmlContent && !htmlContent.includes('</head>') && cssFile) {
           // If there's no head tag, we need to add one with the styles
@@ -262,17 +264,19 @@ const Index = () => {
           // If there is a head tag, insert styles before it closes
           htmlContent = htmlContent.replace('</head>', `<style>${cssFile.content}</style>\n</head>`);
         }
-
+        
         // Add JavaScript before closing body tag
         if (htmlContent && jsFile) {
           htmlContent = htmlContent.replace('</body>', `<script>${jsFile.content}</script>\n</body>`);
         }
+        
         iframeDoc.open();
         iframeDoc.write(htmlContent);
         iframeDoc.close();
       }
     }
   };
+
   const saveApiKey = () => {
     if (apiKey) {
       localStorage.setItem("gemini_api_key", apiKey);
@@ -283,6 +287,7 @@ const Index = () => {
       });
     }
   };
+
   const clearChatHistory = () => {
     if (window.confirm("Are you sure you want to clear the chat history?")) {
       setMessages(initialMessages);
@@ -293,11 +298,12 @@ const Index = () => {
       });
     }
   };
+
   const resetProject = () => {
     // Store current credits before reset
     const currentCredits = credits;
-    const currentLifetimeCredits = lifetimeCredits;
     const isUnlimited = hasUnlimitedCredits;
+    
     setFiles(initialFiles);
     setCurrentFile("index.html");
     setMainPreviewFile("index.html");
@@ -307,20 +313,23 @@ const Index = () => {
     localStorage.setItem("current_file", "index.html");
     localStorage.setItem("main_preview_file", "index.html");
     setEditorView("code");
-
+    
     // Restore credits after reset
     setCredits(currentCredits);
-    setLifetimeCredits(currentLifetimeCredits);
     setHasUnlimitedCredits(isUnlimited);
+    
     toast({
       title: "Project Reset",
       description: "Your project has been reset to its default state. Credits were preserved."
     });
+    
     setLastRefreshTime(Date.now());
   };
+
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
   const handleClaimCode = () => {
     if (claimCode === UNLIMITED_CODE) {
       setHasUnlimitedCredits(true);
@@ -328,18 +337,6 @@ const Index = () => {
       toast({
         title: "Unlimited Credits Activated!",
         description: "You now have unlimited credits to use the AI."
-      });
-      return;
-    }
-
-    // Check if code is valid for lifetime credits
-    if (CLAIM_CODES[claimCode as keyof typeof CLAIM_CODES]) {
-      const bonusCredits = CLAIM_CODES[claimCode as keyof typeof CLAIM_CODES];
-      setLifetimeCredits(prev => prev + bonusCredits);
-      setShowClaimDialog(false);
-      toast({
-        title: `${bonusCredits} Lifetime Credits Added!`,
-        description: `You now have ${lifetimeCredits + bonusCredits} lifetime credits.`
       });
     } else {
       toast({
@@ -349,53 +346,39 @@ const Index = () => {
       });
     }
   };
-  const getTotalAvailableCredits = () => {
-    return credits + lifetimeCredits;
-  };
-  const useCredit = () => {
-    if (hasUnlimitedCredits) {
-      return true;
-    }
-    if (credits > 0) {
-      setCredits(prev => prev - 1);
-      return true;
-    } else if (lifetimeCredits > 0) {
-      setLifetimeCredits(prev => prev - 1);
-      return true;
-    }
-    return false;
-  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!userPrompt.trim()) return;
     if (!apiKey && showApiKeyInput) {
       toast({
         title: "API Key Required",
-        description: "Please enter your Gemini API key to continue."
+        description: "Please enter your Gemini API key to continue.",
       });
       return;
     }
-
+    
     // Check if user has credits available
-    const hasAvailableCredits = getTotalAvailableCredits() > 0 || hasUnlimitedCredits;
-    if (!hasAvailableCredits) {
+    if (credits <= 0 && !hasUnlimitedCredits) {
       toast({
-        title: "No Credits Available",
-        description: "You've used all your credits. Claim a code for more credits or wait until tomorrow.",
+        title: "Daily Limit Reached",
+        description: "You've reached your daily credit limit. Please wait until tomorrow or claim an unlimited code.",
         variant: "destructive"
       });
       return;
     }
-    const userMessage = {
-      role: "user",
-      content: userPrompt
-    };
+    
+    const userMessage = { role: "user", content: userPrompt };
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
     setIsLoading(true);
+    
+    // Deduct credit if not unlimited
+    if (!hasUnlimitedCredits) {
+      setCredits(prev => prev - 1);
+    }
 
-    // Deduct credit
-    useCredit();
     try {
       // Create enhanced system prompt
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
@@ -476,6 +459,7 @@ Full file content here
 58. Consider cultural color associations in your design choices
 59. Implement motion designs that respect users' motion preferences
 60. Use proper column widths and line lengths for optimal readability`;
+
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
         headers: {
@@ -483,12 +467,12 @@ Full file content here
           "x-goog-api-key": apiKey
         },
         body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: [{
-              text: systemPrompt
-            }]
-          }],
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt }]
+            }
+          ],
           generationConfig: {
             temperature: 0.2,
             topP: 0.8,
@@ -496,32 +480,37 @@ Full file content here
           }
         })
       });
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
-      const data = await response.json();
 
+      const data = await response.json();
+      
       // Check if we have valid response data
       if (data.candidates && data.candidates[0] && data.candidates[0].content) {
         // Extract the generated code
         const generatedText = data.candidates[0].content.parts[0].text;
-
+        
         // Process the response to extract file contents
         const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
+        
         if (fileMatches && fileMatches.length > 0) {
           const updatedFiles = [...files];
           const newFiles = [];
+          
           fileMatches.forEach(match => {
             const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
             if (fileNameMatch && fileNameMatch[1]) {
               const fileName = fileNameMatch[1].trim();
               let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
-
+              
               // Get file extension
               const fileExt = fileName.split('.').pop() || "";
-
+              
               // Check if file already exists
               const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
+              
               if (existingFileIndex >= 0) {
                 // Update existing file
                 updatedFiles[existingFileIndex].content = fileContent;
@@ -535,11 +524,11 @@ Full file content here
               }
             }
           });
-
+          
           // Add new files to the list
           const combinedFiles = [...updatedFiles, ...newFiles];
           setFiles(combinedFiles);
-
+          
           // Show toast for new files
           if (newFiles.length > 0) {
             toast({
@@ -551,16 +540,17 @@ Full file content here
           // If no file structure detected, treat it as changes to the current file
           updateFileContent(generatedText);
         }
-
+        
         // Add assistant response
-        setMessages(prev => [...prev, {
-          role: "assistant",
-          content: "✅ Changes applied! Check the preview to see the results."
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: "✅ Changes applied! Check the preview to see the results." 
         }]);
+        
         if (showApiKeyInput) {
           saveApiKey();
         }
-
+        
         // Update preview
         setLastRefreshTime(Date.now());
       } else {
@@ -568,8 +558,8 @@ Full file content here
       }
     } catch (error) {
       console.error("Error:", error);
-      setMessages(prev => [...prev, {
-        role: "assistant",
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
         content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
       }]);
       toast({
@@ -581,32 +571,42 @@ Full file content here
       setIsLoading(false);
     }
   };
-  const creditPercentage = credits / DAILY_CREDIT_LIMIT * 100;
-  return <div className={`flex flex-col h-screen bg-background ${theme}`}>
+
+  const creditPercentage = (credits / DAILY_CREDIT_LIMIT) * 100;
+
+  return (
+    <div className={`flex flex-col h-screen bg-background ${theme}`}>
       {/* Header */}
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
           <h1 className="text-xl font-semibold">Boongle AI - Software Engineer</h1>
         </div>
-        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-4'} items-center`}>
+        <div className="flex gap-4 items-center">
           <Navigation />
-          <div className={`flex ${isMobile ? 'flex-wrap justify-end' : 'gap-2'} items-center`}>
-            <div className="flex items-center gap-2 mr-2">
-              <span className="text-sm font-medium whitespace-nowrap">
-                {hasUnlimitedCredits ? "∞" : `${lifetimeCredits > 0 ? `${credits}+${lifetimeCredits}` : credits}`}
+          <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2 mr-4">
+              <span className="text-sm font-medium">
+                Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
               </span>
-              {!hasUnlimitedCredits && !isMobile && <Progress value={creditPercentage} className="w-24 h-2" />}
-              <Button size="sm" variant="outline" onClick={() => setShowClaimDialog(true)} className={isMobile ? "w-9 px-0" : ""}>
-                <Gift className="h-4 w-4" />
-                {!isMobile && <span className="ml-1">Claim</span>}
+              {!hasUnlimitedCredits && (
+                <Progress
+                  value={creditPercentage}
+                  className="w-24 h-2"
+                />
+              )}
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setShowClaimDialog(true)}
+              >
+                <Gift className="h-4 w-4 mr-2" /> Claim Code
               </Button>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" className={isMobile ? "w-9 px-0" : ""}>
-                  <RefreshCcw className="h-4 w-4" />
-                  {!isMobile && <span className="ml-1">Reset</span>}
+                <Button size="sm" variant="outline">
+                  <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -624,15 +624,22 @@ Full file content here
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Toggle aria-label="Toggle theme" pressed={theme === "dark"} onPressedChange={pressed => setTheme(pressed ? "dark" : "light")} className={isMobile ? "w-9 px-0" : ""}>
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <Toggle
+              aria-label="Toggle theme"
+              pressed={theme === "dark"}
+              onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </Toggle>
             <Button size="sm" variant="outline" onClick={() => {
-            updatePreview();
-            setLastRefreshTime(Date.now());
-          }} className={isMobile ? "w-9 px-0" : ""}>
-              <Play className="h-4 w-4" />
-              {!isMobile && <span className="ml-1">Run</span>}
+              updatePreview();
+              setLastRefreshTime(Date.now());
+            }}>
+              <Play className="h-4 w-4 mr-2" /> Run Preview
             </Button>
           </div>
         </div>
@@ -642,22 +649,17 @@ Full file content here
       <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Claim Credits</DialogTitle>
+            <DialogTitle>Claim Unlimited Credits</DialogTitle>
             <DialogDescription>
-              Enter your claim code to get bonus lifetime credits
+              Enter your code to claim unlimited credits
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3">
-            <div className="text-sm text-muted-foreground">
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Lifetime credits don't expire</li>
-                <li>Daily credits reset every 24 hours</li>
-                <li>There are codes that can give you Unlimited c</li>
-              </ul>
-            </div>
-            <div className="flex gap-2 items-center">
-              <Input placeholder="Enter code..." value={claimCode} onChange={e => setClaimCode(e.target.value)} />
-            </div>
+          <div className="flex gap-2 items-center">
+            <Input 
+              placeholder="Enter code..." 
+              value={claimCode} 
+              onChange={(e) => setClaimCode(e.target.value)}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowClaimDialog(false)}>
@@ -671,223 +673,206 @@ Full file content here
       </Dialog>
 
       {/* Main Content */}
-      {isMobile ?
-    // Mobile Layout
-    <div className="flex flex-col h-full">
-          <Tabs defaultValue="preview" className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="w-full justify-start px-2 pt-2 h-auto">
-              <TabsTrigger value="preview" className="flex-1">Preview</TabsTrigger>
-              <TabsTrigger value="editor" className="flex-1">Editor</TabsTrigger>
-              <TabsTrigger value="files" className="flex-1">Files</TabsTrigger>
-              <TabsTrigger value="chat" className="flex-1">Chat</TabsTrigger>
-            </TabsList>
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* Left Panel - Code Editor */}
+        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
+          <div className="border-r h-full flex flex-col">
+            <div className="p-2 bg-muted flex items-center justify-between">
+              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
+                <TabsList className="grid w-60 grid-cols-2">
+                  <TabsTrigger value="code">Editor</TabsTrigger>
+                  <TabsTrigger value="files">File Explorer</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex items-center gap-2">
+                {editorView === "code" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {files.map((file) => (
+                        <DropdownMenuItem 
+                          key={file.name}
+                          onClick={() => setCurrentFile(file.name)}
+                          className={cn(
+                            "cursor-pointer",
+                            currentFile === file.name && "bg-accent"
+                          )}
+                        >
+                          {file.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                <PreviewSettings
+                  files={files}
+                  mainFile={mainPreviewFile}
+                  setMainFile={setMainPreviewFile}
+                />
+              </div>
+            </div>
             
-            <TabsContent value="preview" className="flex-1 overflow-hidden p-0">
+            <div className="flex-1 h-full">
+              <Tabs value={editorView} className="h-full">
+                <TabsContent value="code" className="h-full mt-0">
+                  <CodeEditor
+                    value={getCurrentFileContent()}
+                    onChange={updateFileContent}
+                    language={getCurrentFileLanguage()}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  <FileExplorer 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        {isFullscreen ? null : <ResizableHandle withHandle />}
+
+        {/* Right Panel - Chat and Preview */}
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
+          <ResizablePanelGroup direction="vertical">
+            {/* Preview Section */}
+            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
               <div className="h-full flex flex-col">
                 <div className="p-2 bg-muted flex items-center justify-between">
                   <div className="flex items-center">
                     <Eye className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium truncate max-w-[150px]">
-                      {mainPreviewFile}
-                    </span>
+                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
                   </div>
-                  <PreviewSettings files={files} mainFile={mainPreviewFile} setMainFile={setMainPreviewFile} />
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </Button>
                 </div>
                 <div className="flex-1 bg-white">
-                  <iframe ref={previewIframeRef} title="Preview" className="w-full h-full" sandbox="allow-scripts allow-same-origin" />
+                  <iframe 
+                    ref={previewIframeRef}
+                    title="Preview"
+                    className="w-full h-full"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
                 </div>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="editor" className="flex-1 overflow-hidden p-0">
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Chat Section */}
+            <ResizablePanel defaultSize={50} minSize={20}>
               <div className="h-full flex flex-col">
                 <div className="p-2 bg-muted flex items-center justify-between">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="mr-2">
-                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                  <div className="flex items-center">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Chat</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={clearChatHistory}
+                    title="Clear chat history"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* API Key Input */}
+                {showApiKeyInput && (
+                  <div className="border-b p-3">
+                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="AIza..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={saveApiKey}
+                      >
+                        <Save className="h-4 w-4 mr-2" /> Save
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      {files.map(file => <DropdownMenuItem key={file.name} onClick={() => setCurrentFile(file.name)} className={cn("cursor-pointer", currentFile === file.name && "bg-accent")}>
-                          {file.name}
-                        </DropdownMenuItem>)}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex-1">
-                  <CodeEditor value={getCurrentFileContent()} onChange={updateFileContent} language={getCurrentFileLanguage()} />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="files" className="flex-1 overflow-hidden p-0">
-              <FileExplorer files={files} setFiles={setFiles} currentFile={currentFile} setCurrentFile={setCurrentFile} />
-            </TabsContent>
-            
-            <TabsContent value="chat" className="flex-1 overflow-hidden p-0 flex flex-col">
-              {/* API Key Input */}
-              {showApiKeyInput && <div className="border-b p-3">
-                  <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
-                  <div className="flex gap-2">
-                    <Input type="password" placeholder="AIza..." value={apiKey} onChange={e => setApiKey(e.target.value)} />
-                    <Button size="sm" onClick={saveApiKey}>
-                      <Save className="h-4 w-4 mr-2" /> Save
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your API key is stored locally and never sent to our servers.
-                  </p>
-                </div>}
-
-              {/* Messages */}
-              <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
-                <div className="space-y-4">
-                  {messages.map((msg, i) => <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[85%] rounded-lg p-3 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      </div>
-                    </div>)}
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-
-              {/* Input Area */}
-              <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
-                <Input placeholder="Describe changes..." value={userPrompt} onChange={e => setUserPrompt(e.target.value)} disabled={isLoading || !hasUnlimitedCredits && getTotalAvailableCredits() <= 0} className="flex-1" />
-                <Button type="submit" size="icon" disabled={isLoading || !userPrompt.trim() || !hasUnlimitedCredits && getTotalAvailableCredits() <= 0}>
-                  {isLoading ? <div className="h-4 w-4 border-2 border-current border-transparent border-t-current rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </div> :
-    // Desktop Layout
-    <ResizablePanelGroup direction="horizontal" className="flex-1">
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={40}>
-            <div className="h-full flex flex-col">
-              <Tabs defaultValue="files" className="flex-1">
-                <div className="border-b px-3">
-                  <TabsList className="w-full justify-start h-12">
-                    <TabsTrigger value="files" className="flex-1">
-                      <FileText className="h-4 w-4 mr-2" /> Files
-                    </TabsTrigger>
-                    <TabsTrigger value="chat" className="flex-1">
-                      <MessageSquare className="h-4 w-4 mr-2" /> Chat
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-                
-                <TabsContent value="files" className="flex-1 p-0 data-[state=active]:flex data-[state=active]:flex-col">
-                  <FileExplorer files={files} setFiles={setFiles} currentFile={currentFile} setCurrentFile={setCurrentFile} />
-                </TabsContent>
-                
-                <TabsContent value="chat" className="flex-1 p-0 data-[state=active]:flex data-[state=active]:flex-col">
-                  {/* API Key Input */}
-                  {showApiKeyInput && <div className="border-b p-3">
-                      <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
-                      <div className="flex gap-2 mb-2">
-                        <Input type="password" placeholder="AIza..." value={apiKey} onChange={e => setApiKey(e.target.value)} />
-                        <Button size="sm" onClick={saveApiKey} className="whitespace-nowrap">
-                          <Save className="h-4 w-4 mr-2" /> Save
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Your API key is stored locally and never sent to our servers.
-                      </p>
-                    </div>}
-                  
-                  {/* Chat Controls */}
-                  <div className="flex justify-between items-center border-b p-2">
-                    <span className="text-sm font-medium">Chat History</span>
-                    <Button variant="ghost" size="sm" onClick={clearChatHistory} className="h-8 px-2">
-                      <Trash className="h-4 w-4 mr-1" /> Clear
-                    </Button>
-                  </div>
-                  
-                  {/* Messages */}
-                  <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
-                    <div className="space-y-4">
-                      {messages.map((msg, i) => <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                          <div className={`max-w-[85%] rounded-lg p-3 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                          </div>
-                        </div>)}
-                      <div ref={messagesEndRef} />
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your API key is stored locally and never sent to our servers.
+                    </p>
                   </div>
-                  
-                  {/* Input Area */}
-                  <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
-                    <Input placeholder="Describe changes..." value={userPrompt} onChange={e => setUserPrompt(e.target.value)} disabled={isLoading || !hasUnlimitedCredits && getTotalAvailableCredits() <= 0} />
-                    <Button type="submit" disabled={isLoading || !userPrompt.trim() || !hasUnlimitedCredits && getTotalAvailableCredits() <= 0}>
-                      {isLoading ? <div className="h-4 w-4 border-2 border-current border-transparent border-t-current rounded-full animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                      Send
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </ResizablePanel>
-          
-          <ResizableHandle />
-          
-          <ResizablePanel defaultSize={40} minSize={30}>
-            <div className="h-full flex flex-col">
-              <div className="border-b p-2 bg-muted flex items-center justify-between">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="mr-2">
-                      {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {files.map(file => <DropdownMenuItem key={file.name} onClick={() => setCurrentFile(file.name)} className={cn("cursor-pointer", currentFile === file.name && "bg-accent")}>
-                        {file.name}
-                      </DropdownMenuItem>)}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={toggleFullscreen} className="h-8">
-                    <Maximize className="h-3.5 w-3.5 mr-1" /> 
-                    {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                  <div className="space-y-4">
+                    {messages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div 
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                  <Input
+                    placeholder="Describe the changes you want to make..."
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 relative">
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
-                </div>
+                </form>
               </div>
-              
-              <div className="flex-1">
-                <CodeEditor value={getCurrentFileContent()} onChange={updateFileContent} language={getCurrentFileLanguage()} />
-              </div>
-            </div>
-          </ResizablePanel>
-          
-          <ResizableHandle />
-          
-          <ResizablePanel defaultSize={40} minSize={20}>
-            <div className="h-full flex flex-col">
-              <div className="border-b p-2 bg-muted flex items-center justify-between">
-                <div className="flex items-center">
-                  <Eye className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">{mainPreviewFile}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <PreviewSettings files={files} mainFile={mainPreviewFile} setMainFile={setMainPreviewFile} />
-                  <Button size="sm" variant="outline" onClick={() => {
-                updatePreview();
-                setLastRefreshTime(Date.now());
-              }} className="h-8">
-                    <RefreshCcw className="h-3.5 w-3.5 mr-1" /> Refresh
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex-1 bg-white">
-                <iframe ref={previewIframeRef} title="Preview" className="w-full h-full" sandbox="allow-scripts allow-same-origin" />
-              </div>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>}
-    </div>;
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
+  );
 };
+
 export default Index;
