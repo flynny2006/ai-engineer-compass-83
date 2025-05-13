@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -838,3 +839,20 @@ Full file content here
               Upload an image for the AI to analyze and clone
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-4 py-2">
+            <ImageUploader onImageUpload={handleImageUpload} />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Add the rest of your UI components and layout here */}
+        {/* This is a placeholder comment to indicate where the rest of the JSX would go */}
+        {/* You should add your panels, editors, previews here based on your application structure */}
+      </div>
+    </div>
+  );
+};
+
+export default Index;
