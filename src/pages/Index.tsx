@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -197,6 +196,16 @@ const Index = () => {
 
   // Update file content
   const updateFileContent = (content: string) => {
+    // Special check for README.md - don't allow deletion
+    if (currentFile === "README.md" && content.trim() === "") {
+      toast({
+        title: "Cannot Delete README",
+        description: "README.md cannot be deleted or emptied.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const updatedFiles = files.map(file => 
       file.name === currentFile ? { ...file, content } : file
     );
@@ -207,11 +216,21 @@ const Index = () => {
     checkForCodeErrors(content);
   };
   
-  // Check for code errors like triple backticks
+  // Check for code errors like triple backticks or invalid JSON
   const checkForCodeErrors = (content: string) => {
     // Check if content ends with backticks or contains double backticks
     const endsWithBackticks = content.trim().endsWith('```');
     const containsDoubleBackticks = content.includes('``````');
+    
+    // Special validation for package.json
+    if (currentFile === "package.json") {
+      try {
+        JSON.parse(content);
+      } catch (e) {
+        setBuildError(true);
+        return;
+      }
+    }
     
     if (endsWithBackticks || containsDoubleBackticks) {
       setBuildError(true);
@@ -222,7 +241,11 @@ const Index = () => {
   
   // Fix code errors
   const handleFixCodeErrors = () => {
-    setUserPrompt("Fix the code syntax. It appears to contain markdown backticks (```) that should be removed.");
+    if (currentFile === "package.json") {
+      setUserPrompt("Fix the package.json syntax. It appears to be invalid JSON.");
+    } else {
+      setUserPrompt("Fix the code syntax. It appears to contain markdown backticks (```) that should be removed.");
+    }
     handleSubmit(new Event('submit') as unknown as React.FormEvent);
     setBuildError(false);
   };
@@ -509,8 +532,8 @@ Full file content here
 8. Make sure your code is clean, organized, and well-documented
 9. Implement responsive design elements when possible
 10. Consider accessibility in your implementations
-11. Create visually appealing color schemes and typography to match the uploaded image
-12. Recreate the design from the uploaded image as closely as possible
+11. Use modern design principles for beautiful interfaces
+12. Create visually appealing color schemes and typography to match the uploaded image
 13. Use the same colors, layout, and style as shown in the image
 14. Consider the context and purpose of the image when designing the site
 15. If the image contains text, try to incorporate that text into your design
@@ -729,7 +752,9 @@ Full file content here
 22. Ensure JavaScript code is properly added and functional
 23. Use modern CSS features like flexbox, grid, and custom properties
 24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
+25. Create stunning visual designs with gradients, shadows, and modern UI elements
+26. Always create a README.md file that explains how to use your generated website
+27. If user wants any OpenAI or use any Gemini API then code it please, the user has to enter the api key in the code or if user sends you the api key then set it in the code. Make their app functional.`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
