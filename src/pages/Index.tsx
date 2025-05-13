@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -839,4 +840,277 @@ Full file content here
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <ImageU
+            <ImageUploader onImageUpload={handleImageUpload} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImageUploader(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main Content */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* Left panel - Chat */}
+        <ResizablePanel defaultSize={40} minSize={30}>
+          <div className="flex flex-col h-full">
+            {/* Chat Messages */}
+            <div 
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+              ref={chatContainerRef}
+            >
+              {messages.map((msg, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "flex flex-col max-w-[80%] rounded-lg p-4",
+                    msg.role === "assistant" 
+                      ? "bg-primary text-primary-foreground ml-auto" 
+                      : "bg-muted ml-0"
+                  )}
+                >
+                  {msg.image && (
+                    <div className="mb-2">
+                      <img 
+                        src={msg.image} 
+                        alt="Uploaded image" 
+                        className="max-w-full rounded-md"
+                        style={{ maxHeight: "200px" }}
+                      />
+                    </div>
+                  )}
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+            
+            {/* API Key Input */}
+            {showApiKeyInput && (
+              <div className="p-4 border-t">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Gemini API Key</label>
+                  <Input 
+                    placeholder="Enter your Gemini API key..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                  <Button onClick={saveApiKey} className="w-full">
+                    Save API Key
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    You need a Gemini API key to use this application.
+                    Get one from <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Chat Input */}
+            <div className="p-4 border-t">
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowImageUploader(true)}
+                  className="flex-shrink-0"
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+                <Input
+                  placeholder="Type your message..."
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  disabled={isLoading || showApiKeyInput}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || showApiKeyInput || (!userPrompt.trim() && !uploadedImage)}
+                  className="flex-shrink-0"
+                >
+                  {isLoading ? (
+                    <div className="h-4 w-4 border-2 border-r-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
+
+              {/* Image preview */}
+              {uploadedImage && (
+                <div className="mt-2 relative">
+                  <img 
+                    src={uploadedImage} 
+                    alt="Uploaded image" 
+                    className="h-20 w-auto rounded-md"
+                  />
+                  <Button 
+                    variant="destructive" 
+                    size="icon"
+                    className="absolute top-0 right-0 h-6 w-6 rounded-full"
+                    onClick={() => setUploadedImage(null)}
+                  >
+                    <Trash className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
+        
+        {/* Right panel - Code Editor & Preview */}
+        <ResizablePanel defaultSize={60}>
+          <Tabs defaultValue="preview" className="h-full flex flex-col">
+            <div className="flex justify-between items-center border-b px-4">
+              <TabsList>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">
+                  <div className="flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    Editor
+                  </div>
+                </TabsTrigger>
+              </TabsList>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={toggleFullscreen}
+                  title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                >
+                  <Maximize className="h-4 w-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={clearChatHistory}>
+                      Clear Chat History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowApiKeyInput(true)}>
+                      Change API Key
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            
+            <TabsContent value="preview" className="flex-1 flex flex-col">
+              <div className="border-b p-2 flex justify-between items-center">
+                <span className="text-sm font-medium">Preview</span>
+                <div className="flex gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => {
+                      updatePreview();
+                      setLastRefreshTime(Date.now());
+                    }}
+                  >
+                    <RefreshCcw className="h-4 w-4 mr-1" />
+                    Refresh
+                  </Button>
+                  <PreviewSettings 
+                    mainFile={mainPreviewFile}
+                    onMainFileChange={setMainPreviewFile}
+                    filesList={files.filter(f => f.name.endsWith('.html')).map(f => f.name)}
+                  />
+                </div>
+              </div>
+              <div className="flex-1 bg-background">
+                <iframe
+                  ref={previewIframeRef}
+                  title="Preview"
+                  className="w-full h-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="code" className="flex-1 h-full">
+              <div className="flex h-full">
+                <div className="w-1/4 border-r overflow-auto">
+                  <div className="p-2 border-b flex justify-between items-center">
+                    <span className="text-sm font-medium">Files</span>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => setEditorView("files")}
+                      >
+                        Explore
+                      </Button>
+                    </div>
+                  </div>
+                  {editorView === "files" ? (
+                    <FileExplorer
+                      files={files}
+                      currentFile={currentFile}
+                      onFileSelect={setCurrentFile}
+                      onFileCreate={(fileName, content, type) => {
+                        const newFile = { name: fileName, content, type };
+                        setFiles(prev => [...prev, newFile]);
+                        setCurrentFile(fileName);
+                      }}
+                      onFileDelete={(fileName) => {
+                        if (window.confirm(`Are you sure you want to delete ${fileName}?`)) {
+                          setFiles(prev => prev.filter(f => f.name !== fileName));
+                          if (currentFile === fileName) {
+                            setCurrentFile(files[0].name);
+                          }
+                        }
+                      }}
+                      onFileRename={(oldName, newName) => {
+                        const fileToRename = files.find(f => f.name === oldName);
+                        if (fileToRename) {
+                          const updatedFile = { ...fileToRename, name: newName };
+                          setFiles(prev => prev.map(f => f.name === oldName ? updatedFile : f));
+                          if (currentFile === oldName) {
+                            setCurrentFile(newName);
+                          }
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="space-y-1 p-2">
+                      {files.map(file => (
+                        <div
+                          key={file.name}
+                          className={cn(
+                            "px-2 py-1 rounded text-sm cursor-pointer flex items-center",
+                            currentFile === file.name ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                          )}
+                          onClick={() => setCurrentFile(file.name)}
+                        >
+                          {file.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <CodeEditor
+                    value={getCurrentFileContent()}
+                    language={getCurrentFileLanguage()}
+                    onChange={updateFileContent}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
+  );
+};
+
+export default Index;
