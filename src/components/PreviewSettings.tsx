@@ -9,22 +9,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 interface PreviewSettingsProps {
-  files: Array<{ name: string; content: string; type: string }>;
+  filesList: string[];
   mainFile: string;
   setMainFile: (file: string) => void;
 }
 
 const PreviewSettings: React.FC<PreviewSettingsProps> = ({ 
-  files, 
+  filesList, 
   mainFile, 
   setMainFile 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(mainFile);
   const isMobile = useIsMobile();
-  
-  // Get all HTML files
-  const htmlFiles = files.filter(file => file.name.endsWith('.html'));
   
   // Apply settings and close dialog
   const applySettings = () => {
@@ -82,10 +79,10 @@ const PreviewSettings: React.FC<PreviewSettingsProps> = ({
                   <SelectValue placeholder="Select a file" />
                 </SelectTrigger>
                 <SelectContent>
-                  {htmlFiles.length > 0 ? (
-                    htmlFiles.map(file => (
-                      <SelectItem key={file.name} value={file.name}>
-                        {file.name}
+                  {filesList.length > 0 ? (
+                    filesList.map(fileName => (
+                      <SelectItem key={fileName} value={fileName}>
+                        {fileName}
                       </SelectItem>
                     ))
                   ) : (
