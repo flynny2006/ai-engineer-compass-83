@@ -1,47 +1,93 @@
 
-import React from 'react';
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Eye, RefreshCcw } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import { Settings, Info } from "lucide-react";
 
-export interface PreviewSettingsProps {
+interface PreviewSettingsProps {
   files: Array<{ name: string; content: string; type: string }>;
   mainFile: string;
-  setMainFile: (filename: string) => void;
-  onRefresh?: () => void;
+  setMainFile: (file: string) => void;
 }
 
 const PreviewSettings: React.FC<PreviewSettingsProps> = ({ 
   files, 
   mainFile, 
-  setMainFile, 
-  onRefresh 
+  setMainFile 
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(mainFile);
+  
+  // Get all HTML files
+  const htmlFiles = files.filter(file => file.name.endsWith('.html'));
+  
+  // Apply settings and close dialog
+  const applySettings = () => {
+    setMainFile(selectedFile);
+    setIsOpen(false);
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onRefresh}
-        title="Refresh preview"
-      >
-        <RefreshCcw className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        title="View preview in new tab"
-        onClick={() => {
-          // Create a blob with the current HTML content
-          const htmlFile = files.find(f => f.name === mainFile);
-          if (htmlFile) {
-            const blob = new Blob([htmlFile.content], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-          }
-        }}
-      >
-        <Eye className="h-4 w-4" />
-      </Button>
+    <div className="flex space-x-2">
+      <Link to="/important">
+        <Button variant="outline" size="sm">
+          <Info className="h-4 w-4 mr-2" />
+          Important Info
+        </Button>
+      </Link>
+      
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4 mr-2" />
+            Preview Settings
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Preview Settings</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="mainFile" className="text-sm font-medium">Main File</label>
+              <p className="text-xs text-muted-foreground">
+                Select the file that will be displayed in the preview by default.
+              </p>
+              <Select
+                value={selectedFile}
+                onValueChange={setSelectedFile}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a file" />
+                </SelectTrigger>
+                <SelectContent>
+                  {htmlFiles.length > 0 ? (
+                    htmlFiles.map(file => (
+                      <SelectItem key={file.name} value={file.name}>
+                        {file.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="index.html" disabled>
+                      No HTML files available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={applySettings}>
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

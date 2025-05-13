@@ -1,12 +1,10 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Upload, Image, File, FolderPlus, FilePlus } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -52,7 +50,6 @@ import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
-import ImageUploader from "@/components/ImageUploader";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -102,16 +99,9 @@ const initialMessages = [
 
 const DAILY_CREDIT_LIMIT = 25;
 const UNLIMITED_CODE = "3636";
-const CREDIT_CODES = {
-  "56722": 100,
-  "757874": 500,
-  "776561": 1600,
-  // More can be added here in the future
-};
 
 const Index = () => {
   const { theme, setTheme } = useTheme();
-  const isMobile = useIsMobile();
   const [files, setFiles] = useState(() => {
     const savedFiles = localStorage.getItem("project_files");
     return savedFiles ? JSON.parse(savedFiles) : initialFiles;
@@ -121,7 +111,7 @@ const Index = () => {
     return lastFile || "index.html";
   });
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{role: string, content: string, image?: string}>>(() => {
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>(() => {
     const savedMessages = localStorage.getItem("chat_history");
     return savedMessages ? JSON.parse(savedMessages) : initialMessages;
   });
@@ -141,7 +131,7 @@ const Index = () => {
   });
   
   // Credits system
-  const [dailyCredits, setDailyCredits] = useState<number>(() => {
+  const [credits, setCredits] = useState<number>(() => {
     const savedCredits = localStorage.getItem("daily_credits");
     if (savedCredits) {
       const { value, lastReset } = JSON.parse(savedCredits);
@@ -157,25 +147,11 @@ const Index = () => {
     }
     return DAILY_CREDIT_LIMIT;
   });
-
-  // New lifetime credits system
-  const [lifetimeCredits, setLifetimeCredits] = useState<number>(() => {
-    return parseInt(localStorage.getItem("lifetime_credits") || "0", 10);
-  });
-  
   const [hasUnlimitedCredits, setHasUnlimitedCredits] = useState<boolean>(() => {
     return localStorage.getItem("unlimited_credits") === "true";
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [showImageUploader, setShowImageUploader] = useState<boolean>(false);
-  const [showNewFileDialog, setShowNewFileDialog] = useState<boolean>(false);
-  const [newFileName, setNewFileName] = useState<string>("");
-  const [newFileType, setNewFileType] = useState<"html" | "css" | "js" | "json" | "txt">("html");
-
-  // Combined credits
-  const totalAvailableCredits = dailyCredits + lifetimeCredits;
 
   // Get current file content and language
   const getCurrentFileContent = () => {
@@ -204,16 +180,11 @@ const Index = () => {
   // Save credits to localStorage
   useEffect(() => {
     const creditsData = {
-      value: dailyCredits,
+      value: credits,
       lastReset: new Date().toISOString()
     };
     localStorage.setItem("daily_credits", JSON.stringify(creditsData));
-  }, [dailyCredits]);
-
-  // Save lifetime credits to localStorage
-  useEffect(() => {
-    localStorage.setItem("lifetime_credits", lifetimeCredits.toString());
-  }, [lifetimeCredits]);
+  }, [credits]);
 
   // Save unlimited credits status
   useEffect(() => {
@@ -232,7 +203,7 @@ const Index = () => {
         const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
         
         if (today > lastResetDate) {
-          setDailyCredits(DAILY_CREDIT_LIMIT);
+          setCredits(DAILY_CREDIT_LIMIT);
         }
       }
     };
@@ -329,7 +300,10 @@ const Index = () => {
   };
 
   const resetProject = () => {
-    // Modified: Do NOT restore credits when resetting project
+    // Store current credits before reset
+    const currentCredits = credits;
+    const isUnlimited = hasUnlimitedCredits;
+    
     setFiles(initialFiles);
     setCurrentFile("index.html");
     setMainPreviewFile("index.html");
@@ -340,9 +314,13 @@ const Index = () => {
     localStorage.setItem("main_preview_file", "index.html");
     setEditorView("code");
     
+    // Restore credits after reset
+    setCredits(currentCredits);
+    setHasUnlimitedCredits(isUnlimited);
+    
     toast({
       title: "Project Reset",
-      description: "Your project has been reset to its default state."
+      description: "Your project has been reset to its default state. Credits were preserved."
     });
     
     setLastRefreshTime(Date.now());
@@ -360,15 +338,6 @@ const Index = () => {
         title: "Unlimited Credits Activated!",
         description: "You now have unlimited credits to use the AI."
       });
-    } else if (CREDIT_CODES[claimCode as keyof typeof CREDIT_CODES]) {
-      // Add credits to lifetime credits
-      const bonusCredits = CREDIT_CODES[claimCode as keyof typeof CREDIT_CODES];
-      setLifetimeCredits(prev => prev + bonusCredits);
-      setShowClaimDialog(false);
-      toast({
-        title: "Credits Claimed!",
-        description: `You've received ${bonusCredits} lifetime credits that won't expire!`
-      });
     } else {
       toast({
         title: "Invalid Code",
@@ -378,95 +347,10 @@ const Index = () => {
     }
   };
 
-  // Handle image upload with the correct property name
-  const handleImageUploaded = (imageData: string) => {
-    setUploadedImage(imageData);
-    setShowImageUploader(false);
-    
-    // Attach image to the next message
-    if (imageData) {
-      toast({
-        title: "Image Uploaded",
-        description: "Your image has been attached to your next message."
-      });
-    }
-  };
-
-  const handleAddNewFile = () => {
-    if (!newFileName.trim()) {
-      toast({
-        title: "Invalid File Name",
-        description: "Please enter a valid file name.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Add proper extension if not provided
-    let fileName = newFileName;
-    if (!fileName.includes('.')) {
-      const extensions = {
-        html: ".html",
-        css: ".css",
-        js: ".js",
-        json: ".json",
-        txt: ".txt"
-      };
-      fileName = fileName + extensions[newFileType];
-    }
-    
-    // Check if file already exists
-    if (files.some(f => f.name === fileName)) {
-      toast({
-        title: "File Already Exists",
-        description: `The file "${fileName}" already exists.`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Create default content based on file type
-    let fileContent = "";
-    switch (newFileType) {
-      case "html":
-        fileContent = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${fileName}</title>\n</head>\n<body>\n  <h1>${fileName}</h1>\n</body>\n</html>`;
-        break;
-      case "css":
-        fileContent = `/* Styles for ${fileName} */\n\nbody {\n  font-family: system-ui, sans-serif;\n}`;
-        break;
-      case "js":
-        fileContent = `// JavaScript for ${fileName}\n\nconsole.log("${fileName} loaded");`;
-        break;
-      case "json":
-        fileContent = `{\n  "name": "${fileName.replace('.json', '')}",\n  "version": "1.0.0"\n}`;
-        break;
-      default:
-        fileContent = `Content for ${fileName}`;
-    }
-    
-    // Add the new file
-    const newFile = {
-      name: fileName,
-      content: fileContent,
-      type: fileName.split('.').pop() || newFileType
-    };
-    
-    setFiles(prev => [...prev, newFile]);
-    setCurrentFile(fileName);
-    setNewFileName("");
-    setShowNewFileDialog(false);
-    setEditorView("code");
-    
-    toast({
-      title: "File Created",
-      description: `Created new file: ${fileName}`
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userPrompt.trim() && !uploadedImage) return;
+    if (!userPrompt.trim()) return;
     if (!apiKey && showApiKeyInput) {
       toast({
         title: "API Key Required",
@@ -476,38 +360,27 @@ const Index = () => {
     }
     
     // Check if user has credits available
-    if (totalAvailableCredits <= 0 && !hasUnlimitedCredits) {
+    if (credits <= 0 && !hasUnlimitedCredits) {
       toast({
-        title: "Credit Limit Reached",
-        description: "You've used all your available credits. Claim codes for more credits or wait until tomorrow for daily credits.",
+        title: "Daily Limit Reached",
+        description: "You've reached your daily credit limit. Please wait until tomorrow or claim an unlimited code.",
         variant: "destructive"
       });
       return;
     }
     
-    const userMessage = { 
-      role: "user", 
-      content: userPrompt,
-      ...(uploadedImage ? { image: uploadedImage } : {})
-    };
-    
+    const userMessage = { role: "user", content: userPrompt };
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
-    setUploadedImage(null);
     setIsLoading(true);
     
     // Deduct credit if not unlimited
     if (!hasUnlimitedCredits) {
-      // First use lifetime credits, then daily credits
-      if (lifetimeCredits > 0) {
-        setLifetimeCredits(prev => prev - 1);
-      } else {
-        setDailyCredits(prev => prev - 1);
-      }
+      setCredits(prev => prev - 1);
     }
 
     try {
-      // Create enhanced system prompt with improved image handling
+      // Create enhanced system prompt
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
@@ -519,8 +392,6 @@ User request: "${userPrompt}"
 
 Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-${uploadedImage ? "IMPORTANT: The user has attached an image to this request. This is a high priority task. You MUST analyze the image in extreme detail and create HTML/CSS/JS code that perfectly replicates the design exactly as shown. Pay close attention to all visual elements including colors, layout, spacing, typography, backgrounds, borders, shadows, and every UI component visible in the image. Ensure the code implementation matches the design at pixel-perfect level." : ""}
 
 Analyze the code and the user's request. Then, respond with the full updated files that incorporates the requested changes.
 
@@ -587,82 +458,27 @@ Full file content here
 57. Use proper transitions between interactive states
 58. Consider cultural color associations in your design choices
 59. Implement motion designs that respect users' motion preferences
-60. Use proper column widths and line lengths for optimal readability
-61. Create tactile and satisfying feedback for interactive elements
-62. Consider mobile-first design principles for responsive interfaces
-63. Use conditional loading techniques to improve performance on mobile
-64. Implement responsive touch targets for mobile users (minimum 44x44px)
-65. Optimize typography for readability on small screens
-66. Consider thumb reachability zones on mobile interfaces
-67. Use bottom navigation patterns for mobile interfaces
-68. Implement swipe gestures for natural mobile interaction
-69. Consider device-specific features like haptic feedback
-70. Adapt form inputs for optimal mobile experience
-71. Use viewport units for responsive sizing
-72. Consider landscape and portrait orientations
-73. Implement appropriate keyboard behavior on mobile
-74. Consider offline usage patterns for mobile users
-75. Optimize image loading and scaling for mobile devices
-76. Implement responsive spacing systems that adapt to screen sizes
-77. Consider reduced motion preferences for animations
-78. Use appropriate color contrasts for outdoor visibility
-79. Implement proper touch feedback states for mobile elements
-80. Consider mobile-specific UI patterns for complex interactions
+60. Use proper column widths and line lengths for optimal readability`;
 
-SPECIFIC IMAGE CLONING INSTRUCTIONS:
-81. When an image is attached, treat it as a HIGH-FIDELITY DESIGN SPEC that must be followed exactly
-82. Extract and use the EXACT color values from images using color eyedropper techniques
-83. Match typography precisely - font sizes, weights, line heights, and font families
-84. Replicate layouts pixel-perfectly with exact spacing between elements
-85. Recreate any gradients, shadows, or lighting effects visible in the image
-86. Implement identical button styles, form elements, and interactive components
-87. Use the same border-radius values on elements as shown in the image
-88. Match any background patterns or textures visible in the design
-89. Implement identical navigation structures and menu layouts
-90. Recreate card designs, grid layouts, and list structures exactly
-91. Use CSS Grid or Flexbox to achieve layouts identical to the image
-92. Implement the same iconography style or use matching icons
-93. Recreate any decorative elements, illustrations, or graphics
-94. Implement the same footer design and information architecture
-95. Use CSS custom properties to maintain consistent colors throughout the implementation
-96. Match any visible animations or transitions in the design
-97. Implement the exact same mobile layout if a mobile design is shown
-98. Pay special attention to active, hover, and focus states visible in the design
-99. Use responsive design techniques to ensure the design scales appropriately
-100. If a complete design system is apparent in the image, implement it consistently`;
-
-      // Fix the inline_data format to be compatible with TypeScript
-      let requestBody: any = {
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.8,
-          topK: 40
-        }
-      };
-      
-      // Add image to the request if present
-      if (uploadedImage) {
-        requestBody.contents[0].parts.push({ 
-          inline_data: {
-            mime_type: "image/jpeg",
-            data: uploadedImage.split(",")[1] // Remove the data:image/jpeg;base64, part
-          }
-        });
-      }
-
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            topP: 0.8,
+            topK: 40
+          }
+        })
       });
 
       if (!response.ok) {
@@ -756,56 +572,48 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
     }
   };
 
-  const creditPercentage = (dailyCredits / DAILY_CREDIT_LIMIT) * 100;
+  const creditPercentage = (credits / DAILY_CREDIT_LIMIT) * 100;
 
   return (
     <div className={`flex flex-col h-screen bg-background ${theme}`}>
-      {/* Header Section */}
+      {/* Header */}
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
-          <h1 className={cn("text-xl font-semibold", isMobile && "sr-only")}>Boongle AI - Software Engineer</h1>
-          {isMobile && <h1 className="text-lg font-semibold">Boongle AI</h1>}
+          <h1 className="text-xl font-semibold">Boongle AI - Software Engineer</h1>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-4 items-center">
           <Navigation />
-          <div className="flex gap-1 md:gap-2 items-center">
-            <div className={cn("flex items-center gap-1 md:gap-2", isMobile ? "mr-1" : "mr-4")}>
-              <span className={cn("text-sm font-medium", isMobile && "hidden md:inline")}>
-                {hasUnlimitedCredits ? "∞" : `${totalAvailableCredits}`} Credits
+          <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2 mr-4">
+              <span className="text-sm font-medium">
+                Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
               </span>
-              {!hasUnlimitedCredits && !isMobile && (
+              {!hasUnlimitedCredits && (
                 <Progress
                   value={creditPercentage}
                   className="w-24 h-2"
                 />
               )}
               <Button 
-                size={isMobile ? "icon" : "sm"} 
+                size="sm" 
                 variant="outline" 
                 onClick={() => setShowClaimDialog(true)}
-                className={isMobile ? "h-9 w-9 p-0" : ""}
               >
-                <Gift className="h-4 w-4" />
-                {!isMobile && <span className="ml-1">Claim</span>}
+                <Gift className="h-4 w-4 mr-2" /> Claim Code
               </Button>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button 
-                  size={isMobile ? "icon" : "sm"} 
-                  variant="outline"
-                  className={isMobile ? "h-9 w-9 p-0" : ""}
-                >
-                  <RefreshCcw className="h-4 w-4" />
-                  {!isMobile && <span className="ml-1">Reset</span>}
+                <Button size="sm" variant="outline">
+                  <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className={isMobile ? "w-[90vw] max-w-[90vw] p-4" : ""}>
+              <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reset Project</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Your credits will NOT be affected.
+                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -820,7 +628,6 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
               aria-label="Toggle theme"
               pressed={theme === "dark"}
               onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
-              className={isMobile ? "h-9 w-9 p-0" : ""}
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -828,357 +635,242 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
                 <Moon className="h-4 w-4" />
               )}
             </Toggle>
-            <Button 
-              size={isMobile ? "icon" : "sm"} 
-              variant="outline" 
-              onClick={() => {
-                updatePreview();
-                setLastRefreshTime(Date.now());
-              }}
-              className={isMobile ? "h-9 w-9 p-0" : ""}
-            >
-              <RefreshCcw className="h-4 w-4" />
-              {!isMobile && <span className="ml-1">Refresh</span>}
+            <Button size="sm" variant="outline" onClick={() => {
+              updatePreview();
+              setLastRefreshTime(Date.now());
+            }}>
+              <Play className="h-4 w-4 mr-2" /> Run Preview
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Chat Section */}
-        <div className={cn(
-          "flex flex-col",
-          isFullscreen ? "hidden" : "w-full md:w-1/2 lg:w-2/5"
-        )}>
-          {/* API Key Input */}
-          {showApiKeyInput && (
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-medium mb-2">Enter Gemini API Key</h2>
-              <div className="flex gap-2">
-                <Input
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your Gemini API key"
-                  className="flex-1"
-                />
-                <Button onClick={saveApiKey}>Save</Button>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                You need a Google Gemini API key to use this app. Get one at{" "}
-                <a
-                  href="https://ai.google.dev/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  ai.google.dev
-                </a>
-              </p>
-            </div>
-          )}
-
-          {/* Chat Messages */}
-          <div 
-            className="flex-1 overflow-y-auto p-4 space-y-4"
-            ref={chatContainerRef}
-          >
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "flex flex-col max-w-[85%] rounded-lg p-3",
-                  msg.role === "assistant"
-                    ? "bg-muted self-start"
-                    : "bg-primary text-primary-foreground self-end"
-                )}
-              >
-                {msg.image && (
-                  <div className="mb-2 rounded overflow-hidden">
-                    <img 
-                      src={msg.image} 
-                      alt="Uploaded content" 
-                      className="max-w-full h-auto max-h-[200px] object-contain" 
-                    />
-                  </div>
-                )}
-                <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="border-t p-4">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setShowImageUploader(true)}
-                  title="Attach image"
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-                <Input
-                  value={userPrompt}
-                  onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="Describe what you want to build..."
-                  className="flex-1"
-                  disabled={isLoading}
-                />
-                <Button type="submit" disabled={isLoading} size="icon">
-                  {isLoading ? (
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {uploadedImage && (
-                <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                  <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0">
-                    <img 
-                      src={uploadedImage} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs truncate">Image attached</p>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6" 
-                    onClick={() => setUploadedImage(null)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </form>
-            <div className="flex justify-between items-center mt-2">
-              <div className="text-xs text-muted-foreground">
-                {hasUnlimitedCredits 
-                  ? "Unlimited credits" 
-                  : `Credits: ${totalAvailableCredits} (${dailyCredits} daily + ${lifetimeCredits} lifetime)`}
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearChatHistory}
-                className="h-7 text-xs"
-              >
-                Clear chat
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Vertical Resizable Divider */}
-        {!isFullscreen && (
-          <div className="hidden md:block w-[1px] bg-border" />
-        )}
-
-        {/* Code Editor and Preview Section */}
-        <div className={cn(
-          "flex flex-col",
-          isFullscreen ? "w-full" : "hidden md:flex md:w-1/2 lg:w-3/5"
-        )}>
-          {/* Editor Controls */}
-          <div className="border-b p-2 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Tabs 
-                defaultValue="code" 
-                value={editorView}
-                onValueChange={(value) => setEditorView(value as "code" | "files")}
-                className="w-[240px]"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="code">Editor</TabsTrigger>
-                  <TabsTrigger value="files">Files</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8">
-                    <FileText className="h-4 w-4 mr-1" />
-                    {currentFile}
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[220px] max-h-[400px] overflow-y-auto">
-                  {files.map((file) => (
-                    <DropdownMenuItem
-                      key={file.name}
-                      onClick={() => {
-                        setCurrentFile(file.name);
-                        setEditorView("code");
-                      }}
-                    >
-                      {file.name}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuItem
-                    onClick={() => setShowNewFileDialog(true)}
-                    className="border-t mt-1 pt-1"
-                  >
-                    <FilePlus className="h-4 w-4 mr-2" />
-                    New File...
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <PreviewSettings
-                files={files}
-                mainFile={mainPreviewFile}
-                setMainFile={setMainPreviewFile}
-                onRefresh={() => setLastRefreshTime(Date.now())}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleFullscreen}
-                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-              >
-                <Maximize className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Resizable Panels for Editor and Preview */}
-          <ResizablePanelGroup
-            direction="vertical"
-            className="flex-1 overflow-hidden"
-          >
-            {/* Editor Panel */}
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <div className="h-full overflow-hidden">
-                {editorView === "code" ? (
-                  <CodeEditor
-                    value={getCurrentFileContent()}
-                    language={getCurrentFileLanguage()}
-                    onChange={updateFileContent}
-                  />
-                ) : (
-                  <FileExplorer
-                    files={files}
-                    setFiles={setFiles}
-                    currentFile={currentFile}
-                    setCurrentFile={setCurrentFile}
-                    onNewFile={() => setShowNewFileDialog(true)}
-                  />
-                )}
-              </div>
-            </ResizablePanel>
-            
-            <ResizableHandle />
-            
-            {/* Preview Panel */}
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <div className="h-full flex flex-col">
-                <div className="p-2 border-t border-b flex justify-between items-center">
-                  <span className="text-sm font-medium">
-                    Preview: {mainPreviewFile}
-                  </span>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <iframe
-                    ref={previewIframeRef}
-                    title="Preview"
-                    className="w-full h-full border-none"
-                    sandbox="allow-scripts allow-same-origin"
-                  />
-                </div>
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
-      </div>
-      
-      {/* Image Uploader Dialog */}
-      <Dialog open={showImageUploader} onOpenChange={setShowImageUploader}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload Image</DialogTitle>
-            <DialogDescription>
-              Upload an image to share with the AI. The AI will analyze the image and help you create code based on it.
-            </DialogDescription>
-          </DialogHeader>
-          <ImageUploader onImageUploaded={handleImageUploaded} />
-        </DialogContent>
-      </Dialog>
-      
-      {/* New File Dialog */}
-      <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New File</DialogTitle>
-            <DialogDescription>
-              Enter a name for your new file and select its type.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Input
-                placeholder="Filename"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                className="col-span-3"
-              />
-              <select
-                value={newFileType}
-                onChange={(e) => setNewFileType(e.target.value as any)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="html">HTML</option>
-                <option value="css">CSS</option>
-                <option value="js">JavaScript</option>
-                <option value="json">JSON</option>
-                <option value="txt">Text</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewFileDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddNewFile}>Create</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
       {/* Claim Code Dialog */}
       <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Claim Credits</DialogTitle>
+            <DialogTitle>Claim Unlimited Credits</DialogTitle>
             <DialogDescription>
-              Enter a claim code to get additional credits.
+              Enter your code to claim unlimited credits
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid items-center gap-2">
-              <Input
-                placeholder="Enter claim code"
-                value={claimCode}
-                onChange={(e) => setClaimCode(e.target.value)}
-              />
-            </div>
+          <div className="flex gap-2 items-center">
+            <Input 
+              placeholder="Enter code..." 
+              value={claimCode} 
+              onChange={(e) => setClaimCode(e.target.value)}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowClaimDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleClaimCode}>Claim</Button>
+            <Button onClick={handleClaimCode}>
+              Activate
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Main Content */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* Left Panel - Code Editor */}
+        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
+          <div className="border-r h-full flex flex-col">
+            <div className="p-2 bg-muted flex items-center justify-between">
+              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
+                <TabsList className="grid w-60 grid-cols-2">
+                  <TabsTrigger value="code">Editor</TabsTrigger>
+                  <TabsTrigger value="files">File Explorer</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex items-center gap-2">
+                {editorView === "code" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {files.map((file) => (
+                        <DropdownMenuItem 
+                          key={file.name}
+                          onClick={() => setCurrentFile(file.name)}
+                          className={cn(
+                            "cursor-pointer",
+                            currentFile === file.name && "bg-accent"
+                          )}
+                        >
+                          {file.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                <PreviewSettings
+                  files={files}
+                  mainFile={mainPreviewFile}
+                  setMainFile={setMainPreviewFile}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1 h-full">
+              <Tabs value={editorView} className="h-full">
+                <TabsContent value="code" className="h-full mt-0">
+                  <CodeEditor
+                    value={getCurrentFileContent()}
+                    onChange={updateFileContent}
+                    language={getCurrentFileLanguage()}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  <FileExplorer 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        {isFullscreen ? null : <ResizableHandle withHandle />}
+
+        {/* Right Panel - Chat and Preview */}
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
+          <ResizablePanelGroup direction="vertical">
+            {/* Preview Section */}
+            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 bg-white">
+                  <iframe 
+                    ref={previewIframeRef}
+                    title="Preview"
+                    className="w-full h-full"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Chat Section */}
+            <ResizablePanel defaultSize={50} minSize={20}>
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Chat</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={clearChatHistory}
+                    title="Clear chat history"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* API Key Input */}
+                {showApiKeyInput && (
+                  <div className="border-b p-3">
+                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="AIza..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={saveApiKey}
+                      >
+                        <Save className="h-4 w-4 mr-2" /> Save
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your API key is stored locally and never sent to our servers.
+                    </p>
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                  <div className="space-y-4">
+                    {messages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div 
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                  <Input
+                    placeholder="Describe the changes you want to make..."
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 relative">
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };
