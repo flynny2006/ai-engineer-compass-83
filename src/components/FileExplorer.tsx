@@ -1,543 +1,852 @@
-
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { File, Plus, Folder, Trash, Edit, Copy, Download, Save, X, Eye } from "lucide-react";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import React, { useState, useRef } from "react";
+import { Folder, File, Trash2, Edit, Plus, X, ArrowDown, ArrowUp, FolderPlus, Move, Copy, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-interface FileType {
+interface FileItem {
   name: string;
   content: string;
   type: string;
 }
 
 interface FileExplorerProps {
-  files: FileType[];
-  setFiles: React.Dispatch<React.SetStateAction<FileType[]>>;
+  files: FileItem[];
+  setFiles: React.Dispatch<React.SetStateAction<FileItem[]>>;
   currentFile: string;
   setCurrentFile: React.Dispatch<React.SetStateAction<string>>;
-  mainPreviewFile?: string;
-  setMainPreviewFile?: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const FileExplorer: React.FC<FileExplorerProps> = ({
-  files,
-  setFiles,
-  currentFile,
-  setCurrentFile,
-  mainPreviewFile,
-  setMainPreviewFile
-}) => {
-  const [showNewFileDialog, setShowNewFileDialog] = useState(false);
-  const [newFileName, setNewFileName] = useState('');
-  const [newFileContent, setNewFileContent] = useState('');
-  const [showRenameDialog, setShowRenameDialog] = useState(false);
-  const [renameFileName, setRenameFileName] = useState('');
-  const [fileToRename, setFileToRename] = useState<string>('');
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
-  const [fileToDelete, setFileToDelete] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'name' | 'type'>('name');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+const FileExplorer: React.FC<FileExplorerProps> = ({ files, setFiles, currentFile, setCurrentFile }) => {
+  const [expandedFolders, setExpandedFolders] = useState<{ [key: string]: boolean }>({});
+  const [newFileDialogOpen, setNewFileDialogOpen] = useState<boolean>(false);
+  const [newFolderDialogOpen, setNewFolderDialogOpen] = useState<boolean>(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState<boolean>(false);
+  const [newFileName, setNewFileName] = useState<string>("");
+  const [newFileContent, setNewFileContent] = useState<string>("");
+  const [renameFile, setRenameFile] = useState<string>("");
+  const [newName, setNewName] = useState<string>("");
+  const [newFolderName, setNewFolderName] = useState<string>("");
+  const [currentPath, setCurrentPath] = useState<string>("/");
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  // Extract folders from file names
+  const getFolderStructure = () => {
+    const structure: { [folder: string]: FileItem[] } = { "/": [] };
+    
+    files.forEach(file => {
+      const pathSegments = file.name.split('/');
+      const fileName = pathSegments.pop() || file.name;
+      const folderPath = pathSegments.length > 0 ? pathSegments.join('/') : "/";
+      
+      if (!structure[folderPath]) {
+        structure[folderPath] = [];
+      }
+      
+      structure[folderPath].push({...file, name: fileName});
+    });
+    
+    return structure;
+  };
 
+  // Filter files based on search query
+  const getFilteredFileStructure = () => {
+    if (!searchQuery.trim()) {
+      return getFolderStructure();
+    }
+    
+    const filteredStructure: { [folder: string]: FileItem[] } = { "/": [] };
+    const query = searchQuery.toLowerCase();
+    
+    files.forEach(file => {
+      if (file.name.toLowerCase().includes(query)) {
+        const pathSegments = file.name.split('/');
+        const fileName = pathSegments.pop() || file.name;
+        const folderPath = pathSegments.length > 0 ? pathSegments.join('/') : "/";
+        
+        if (!filteredStructure[folderPath]) {
+          filteredStructure[folderPath] = [];
+        }
+        
+        filteredStructure[folderPath].push({...file, name: fileName});
+        
+        // Ensure parent folders are included in structure
+        let currentPath = "";
+        pathSegments.forEach(segment => {
+          if (currentPath) {
+            currentPath += `/${segment}`;
+          } else {
+            currentPath = segment;
+          }
+          
+          if (!filteredStructure[currentPath]) {
+            filteredStructure[currentPath] = [];
+          }
+        });
+      }
+    });
+    
+    return filteredStructure;
+  };
+
+  // Get all folder paths
+  const getAllFolders = () => {
+    const folders = new Set<string>(["/"]); // Root folder always exists
+    
+    files.forEach(file => {
+      const pathSegments = file.name.split('/');
+      pathSegments.pop(); // Remove filename
+      
+      let currentPath = "";
+      pathSegments.forEach(segment => {
+        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+        folders.add(currentPath);
+      });
+    });
+    
+    return Array.from(folders);
+  };
+
+  const folderStructure = getFilteredFileStructure();
+  const allFolders = getAllFolders();
+
+  // Toggle folder expanded state
+  const toggleFolder = (folderPath: string) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folderPath]: !prev[folderPath],
+    }));
+  };
+
+  // Handle file click
+  const handleFileClick = (folder: string, file: FileItem) => {
+    const fullPath = folder === "/" ? file.name : `${folder}/${file.name}`;
+    setCurrentFile(fullPath);
+  };
+
+  // Create new file
   const handleCreateFile = () => {
-    if (!newFileName) {
+    if (!newFileName.trim()) {
       toast({
         title: "Error",
         description: "File name cannot be empty",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
-    // Check if file already exists
-    if (files.some(file => file.name === newFileName)) {
+    
+    const fullPath = currentPath === "/" 
+      ? newFileName 
+      : `${currentPath}/${newFileName}`;
+    
+    if (files.some(file => file.name === fullPath)) {
       toast({
         title: "Error",
-        description: `File '${newFileName}' already exists`,
-        variant: "destructive",
+        description: "A file with this name already exists",
+        variant: "destructive"
       });
       return;
     }
-
-    // Determine file type
-    const extension = newFileName.split('.').pop() || '';
-    let fileType = 'text';
     
-    if (extension === 'html') fileType = 'html';
-    else if (extension === 'css') fileType = 'css';
-    else if (extension === 'js') fileType = 'js';
-    else if (extension === 'json') fileType = 'json';
-    else if (['ts', 'tsx'].includes(extension)) fileType = 'ts';
-
-    // Create new file
+    let fileType = "txt";
+    const extension = newFileName.split('.').pop() || "";
+    
+    if (extension === "html") fileType = "html";
+    else if (extension === "css") fileType = "css";
+    else if (extension === "js") fileType = "js";
+    else if (extension === "ts" || extension === "tsx") fileType = "ts";
+    else if (extension === "json") fileType = "json";
+    
     const newFile = {
-      name: newFileName,
-      content: newFileContent || getDefaultContent(fileType),
+      name: fullPath,
+      content: newFileContent || "",
       type: fileType
     };
-
-    setFiles([...files, newFile]);
-    setCurrentFile(newFileName);
-    setShowNewFileDialog(false);
-    setNewFileName('');
-    setNewFileContent('');
-
+    
+    setFiles(prev => [...prev, newFile]);
+    setCurrentFile(fullPath);
+    setNewFileDialogOpen(false);
+    setNewFileName("");
+    setNewFileContent("");
+    
     toast({
       title: "Success",
-      description: `File '${newFileName}' created`,
+      description: `File "${fullPath}" created`
     });
+  };
+
+  // Create new folder
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) {
+      toast({
+        title: "Error",
+        description: "Folder name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const fullPath = currentPath === "/" 
+      ? newFolderName 
+      : `${currentPath}/${newFolderName}`;
+    
+    // Check if folder already exists
+    if (allFolders.includes(fullPath)) {
+      toast({
+        title: "Error",
+        description: "A folder with this name already exists",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create an empty file as placeholder to establish folder structure
+    // This is just a way to represent the folder since we're tracking folders through files
+    const placeholderFile = {
+      name: `${fullPath}/.gitkeep`,
+      content: "",
+      type: "txt"
+    };
+    
+    setFiles(prev => [...prev, placeholderFile]);
+    setNewFolderDialogOpen(false);
+    setNewFolderName("");
+    
+    // Expand the parent folder
+    setExpandedFolders(prev => ({
+      ...prev,
+      [currentPath]: true,
+    }));
+    
+    toast({
+      title: "Success",
+      description: `Folder "${fullPath}" created`
+    });
+  };
+
+  // Delete file
+  const handleDeleteFile = (folder: string, file: FileItem) => {
+    const fullPath = folder === "/" ? file.name : `${folder}/${file.name}`;
+    
+    if (confirm(`Are you sure you want to delete "${fullPath}"?`)) {
+      setFiles(prev => prev.filter(f => f.name !== fullPath));
+      
+      if (currentFile === fullPath) {
+        const firstAvailableFile = files.find(f => f.name !== fullPath);
+        setCurrentFile(firstAvailableFile ? firstAvailableFile.name : "");
+      }
+      
+      toast({
+        title: "Success",
+        description: `File "${fullPath}" deleted`
+      });
+    }
+  };
+
+  // Delete folder
+  const handleDeleteFolder = (folderPath: string) => {
+    if (confirm(`Are you sure you want to delete folder "${folderPath}" and all its contents?`)) {
+      // Delete all files that start with this folder path
+      setFiles(prev => prev.filter(f => !f.name.startsWith(`${folderPath}/`)));
+      
+      toast({
+        title: "Success",
+        description: `Folder "${folderPath}" deleted`
+      });
+    }
+  };
+
+  // Rename file
+  const handleRenameFileClick = (folder: string, file: FileItem) => {
+    const fullPath = folder === "/" ? file.name : `${folder}/${file.name}`;
+    setRenameFile(fullPath);
+    setNewName(fullPath);
+    setRenameDialogOpen(true);
   };
 
   const handleRenameFile = () => {
-    if (!renameFileName) {
+    if (!newName.trim()) {
       toast({
         title: "Error",
         description: "File name cannot be empty",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
-    // Check if file already exists
-    if (files.some(file => file.name === renameFileName)) {
+    
+    if (files.some(file => file.name === newName && file.name !== renameFile)) {
       toast({
         title: "Error",
-        description: `File '${renameFileName}' already exists`,
-        variant: "destructive",
+        description: "A file with this name already exists",
+        variant: "destructive"
       });
       return;
     }
-
-    // Rename file
-    const updatedFiles = files.map(file => {
-      if (file.name === fileToRename) {
-        return {
-          ...file,
-          name: renameFileName,
-          type: renameFileName.split('.').pop() || file.type
-        };
-      }
-      return file;
-    });
-
-    setFiles(updatedFiles);
     
-    // Update current file if it's the renamed file
-    if (currentFile === fileToRename) {
-      setCurrentFile(renameFileName);
+    setFiles(prev => 
+      prev.map(file => 
+        file.name === renameFile 
+        ? { ...file, name: newName } 
+        : file
+      )
+    );
+    
+    if (currentFile === renameFile) {
+      setCurrentFile(newName);
     }
     
-    // Update preview file if needed
-    if (mainPreviewFile === fileToRename && setMainPreviewFile) {
-      setMainPreviewFile(renameFileName);
-    }
+    setRenameDialogOpen(false);
     
-    setShowRenameDialog(false);
-    setRenameFileName('');
-    setFileToRename('');
-
     toast({
       title: "Success",
-      description: `File renamed to '${renameFileName}'`,
+      description: `File renamed to "${newName}"`
     });
   };
 
-  const handleDeleteFile = () => {
-    // Cannot delete if only one file is left
-    if (files.length <= 1) {
-      toast({
-        title: "Error",
-        description: "Cannot delete the last file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Find another file to set as current if deleting the current file
-    let newCurrentFile = currentFile;
-    if (currentFile === fileToDelete) {
-      newCurrentFile = files.find(file => file.name !== fileToDelete)?.name || '';
-    }
-
-    // Update preview file if needed
-    if (mainPreviewFile === fileToDelete && setMainPreviewFile) {
-      setMainPreviewFile(newCurrentFile);
-    }
-
-    // Delete file
-    setFiles(files.filter(file => file.name !== fileToDelete));
-    setCurrentFile(newCurrentFile);
-    setShowDeleteConfirmation(false);
-    setFileToDelete('');
-
-    toast({
-      title: "Success",
-      description: `File '${fileToDelete}' deleted`,
-    });
-  };
-
-  const handleDuplicateFile = (fileName: string) => {
-    const fileToClone = files.find(file => file.name === fileName);
-    if (!fileToClone) return;
-
-    // Generate a new name
-    let baseName = fileName;
-    let extension = '';
+  // Duplicate file
+  const handleDuplicateFile = (folder: string, file: FileItem) => {
+    const fullPath = folder === "/" ? file.name : `${folder}/${file.name}`;
+    const pathParts = fullPath.split('/');
+    const fileName = pathParts.pop() || '';
+    const fileNameWithoutExt = fileName.includes('.') ? fileName.split('.').slice(0, -1).join('.') : fileName;
+    const extension = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
+    const folderPath = pathParts.join('/');
     
-    if (fileName.includes('.')) {
-      const lastDotIndex = fileName.lastIndexOf('.');
-      baseName = fileName.substring(0, lastDotIndex);
-      extension = fileName.substring(lastDotIndex);
-    }
+    const newFileName = `${fileNameWithoutExt}_copy${extension}`;
+    const newFullPath = folderPath ? `${folderPath}/${newFileName}` : newFileName;
     
-    let newName = `${baseName}_copy${extension}`;
+    // Check if the duplicate name already exists and create a unique name
     let counter = 1;
+    let uniquePath = newFullPath;
     
-    while (files.some(file => file.name === newName)) {
-      newName = `${baseName}_copy${counter}${extension}`;
+    while (files.some(f => f.name === uniquePath)) {
+      const uniqueName = `${fileNameWithoutExt}_copy_${counter}${extension}`;
+      uniquePath = folderPath ? `${folderPath}/${uniqueName}` : uniqueName;
       counter++;
     }
-
-    // Create duplicated file
-    const newFile = {
-      name: newName,
-      content: fileToClone.content,
-      type: fileToClone.type
+    
+    const duplicatedFile = {
+      name: uniquePath,
+      content: file.content,
+      type: file.type
     };
-
-    setFiles([...files, newFile]);
-    setCurrentFile(newName);
-
+    
+    setFiles(prev => [...prev, duplicatedFile]);
+    
     toast({
       title: "Success",
-      description: `File duplicated as '${newName}'`,
+      description: `File duplicated as "${uniquePath}"`
     });
   };
 
-  const handleDownloadFile = (fileName: string) => {
-    const file = files.find(file => file.name === fileName);
-    if (!file) return;
-
-    const blob = new Blob([file.content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+  // Duplicate folder
+  const handleDuplicateFolder = (folderPath: string) => {
+    // Generate a unique name for the duplicated folder
+    const folderName = folderPath.split('/').pop() || folderPath;
+    const parentPath = folderPath.split('/').slice(0, -1).join('/');
+    const newFolderName = `${folderName}_copy`;
+    const newFolderPath = parentPath ? `${parentPath}/${newFolderName}` : newFolderName;
     
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
+    // Check if the folder name already exists
+    let counter = 1;
+    let uniquePath = newFolderPath;
     
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-  };
-
-  const getDefaultContent = (fileType: string): string => {
-    switch (fileType) {
-      case 'html':
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<body>
-  
-</body>
-</html>`;
-      case 'css':
-        return `/* Add your styles here */
-`;
-      case 'js':
-        return `// Add your JavaScript code here
-`;
-      case 'json':
-        return `{
-  
-}`;
-      case 'ts':
-        return `// Add your TypeScript code here
-`;
-      default:
-        return '';
+    while (allFolders.includes(uniquePath)) {
+      uniquePath = parentPath ? `${parentPath}/${folderName}_copy_${counter}` : `${folderName}_copy_${counter}`;
+      counter++;
     }
-  };
-
-  const getFileIcon = (fileName: string) => {
-    const ext = fileName.split('.').pop() || '';
     
-    switch (ext) {
-      case 'html':
-        return <File className="h-4 w-4 text-orange-500" />;
-      case 'css':
-        return <File className="h-4 w-4 text-blue-500" />;
-      case 'js':
-        return <File className="h-4 w-4 text-yellow-500" />;
-      case 'json':
-        return <File className="h-4 w-4 text-green-500" />;
-      case 'ts':
-      case 'tsx':
-        return <File className="h-4 w-4 text-blue-600" />;
-      default:
-        return <File className="h-4 w-4" />;
+    // Get all files in this folder and its subfolders
+    const folderFiles = files.filter(file => file.name.startsWith(`${folderPath}/`));
+    
+    // Create duplicates with the new path
+    const duplicatedFiles = folderFiles.map(file => {
+      const relativePath = file.name.substring(folderPath.length + 1);
+      return {
+        name: `${uniquePath}/${relativePath}`,
+        content: file.content,
+        type: file.type
+      };
+    });
+    
+    if (duplicatedFiles.length === 0) {
+      // If folder was empty, create a placeholder file
+      duplicatedFiles.push({
+        name: `${uniquePath}/.gitkeep`,
+        content: "",
+        type: "txt"
+      });
     }
-  };
-
-  const sortedFiles = [...files].sort((a, b) => {
-    if (sortBy === 'name') {
-      return a.name.localeCompare(b.name);
+    
+    setFiles(prev => [...prev, ...duplicatedFiles]);
+    
+    // Expand the parent folder
+    if (parentPath) {
+      setExpandedFolders(prev => ({
+        ...prev,
+        [parentPath]: true,
+      }));
     } else {
-      return a.type.localeCompare(b.type);
+      setExpandedFolders(prev => ({
+        ...prev,
+        "/": true,
+      }));
     }
-  });
+    
+    toast({
+      title: "Success",
+      description: `Folder duplicated as "${uniquePath}"`
+    });
+  };
+  
+  // Drag and drop handlers
+  const handleDragStart = (fullPath: string) => {
+    setDraggedItem(fullPath);
+  };
+  
+  const handleDragOver = (e: React.DragEvent, folderPath: string) => {
+    e.preventDefault();
+    setDragOverFolder(folderPath);
+  };
+  
+  const handleDragLeave = () => {
+    setDragOverFolder(null);
+  };
+  
+  const handleDrop = (e: React.DragEvent, targetFolder: string) => {
+    e.preventDefault();
+    setDragOverFolder(null);
+    
+    if (!draggedItem) return;
+    
+    // Check if we're trying to move an item into itself
+    if (targetFolder === draggedItem || targetFolder.startsWith(`${draggedItem}/`)) {
+      toast({
+        title: "Error",
+        description: "Cannot move a folder into itself",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Determine if we're moving a file or folder
+    const isFolder = files.some(file => file.name.startsWith(`${draggedItem}/`));
+    
+    if (isFolder) {
+      // Move folder and all its contents
+      const newFiles = [...files];
+      const foldersToUpdate = files.filter(file => file.name.startsWith(`${draggedItem}/`));
+      
+      foldersToUpdate.forEach(file => {
+        const relativePath = file.name.substring(draggedItem.length + 1);
+        const newPath = targetFolder === "/" 
+          ? `${targetFolder}${draggedItem.split("/").pop()}/${relativePath}` 
+          : `${targetFolder}/${draggedItem.split("/").pop()}/${relativePath}`;
+        
+        const fileIndex = newFiles.findIndex(f => f.name === file.name);
+        if (fileIndex !== -1) {
+          newFiles[fileIndex] = { ...file, name: newPath };
+        }
+      });
+      
+      setFiles(newFiles);
+    } else {
+      // Move a single file
+      const fileName = draggedItem.split("/").pop() || "";
+      const newPath = targetFolder === "/" 
+        ? fileName 
+        : `${targetFolder}/${fileName}`;
+      
+      if (files.some(file => file.name === newPath)) {
+        toast({
+          title: "Error",
+          description: "A file with this name already exists in the target folder",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setFiles(prev => 
+        prev.map(file => 
+          file.name === draggedItem 
+          ? { ...file, name: newPath } 
+          : file
+        )
+      );
+      
+      if (currentFile === draggedItem) {
+        setCurrentFile(newPath);
+      }
+    }
+    
+    toast({
+      title: "Success",
+      description: `Moved item to ${targetFolder}`
+    });
+    
+    setDraggedItem(null);
+  };
 
-  const filteredFiles = sortedFiles.filter(file => 
-    file.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="h-full flex flex-col">
-      <div className="p-2 border-b flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Files</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowNewFileDialog(true)}
-            className="h-8 px-2"
+  // Render folder and its contents
+  const renderFolder = (folderPath: string, files: FileItem[]) => {
+    const isExpanded = expandedFolders[folderPath] ?? true;
+    const folderName = folderPath === "/" ? "Root" : folderPath.split('/').pop() || folderPath;
+    
+    // Sort items: folders first, then files alphabetically
+    const sortedItems = [...files].sort((a, b) => {
+      const isAFolder = files.some(file => file.name.startsWith(`${folderPath === "/" ? "" : folderPath + "/"}${a.name}/`));
+      const isBFolder = files.some(file => file.name.startsWith(`${folderPath === "/" ? "" : folderPath + "/"}${b.name}/`));
+      
+      if (isAFolder && !isBFolder) return -1;
+      if (!isAFolder && isBFolder) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    
+    return (
+      <div 
+        key={folderPath} 
+        className="mb-1"
+        onDragOver={(e) => handleDragOver(e, folderPath)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, folderPath)}
+      >
+        <div 
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded hover:bg-muted cursor-pointer text-sm font-medium",
+            dragOverFolder === folderPath && "bg-accent"
+          )}
+        >
+          <div 
+            className="flex items-center gap-1 flex-grow"
+            onClick={() => toggleFolder(folderPath)}
           >
-            <Plus className="h-4 w-4 mr-1" /> New File
-          </Button>
-        </div>
-        
-        <Input
-          placeholder="Search files..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="h-8 text-sm"
-        />
-        
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{files.length} files</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 px-2">
-                Sort: {sortBy === 'name' ? 'Name' : 'Type'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSortBy('name')}>
-                Sort by name
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy('type')}>
-                Sort by type
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto p-2">
-        {filteredFiles.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-            No files found
+            {isExpanded ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />}
+            <Folder className="h-4 w-4 text-amber-500" />
+            <span>{folderName}</span>
           </div>
-        ) : (
-          <ul className="space-y-1">
-            {filteredFiles.map((file) => (
-              <ContextMenu key={file.name}>
-                <ContextMenuTrigger>
-                  <li
-                    className={cn(
-                      "flex items-center justify-between rounded-md px-2 py-1.5 text-sm cursor-pointer",
-                      currentFile === file.name
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted"
-                    )}
-                    onClick={() => setCurrentFile(file.name)}
+          
+          <div className="flex items-center">
+            {folderPath !== "/" && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDuplicateFolder(folderPath);
+                  }}
+                  title="Duplicate folder"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 text-red-500" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFolder(folderPath);
+                  }}
+                  title="Delete folder"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPath(folderPath);
+                setNewFileDialogOpen(true);
+              }}
+              title="New file"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPath(folderPath);
+                setNewFolderDialogOpen(true);
+              }}
+              title="New folder"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+        
+        {isExpanded && (
+          <div className="pl-4 border-l border-muted ml-2 mt-1">
+            {sortedItems.map(file => {
+              // Skip .gitkeep files
+              if (file.name === ".gitkeep") return null;
+              
+              const fullPath = folderPath === "/" ? file.name : `${folderPath}/${file.name}`;
+              const isFileFolder = allFolders.includes(fullPath);
+              
+              // If it's a folder, render a folder component
+              if (isFileFolder) {
+                const folderFiles = files.filter(f => {
+                  const pathParts = f.name.split('/');
+                  return pathParts.length > 1 && pathParts[0] === file.name;
+                }).map(f => {
+                  const nameParts = f.name.split('/');
+                  return {
+                    ...f,
+                    name: nameParts.slice(1).join('/')
+                  };
+                });
+                
+                return renderFolder(fullPath, folderFiles);
+              }
+              
+              // Otherwise render a file
+              return (
+                <div 
+                  key={file.name}
+                  className={cn(
+                    "flex items-center justify-between gap-1 px-2 py-1 rounded text-sm",
+                    currentFile === (folderPath === "/" ? file.name : `${folderPath}/${file.name}`) 
+                      ? "bg-accent text-accent-foreground" 
+                      : "hover:bg-muted"
+                  )}
+                  draggable
+                  onDragStart={() => handleDragStart(fullPath)}
+                >
+                  <div 
+                    className="flex items-center gap-1 cursor-pointer flex-grow"
+                    onClick={() => handleFileClick(folderPath, file)}
                   >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      {getFileIcon(file.name)}
-                      <span className="truncate">{file.name}</span>
-                    </div>
-                    {mainPreviewFile === file.name && (
-                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
-                  </li>
-                </ContextMenuTrigger>
-                <ContextMenuContent className="w-48">
-                  <ContextMenuItem
-                    onClick={() => {
-                      setCurrentFile(file.name);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </ContextMenuItem>
-                  
-                  <ContextMenuItem
-                    onClick={() => {
-                      if (setMainPreviewFile) {
-                        setMainPreviewFile(file.name);
-                        toast({
-                          title: "Preview Updated",
-                          description: `Set ${file.name} as the preview file`,
-                        });
-                      }
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Set as Preview
-                  </ContextMenuItem>
-                  
-                  <ContextMenuSeparator />
-                  
-                  <ContextMenuItem
-                    onClick={() => {
-                      setFileToRename(file.name);
-                      setRenameFileName(file.name);
-                      setShowRenameDialog(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Rename
-                  </ContextMenuItem>
-                  
-                  <ContextMenuItem
-                    onClick={() => handleDuplicateFile(file.name)}
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplicate
-                  </ContextMenuItem>
-                  
-                  <ContextMenuItem
-                    onClick={() => handleDownloadFile(file.name)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </ContextMenuItem>
-                  
-                  <ContextMenuSeparator />
-                  
-                  <ContextMenuItem
-                    onClick={() => {
-                      setFileToDelete(file.name);
-                      setShowDeleteConfirmation(true);
-                    }}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    <Trash className="h-4 w-4 mr-2" />
-                    Delete
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            ))}
-          </ul>
+                    <FileIcon type={file.type} />
+                    <span className="truncate">{file.name}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicateFile(folderPath, file);
+                      }}
+                      title="Duplicate file"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRenameFileClick(folderPath, file);
+                      }}
+                      title="Rename file"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFile(folderPath, file);
+                      }}
+                      title="Delete file"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
+    );
+  };
 
-      {/* New File Dialog */}
-      <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
+  // Render file icon based on type
+  const FileIcon = ({ type }: { type: string }) => {
+    const getIconColor = () => {
+      switch (type) {
+        case 'html': return 'text-orange-500';
+        case 'css': return 'text-blue-500';
+        case 'js': return 'text-yellow-500';
+        case 'ts': return 'text-blue-600';
+        case 'json': return 'text-gray-500';
+        default: return 'text-gray-400';
+      }
+    };
+    
+    return <File className={`h-4 w-4 ${getIconColor()}`} />;
+  };
+
+  return (
+    <div className="h-full overflow-auto">
+      <div className="p-2 flex justify-between items-center sticky top-0 bg-background z-10 border-b">
+        <h3 className="text-sm font-medium">Files</h3>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={() => {
+            setCurrentPath("/");
+            setNewFolderDialogOpen(true);
+          }}>
+            <FolderPlus className="h-4 w-4 mr-1" />
+            Folder
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => {
+            setCurrentPath("/");
+            setNewFileDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-1" />
+            File
+          </Button>
+        </div>
+      </div>
+      
+      {/* Search Bar */}
+      <div className="px-2 py-1.5 border-b">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="h-8 pl-8 text-sm"
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      <div className="p-2">
+        {Object.entries(folderStructure).map(([folder, files]) => 
+          renderFolder(folder, files)
+        )}
+      </div>
+      
+      {/* Create File Dialog */}
+      <Dialog open={newFileDialogOpen} onOpenChange={setNewFileDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create new file</DialogTitle>
-            <DialogDescription>
-              Enter a name for the new file
-            </DialogDescription>
+            <DialogTitle>Create New File</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">File Name</label>
+            <div className="space-y-2">
+              <label htmlFor="folderpath" className="text-sm font-medium">Location</label>
               <Input
-                placeholder="example.html"
+                id="folderpath"
+                value={currentPath}
+                readOnly
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="filename" className="text-sm font-medium">File Name</label>
+              <Input
+                id="filename"
+                placeholder="example.js"
                 value={newFileName}
                 onChange={(e) => setNewFileName(e.target.value)}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewFileDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateFile}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rename File Dialog */}
-      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename file</DialogTitle>
-            <DialogDescription>
-              Enter a new name for {fileToRename}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">New File Name</label>
-              <Input
-                placeholder="example.html"
-                value={renameFileName}
-                onChange={(e) => setRenameFileName(e.target.value)}
+            <div className="space-y-2">
+              <label htmlFor="content" className="text-sm font-medium">Initial Content (optional)</label>
+              <textarea
+                id="content"
+                className="w-full min-h-[100px] p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="// Add your code here"
+                value={newFileContent}
+                onChange={(e) => setNewFileContent(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenameFile}>
-              Rename
-            </Button>
+            <Button variant="outline" onClick={() => setNewFileDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateFile}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+      
+      {/* Create Folder Dialog */}
+      <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete file</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {fileToDelete}? This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle>Create New Folder</DialogTitle>
           </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="folderPathParent" className="text-sm font-medium">Location</label>
+              <Input
+                id="folderPathParent"
+                value={currentPath}
+                readOnly
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="foldername" className="text-sm font-medium">Folder Name</label>
+              <Input
+                id="foldername"
+                placeholder="my-folder"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteConfirmation(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteFile}>
-              Delete
-            </Button>
+            <Button variant="outline" onClick={() => setNewFolderDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateFolder}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Rename File Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename File</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="newname" className="text-sm font-medium">New Name</label>
+              <Input
+                id="newname"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameFile}>Rename</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Upload } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -52,7 +52,6 @@ import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
-import ImageUploader from "@/components/ImageUploader";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -121,7 +120,7 @@ const Index = () => {
     return lastFile || "index.html";
   });
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{role: string, content: string, image?: string}>>(() => {
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>(() => {
     const savedMessages = localStorage.getItem("chat_history");
     return savedMessages ? JSON.parse(savedMessages) : initialMessages;
   });
@@ -168,8 +167,6 @@ const Index = () => {
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [showImageUploader, setShowImageUploader] = useState<boolean>(false);
 
   // Combined credits
   const totalAvailableCredits = dailyCredits + lifetimeCredits;
@@ -326,7 +323,6 @@ const Index = () => {
   };
 
   const resetProject = () => {
-    // Do NOT reset credits when resetting project
     // Store current credits before reset
     const currentDailyCredits = dailyCredits;
     const currentLifetimeCredits = lifetimeCredits;
@@ -385,24 +381,10 @@ const Index = () => {
     }
   };
 
-  // Handle image upload with the correct prop name
-  const handleImageUpload = (imageData: string) => {
-    setUploadedImage(imageData);
-    setShowImageUploader(false);
-    
-    // Attach image to the next message
-    if (imageData) {
-      toast({
-        title: "Image Uploaded",
-        description: "Your image has been attached to your next message."
-      });
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userPrompt.trim() && !uploadedImage) return;
+    if (!userPrompt.trim()) return;
     if (!apiKey && showApiKeyInput) {
       toast({
         title: "API Key Required",
@@ -421,15 +403,9 @@ const Index = () => {
       return;
     }
     
-    const userMessage = { 
-      role: "user", 
-      content: userPrompt,
-      ...(uploadedImage ? { image: uploadedImage } : {})
-    };
-    
+    const userMessage = { role: "user", content: userPrompt };
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
-    setUploadedImage(null);
     setIsLoading(true);
     
     // Deduct credit if not unlimited
@@ -455,8 +431,6 @@ User request: "${userPrompt}"
 
 Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-${uploadedImage ? "The user has attached an image to this request. Please analyze it carefully and create HTML/CSS/JS code that replicates this design or integrates this image appropriately. Pay attention to colors, layout, typography and the overall visual style." : ""}
 
 Analyze the code and the user's request. Then, respond with the full updated files that incorporates the requested changes.
 
@@ -527,7 +501,8 @@ Full file content here
 61. Create tactile and satisfying feedback for interactive elements
 62. Consider mobile-first design principles for responsive interfaces
 63. Use conditional loading techniques to improve performance on mobile
-64. Implement responsive touch targets for mobile users (minimum 44x44px)\n65. Optimize typography for readability on small screens
+64. Implement responsive touch targets for mobile users (minimum 44x44px)
+65. Optimize typography for readability on small screens
 66. Consider thumb reachability zones on mobile interfaces
 67. Use bottom navigation patterns for mobile interfaces
 68. Implement swipe gestures for natural mobile interaction
@@ -542,55 +517,27 @@ Full file content here
 77. Consider reduced motion preferences for animations
 78. Use appropriate color contrasts for outdoor visibility
 79. Implement proper touch feedback states for mobile elements
-80. Consider mobile-specific UI patterns for complex interactions
-81. If an image is attached, analyze its visual style carefully
-82. For image cloning, pay attention to color schemes, typography, and layout structure
-83. When cloning an image, try to replicate the look and feel, not just the content
-84. For UI screenshots, replicate the exact component structure and styling
-85. For design inspirations, extract the color palette and apply it consistently
-86. Match the typography style, spacing, and visual hierarchy from attached images
-87. For product mockups, create a replica with HTML/CSS that matches the design
-88. Extract color palettes from images and use CSS variables for consistent application
-89. Pay attention to shadows, gradients, and texture effects in images
-90. For complex images, break down the visual elements into reusable components
-91. Ensure margins and padding match the visual spacing in image references
-92. Use CSS grid or flexbox to match complex layouts from images
-93. For branding elements in images, maintain consistent style throughout the implementation
-94. Implement animations that match the visual style in motion design mockups
-95. Use CSS filters to match specific visual effects from reference images`;
+80. Consider mobile-specific UI patterns for complex interactions`;
 
-      // Fix the inline_data format to be compatible with TypeScript
-      let requestBody: any = {
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.8,
-          topK: 40
-        }
-      };
-      
-      // Add image to the request if present
-      if (uploadedImage) {
-        requestBody.contents[0].parts.push({ 
-          inline_data: {
-            mime_type: "image/jpeg",
-            data: uploadedImage.split(",")[1] // Remove the data:image/jpeg;base64, part
-          }
-        });
-      }
-
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            topP: 0.8,
+            topK: 40
+          }
+        })
       });
 
       if (!response.ok) {
@@ -733,7 +680,7 @@ Full file content here
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reset Project</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Your credits will be preserved.
+                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -827,30 +774,205 @@ Full file content here
         </DialogContent>
       </Dialog>
 
-      {/* Image Uploader Dialog */}
-      <Dialog open={showImageUploader} onOpenChange={setShowImageUploader}>
-        <DialogContent className={cn(
-          "sm:max-w-md",
-          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
-        )}>
-          <DialogHeader>
-            <DialogTitle>Upload Image</DialogTitle>
-            <DialogDescription>
-              Upload an image for the AI to analyze and clone
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <ImageUploader onImageUpload={handleImageUpload} />
-          </div>
-        </DialogContent>
-      </Dialog>
-      
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Add the rest of your UI components and layout here */}
-        {/* This is a placeholder comment to indicate where the rest of the JSX would go */}
-        {/* You should add your panels, editors, previews here based on your application structure */}
-      </div>
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* Left Panel - Code Editor */}
+        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
+          <div className="border-r h-full flex flex-col">
+            <div className="p-2 bg-muted flex items-center justify-between">
+              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
+                <TabsList className={cn("grid w-60 grid-cols-2", isMobile && "w-full")}>
+                  <TabsTrigger value="code">Editor</TabsTrigger>
+                  <TabsTrigger value="files">File Explorer</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex items-center gap-2">
+                {editorView === "code" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {files.map((file) => (
+                        <DropdownMenuItem 
+                          key={file.name}
+                          onClick={() => setCurrentFile(file.name)}
+                          className={cn(
+                            "cursor-pointer",
+                            currentFile === file.name && "bg-accent"
+                          )}
+                        >
+                          {file.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                <PreviewSettings
+                  files={files}
+                  mainFile={mainPreviewFile}
+                  setMainFile={setMainPreviewFile}
+                />
+              </div>
+            </div>
+            
+            <div className="flex-1 h-full">
+              <Tabs value={editorView} className="h-full">
+                <TabsContent value="code" className="h-full mt-0">
+                  <CodeEditor
+                    value={getCurrentFileContent()}
+                    onChange={updateFileContent}
+                    language={getCurrentFileLanguage()}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  <FileExplorer 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        {isFullscreen ? null : <ResizableHandle withHandle />}
+
+        {/* Right Panel - Chat and Preview */}
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
+          <ResizablePanelGroup direction="vertical">
+            {/* Preview Section */}
+            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 bg-white">
+                  <iframe 
+                    ref={previewIframeRef}
+                    title="Preview"
+                    className="w-full h-full"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Chat Section */}
+            <ResizablePanel defaultSize={50} minSize={20}>
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Chat</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={clearChatHistory}
+                    title="Clear chat history"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* API Key Input */}
+                {showApiKeyInput && (
+                  <div className="border-b p-3">
+                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="AIza..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={saveApiKey}
+                      >
+                        <Save className="h-4 w-4 mr-2" /> Save
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your API key is stored locally and never sent to our servers.
+                    </p>
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                  <div className="space-y-4">
+                    {messages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div 
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                  <Input
+                    placeholder="Describe the changes you want to make..."
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 relative">
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };
