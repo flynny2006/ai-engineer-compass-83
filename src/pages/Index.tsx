@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -52,6 +51,7 @@ import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
+import { Link } from "react-router-dom";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -77,12 +77,16 @@ const DEFAULT_CODE = `<!DOCTYPE html>
     h1 {
       color: #333;
     }
+    p {
+      line-height: 1.5;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Hello World!</h1>
-    <p>This is a simple web page. Try describing changes you'd like to make.</p>
+    <h1>The Preview hasn't been built yet.</h1>
+    <p>Ask our AI Assistant to build something to see the app here! Or Edit the Code yourself.</p>
   </div>
 </body>
 </html>`;
@@ -643,6 +647,12 @@ Full file content here
           {isMobile && <h1 className="text-lg font-semibold">Boongle AI</h1>}
         </div>
         <div className="flex gap-2 items-center">
+          <Link to="/supabase">
+            <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "h-9 w-9 p-0" : ""}>
+              <Database className="h-4 w-4" />
+              {!isMobile && <span className="ml-1">Supabase</span>}
+            </Button>
+          </Link>
           <Navigation />
           <div className="flex gap-1 md:gap-2 items-center">
             <div className={cn("flex items-center gap-1 md:gap-2", isMobile ? "mr-1" : "mr-4")}>
