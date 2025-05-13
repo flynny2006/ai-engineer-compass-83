@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -99,9 +101,16 @@ const initialMessages = [
 
 const DAILY_CREDIT_LIMIT = 25;
 const UNLIMITED_CODE = "3636";
+const CREDIT_CODES = {
+  "56722": 100,
+  "757874": 500,
+  "776561": 1600,
+  // More can be added here in the future
+};
 
 const Index = () => {
   const { theme, setTheme } = useTheme();
+  const isMobile = useIsMobile();
   const [files, setFiles] = useState(() => {
     const savedFiles = localStorage.getItem("project_files");
     return savedFiles ? JSON.parse(savedFiles) : initialFiles;
@@ -131,7 +140,7 @@ const Index = () => {
   });
   
   // Credits system
-  const [credits, setCredits] = useState<number>(() => {
+  const [dailyCredits, setDailyCredits] = useState<number>(() => {
     const savedCredits = localStorage.getItem("daily_credits");
     if (savedCredits) {
       const { value, lastReset } = JSON.parse(savedCredits);
@@ -147,11 +156,20 @@ const Index = () => {
     }
     return DAILY_CREDIT_LIMIT;
   });
+
+  // New lifetime credits system
+  const [lifetimeCredits, setLifetimeCredits] = useState<number>(() => {
+    return parseInt(localStorage.getItem("lifetime_credits") || "0", 10);
+  });
+  
   const [hasUnlimitedCredits, setHasUnlimitedCredits] = useState<boolean>(() => {
     return localStorage.getItem("unlimited_credits") === "true";
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
+
+  // Combined credits
+  const totalAvailableCredits = dailyCredits + lifetimeCredits;
 
   // Get current file content and language
   const getCurrentFileContent = () => {
@@ -180,11 +198,16 @@ const Index = () => {
   // Save credits to localStorage
   useEffect(() => {
     const creditsData = {
-      value: credits,
+      value: dailyCredits,
       lastReset: new Date().toISOString()
     };
     localStorage.setItem("daily_credits", JSON.stringify(creditsData));
-  }, [credits]);
+  }, [dailyCredits]);
+
+  // Save lifetime credits to localStorage
+  useEffect(() => {
+    localStorage.setItem("lifetime_credits", lifetimeCredits.toString());
+  }, [lifetimeCredits]);
 
   // Save unlimited credits status
   useEffect(() => {
@@ -203,7 +226,7 @@ const Index = () => {
         const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
         
         if (today > lastResetDate) {
-          setCredits(DAILY_CREDIT_LIMIT);
+          setDailyCredits(DAILY_CREDIT_LIMIT);
         }
       }
     };
@@ -301,7 +324,8 @@ const Index = () => {
 
   const resetProject = () => {
     // Store current credits before reset
-    const currentCredits = credits;
+    const currentDailyCredits = dailyCredits;
+    const currentLifetimeCredits = lifetimeCredits;
     const isUnlimited = hasUnlimitedCredits;
     
     setFiles(initialFiles);
@@ -315,7 +339,8 @@ const Index = () => {
     setEditorView("code");
     
     // Restore credits after reset
-    setCredits(currentCredits);
+    setDailyCredits(currentDailyCredits);
+    setLifetimeCredits(currentLifetimeCredits);
     setHasUnlimitedCredits(isUnlimited);
     
     toast({
@@ -337,6 +362,15 @@ const Index = () => {
       toast({
         title: "Unlimited Credits Activated!",
         description: "You now have unlimited credits to use the AI."
+      });
+    } else if (CREDIT_CODES[claimCode as keyof typeof CREDIT_CODES]) {
+      // Add credits to lifetime credits
+      const bonusCredits = CREDIT_CODES[claimCode as keyof typeof CREDIT_CODES];
+      setLifetimeCredits(prev => prev + bonusCredits);
+      setShowClaimDialog(false);
+      toast({
+        title: "Credits Claimed!",
+        description: `You've received ${bonusCredits} lifetime credits that won't expire!`
       });
     } else {
       toast({
@@ -360,10 +394,10 @@ const Index = () => {
     }
     
     // Check if user has credits available
-    if (credits <= 0 && !hasUnlimitedCredits) {
+    if (totalAvailableCredits <= 0 && !hasUnlimitedCredits) {
       toast({
-        title: "Daily Limit Reached",
-        description: "You've reached your daily credit limit. Please wait until tomorrow or claim an unlimited code.",
+        title: "Credit Limit Reached",
+        description: "You've used all your available credits. Claim codes for more credits or wait until tomorrow for daily credits.",
         variant: "destructive"
       });
       return;
@@ -376,7 +410,12 @@ const Index = () => {
     
     // Deduct credit if not unlimited
     if (!hasUnlimitedCredits) {
-      setCredits(prev => prev - 1);
+      // First use lifetime credits, then daily credits
+      if (lifetimeCredits > 0) {
+        setLifetimeCredits(prev => prev - 1);
+      } else {
+        setDailyCredits(prev => prev - 1);
+      }
     }
 
     try {
@@ -458,7 +497,27 @@ Full file content here
 57. Use proper transitions between interactive states
 58. Consider cultural color associations in your design choices
 59. Implement motion designs that respect users' motion preferences
-60. Use proper column widths and line lengths for optimal readability`;
+60. Use proper column widths and line lengths for optimal readability
+61. Create tactile and satisfying feedback for interactive elements
+62. Consider mobile-first design principles for responsive interfaces
+63. Use conditional loading techniques to improve performance on mobile
+64. Implement responsive touch targets for mobile users (minimum 44x44px)
+65. Optimize typography for readability on small screens
+66. Consider thumb reachability zones on mobile interfaces
+67. Use bottom navigation patterns for mobile interfaces
+68. Implement swipe gestures for natural mobile interaction
+69. Consider device-specific features like haptic feedback
+70. Adapt form inputs for optimal mobile experience
+71. Use viewport units for responsive sizing
+72. Consider landscape and portrait orientations
+73. Implement appropriate keyboard behavior on mobile
+74. Consider offline usage patterns for mobile users
+75. Optimize image loading and scaling for mobile devices
+76. Implement responsive spacing systems that adapt to screen sizes
+77. Consider reduced motion preferences for animations
+78. Use appropriate color contrasts for outdoor visibility
+79. Implement proper touch feedback states for mobile elements
+80. Consider mobile-specific UI patterns for complex interactions`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -572,7 +631,7 @@ Full file content here
     }
   };
 
-  const creditPercentage = (credits / DAILY_CREDIT_LIMIT) * 100;
+  const creditPercentage = (dailyCredits / DAILY_CREDIT_LIMIT) * 100;
 
   return (
     <div className={`flex flex-col h-screen bg-background ${theme}`}>
@@ -580,36 +639,44 @@ Full file content here
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
-          <h1 className="text-xl font-semibold">Boongle AI - Software Engineer</h1>
+          <h1 className={cn("text-xl font-semibold", isMobile && "sr-only")}>Boongle AI - Software Engineer</h1>
+          {isMobile && <h1 className="text-lg font-semibold">Boongle AI</h1>}
         </div>
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 items-center">
           <Navigation />
-          <div className="flex gap-2 items-center">
-            <div className="flex items-center gap-2 mr-4">
-              <span className="text-sm font-medium">
-                Daily Credits: {hasUnlimitedCredits ? "∞" : `${credits}/${DAILY_CREDIT_LIMIT}`}
+          <div className="flex gap-1 md:gap-2 items-center">
+            <div className={cn("flex items-center gap-1 md:gap-2", isMobile ? "mr-1" : "mr-4")}>
+              <span className={cn("text-sm font-medium", isMobile && "hidden md:inline")}>
+                {hasUnlimitedCredits ? "∞" : `${totalAvailableCredits}`} Credits
               </span>
-              {!hasUnlimitedCredits && (
+              {!hasUnlimitedCredits && !isMobile && (
                 <Progress
                   value={creditPercentage}
                   className="w-24 h-2"
                 />
               )}
               <Button 
-                size="sm" 
+                size={isMobile ? "icon" : "sm"} 
                 variant="outline" 
                 onClick={() => setShowClaimDialog(true)}
+                className={isMobile ? "h-9 w-9 p-0" : ""}
               >
-                <Gift className="h-4 w-4 mr-2" /> Claim Code
+                <Gift className="h-4 w-4" />
+                {!isMobile && <span className="ml-1">Claim</span>}
               </Button>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <RefreshCcw className="h-4 w-4 mr-2" /> Reset Project
+                <Button 
+                  size={isMobile ? "icon" : "sm"} 
+                  variant="outline"
+                  className={isMobile ? "h-9 w-9 p-0" : ""}
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  {!isMobile && <span className="ml-1">Reset</span>}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className={isMobile ? "w-[90vw] max-w-[90vw] p-4" : ""}>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reset Project</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -628,6 +695,7 @@ Full file content here
               aria-label="Toggle theme"
               pressed={theme === "dark"}
               onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
+              className={isMobile ? "h-9 w-9 p-0" : ""}
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -635,11 +703,17 @@ Full file content here
                 <Moon className="h-4 w-4" />
               )}
             </Toggle>
-            <Button size="sm" variant="outline" onClick={() => {
-              updatePreview();
-              setLastRefreshTime(Date.now());
-            }}>
-              <Play className="h-4 w-4 mr-2" /> Run Preview
+            <Button 
+              size={isMobile ? "icon" : "sm"} 
+              variant="outline" 
+              onClick={() => {
+                updatePreview();
+                setLastRefreshTime(Date.now());
+              }}
+              className={isMobile ? "h-9 w-9 p-0" : ""}
+            >
+              <Play className="h-4 w-4" />
+              {!isMobile && <span className="ml-1">Run</span>}
             </Button>
           </div>
         </div>
@@ -647,19 +721,47 @@ Full file content here
 
       {/* Claim Code Dialog */}
       <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
-        <DialogContent>
+        <DialogContent className={cn(
+          "sm:max-w-md",
+          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
+        )}>
           <DialogHeader>
-            <DialogTitle>Claim Unlimited Credits</DialogTitle>
+            <DialogTitle>Claim Credits</DialogTitle>
             <DialogDescription>
-              Enter your code to claim unlimited credits
+              Enter your code to claim additional credits
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2 items-center">
-            <Input 
-              placeholder="Enter code..." 
-              value={claimCode} 
-              onChange={(e) => setClaimCode(e.target.value)}
-            />
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Enter claim code</label>
+              <Input 
+                placeholder="Enter code..." 
+                value={claimCode} 
+                onChange={(e) => setClaimCode(e.target.value)}
+              />
+            </div>
+            
+            {/* Credits status */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Your Credits</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                  <span>Daily:</span>
+                  <span className="font-semibold">{dailyCredits}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                  <span>Lifetime:</span>
+                  <span className="font-semibold">{lifetimeCredits}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded col-span-2">
+                  <span>Unlimited:</span>
+                  <span className="font-semibold">{hasUnlimitedCredits ? "Yes" : "No"}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Daily credits reset every 24 hours. Lifetime credits never expire.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowClaimDialog(false)}>
@@ -679,7 +781,7 @@ Full file content here
           <div className="border-r h-full flex flex-col">
             <div className="p-2 bg-muted flex items-center justify-between">
               <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
-                <TabsList className="grid w-60 grid-cols-2">
+                <TabsList className={cn("grid w-60 grid-cols-2", isMobile && "w-full")}>
                   <TabsTrigger value="code">Editor</TabsTrigger>
                   <TabsTrigger value="files">File Explorer</TabsTrigger>
                 </TabsList>
@@ -847,12 +949,12 @@ Full file content here
                     placeholder="Describe the changes you want to make..."
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
-                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
                     className="flex-1"
                   />
                   <Button 
                     type="submit" 
-                    disabled={isLoading || (credits <= 0 && !hasUnlimitedCredits)}
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
                   >
                     {isLoading ? (
                       <div className="flex items-center">

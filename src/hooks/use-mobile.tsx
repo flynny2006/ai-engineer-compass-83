@@ -15,6 +15,9 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < 768)
     }
 
+    // Set correct initial state
+    handleResize()
+    
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
