@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -882,3 +883,226 @@ Full file content here
                   className="flex-1"
                 />
                 <Button
+                  type="submit"
+                  size="icon"
+                  disabled={isLoading || !userPrompt.trim() || (!hasUnlimitedCredits && getTotalAvailableCredits() <= 0)}
+                >
+                  {isLoading ? (
+                    <div className="h-4 w-4 border-2 border-current border-transparent border-t-current rounded-full animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </div>
+      ) : (
+        // Desktop Layout
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          <ResizablePanel defaultSize={20} minSize={15} maxSize={40}>
+            <div className="h-full flex flex-col">
+              <Tabs defaultValue="files" className="flex-1">
+                <div className="border-b px-3">
+                  <TabsList className="w-full justify-start h-12">
+                    <TabsTrigger value="files" className="flex-1">
+                      <FileText className="h-4 w-4 mr-2" /> Files
+                    </TabsTrigger>
+                    <TabsTrigger value="chat" className="flex-1">
+                      <MessageSquare className="h-4 w-4 mr-2" /> Chat
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <TabsContent value="files" className="flex-1 p-0 data-[state=active]:flex data-[state=active]:flex-col">
+                  <FileExplorer 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+                
+                <TabsContent value="chat" className="flex-1 p-0 data-[state=active]:flex data-[state=active]:flex-col">
+                  {/* API Key Input */}
+                  {showApiKeyInput && (
+                    <div className="border-b p-3">
+                      <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                      <div className="flex gap-2 mb-2">
+                        <Input
+                          type="password"
+                          placeholder="AIza..."
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                        />
+                        <Button 
+                          size="sm" 
+                          onClick={saveApiKey}
+                          className="whitespace-nowrap"
+                        >
+                          <Save className="h-4 w-4 mr-2" /> Save
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Your API key is stored locally and never sent to our servers.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Chat Controls */}
+                  <div className="flex justify-between items-center border-b p-2">
+                    <span className="text-sm font-medium">Chat History</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearChatHistory}
+                      className="h-8 px-2"
+                    >
+                      <Trash className="h-4 w-4 mr-1" /> Clear
+                    </Button>
+                  </div>
+                  
+                  {/* Messages */}
+                  <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                    <div className="space-y-4">
+                      {messages.map((msg, i) => (
+                        <div 
+                          key={i} 
+                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div 
+                            className={`max-w-[85%] rounded-lg p-3 ${
+                              msg.role === "user" 
+                                ? "bg-primary text-primary-foreground" 
+                                : "bg-muted"
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </div>
+                  
+                  {/* Input Area */}
+                  <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                    <Input
+                      placeholder="Describe changes..."
+                      value={userPrompt}
+                      onChange={(e) => setUserPrompt(e.target.value)}
+                      disabled={isLoading || (!hasUnlimitedCredits && getTotalAvailableCredits() <= 0)}
+                    />
+                    <Button
+                      type="submit"
+                      disabled={isLoading || !userPrompt.trim() || (!hasUnlimitedCredits && getTotalAvailableCredits() <= 0)}
+                    >
+                      {isLoading ? (
+                        <div className="h-4 w-4 border-2 border-current border-transparent border-t-current rounded-full animate-spin mr-2" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      Send
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </ResizablePanel>
+          
+          <ResizableHandle />
+          
+          <ResizablePanel defaultSize={40} minSize={30}>
+            <div className="h-full flex flex-col">
+              <div className="border-b p-2 bg-muted flex items-center justify-between">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="mr-2">
+                      {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {files.map((file) => (
+                      <DropdownMenuItem 
+                        key={file.name}
+                        onClick={() => setCurrentFile(file.name)}
+                        className={cn(
+                          "cursor-pointer",
+                          currentFile === file.name && "bg-accent"
+                        )}
+                      >
+                        {file.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={toggleFullscreen}
+                    className="h-8"
+                  >
+                    <Maximize className="h-3.5 w-3.5 mr-1" /> 
+                    {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <CodeEditor
+                  value={getCurrentFileContent()}
+                  onChange={updateFileContent}
+                  language={getCurrentFileLanguage()}
+                />
+              </div>
+            </div>
+          </ResizablePanel>
+          
+          <ResizableHandle />
+          
+          <ResizablePanel defaultSize={40} minSize={20}>
+            <div className="h-full flex flex-col">
+              <div className="border-b p-2 bg-muted flex items-center justify-between">
+                <div className="flex items-center">
+                  <Eye className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">{mainPreviewFile}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <PreviewSettings
+                    files={files}
+                    mainFile={mainPreviewFile}
+                    setMainFile={setMainPreviewFile}
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      updatePreview();
+                      setLastRefreshTime(Date.now());
+                    }}
+                    className="h-8"
+                  >
+                    <RefreshCcw className="h-3.5 w-3.5 mr-1" /> Refresh
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex-1 bg-white">
+                <iframe 
+                  ref={previewIframeRef}
+                  title="Preview"
+                  className="w-full h-full"
+                  sandbox="allow-scripts allow-same-origin"
+                />
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
+    </div>
+  );
+};
+
+export default Index;
