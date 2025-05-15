@@ -41,42 +41,58 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
 
-    // Apply custom CSS variables for the completely black theme when in dark mode
+    // Apply custom CSS variables for the completely redesigned dark mode
     if (theme === "dark") {
-      root.style.setProperty("--background", "0 0% 0%"); // Pure black background
-      root.style.setProperty("--foreground", "210 40% 98%");
+      // Modern dark theme with deep blues and purples
+      root.style.setProperty("--background", "224 71% 4%"); // Dark blue-black background
+      root.style.setProperty("--foreground", "213 31% 91%"); // Light blue-white text
       
-      root.style.setProperty("--card", "0 0% 0%"); // Pure black card
-      root.style.setProperty("--card-foreground", "210 40% 98%");
+      root.style.setProperty("--card", "224 71% 4%"); // Dark blue-black card
+      root.style.setProperty("--card-foreground", "213 31% 91%"); // Light blue-white text
       
-      root.style.setProperty("--popover", "0 0% 0%"); // Pure black popover
-      root.style.setProperty("--popover-foreground", "210 40% 98%");
+      root.style.setProperty("--popover", "224 71% 4%"); // Dark blue-black popover
+      root.style.setProperty("--popover-foreground", "213 31% 91%"); // Light blue-white text
       
-      root.style.setProperty("--primary", "210 40% 98%");
-      root.style.setProperty("--primary-foreground", "0 0% 0%"); // Pure black primary foreground
+      root.style.setProperty("--primary", "262 80% 70%"); // Vibrant purple primary
+      root.style.setProperty("--primary-foreground", "210 20% 98%"); // Nearly white primary text
       
-      root.style.setProperty("--secondary", "0 0% 7%"); // Very dark gray for secondary elements
-      root.style.setProperty("--secondary-foreground", "210 40% 98%");
+      root.style.setProperty("--secondary", "215 27% 11%"); // Dark blue secondary
+      root.style.setProperty("--secondary-foreground", "210 20% 98%"); // Nearly white secondary text
       
-      root.style.setProperty("--muted", "0 0% 7%"); // Very dark gray for muted elements
-      root.style.setProperty("--muted-foreground", "215 20.2% 65.1%");
+      root.style.setProperty("--muted", "215 27% 11%"); // Dark blue muted
+      root.style.setProperty("--muted-foreground", "217 33% 60%"); // Muted blue-gray text
       
-      root.style.setProperty("--accent", "0 0% 7%"); // Very dark gray for accent
-      root.style.setProperty("--accent-foreground", "210 40% 98%");
+      root.style.setProperty("--accent", "215 27% 11%"); // Dark blue accent
+      root.style.setProperty("--accent-foreground", "210 20% 98%"); // Nearly white accent text
       
-      root.style.setProperty("--destructive", "0 62.8% 30.6%");
-      root.style.setProperty("--destructive-foreground", "0 0% 98%");
+      root.style.setProperty("--destructive", "0 62% 30%"); // Deep red for destructive
+      root.style.setProperty("--destructive-foreground", "210 20% 98%"); // Nearly white destructive text
       
-      root.style.setProperty("--border", "0 0% 12%"); // Darker border
-      root.style.setProperty("--input", "0 0% 12%"); // Darker input
-      root.style.setProperty("--ring", "224.3 76.3% 48%");
+      root.style.setProperty("--border", "215 28% 17%"); // Dark blue border
+      root.style.setProperty("--input", "215 28% 17%"); // Dark blue input
+      root.style.setProperty("--ring", "262 80% 70%"); // Vibrant purple ring
       
-      // Update sidebar colors to match completely black theme
-      root.style.setProperty("--sidebar-background", "0 0% 0%"); // Pure black sidebar
-      root.style.setProperty("--sidebar-foreground", "210 40% 98%");
-      root.style.setProperty("--sidebar-accent", "0 0% 7%"); // Very dark gray for sidebar accent
-      root.style.setProperty("--sidebar-accent-foreground", "210 40% 98%");
-      root.style.setProperty("--sidebar-border", "0 0% 12%"); // Darker sidebar border
+      // Update sidebar colors to match completely modernized dark theme
+      root.style.setProperty("--sidebar-background", "224 71% 4%"); // Dark blue-black sidebar
+      root.style.setProperty("--sidebar-foreground", "213 31% 91%"); // Light blue-white text
+      root.style.setProperty("--sidebar-primary", "262 80% 70%"); // Vibrant purple primary
+      root.style.setProperty("--sidebar-primary-foreground", "0 0% 100%"); // Pure white text
+      root.style.setProperty("--sidebar-accent", "215 27% 11%"); // Dark blue accent
+      root.style.setProperty("--sidebar-accent-foreground", "213 31% 91%"); // Light blue-white text
+      root.style.setProperty("--sidebar-border", "215 28% 17%"); // Dark blue border
+      root.style.setProperty("--sidebar-ring", "262 80% 70%"); // Vibrant purple ring
+      
+      // Syntax highlighting variables for dark mode - more vibrant colors
+      root.style.setProperty("--syntax-keyword", "262 80% 70%"); // Vibrant purple for keywords
+      root.style.setProperty("--syntax-string", "35 90% 61%"); // Bright gold for strings
+      root.style.setProperty("--syntax-comment", "220 14% 53%"); // Muted blue-gray for comments
+      root.style.setProperty("--syntax-number", "176 85% 55%"); // Bright cyan for numbers
+      root.style.setProperty("--syntax-class", "290 90% 80%"); // Bright magenta for classes
+      root.style.setProperty("--syntax-property", "197 90% 70%"); // Bright blue for properties
+      root.style.setProperty("--syntax-tag", "330 90% 70%"); // Bright pink for tags
+      root.style.setProperty("--syntax-attribute", "119 80% 50%"); // Bright green for attributes
+      root.style.setProperty("--syntax-operator", "35 90% 61%"); // Gold for operators
+      root.style.setProperty("--syntax-function", "35 90% 61%"); // Gold for functions
     } else {
       // Reset custom properties when in light mode
       root.style.removeProperty("--background");
@@ -100,9 +116,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.style.removeProperty("--ring");
       root.style.removeProperty("--sidebar-background");
       root.style.removeProperty("--sidebar-foreground");
+      root.style.removeProperty("--sidebar-primary");
+      root.style.removeProperty("--sidebar-primary-foreground");
       root.style.removeProperty("--sidebar-accent");
       root.style.removeProperty("--sidebar-accent-foreground");
       root.style.removeProperty("--sidebar-border");
+      root.style.removeProperty("--syntax-keyword");
+      root.style.removeProperty("--syntax-string");
+      root.style.removeProperty("--syntax-comment");
+      root.style.removeProperty("--syntax-number");
+      root.style.removeProperty("--syntax-class");
+      root.style.removeProperty("--syntax-property");
+      root.style.removeProperty("--syntax-tag");
+      root.style.removeProperty("--syntax-attribute");
+      root.style.removeProperty("--syntax-operator");
+      root.style.removeProperty("--syntax-function");
     }
   }, [theme]);
 
