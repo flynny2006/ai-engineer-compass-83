@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, ArrowUp, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database, Plus, Image, Menu, Info } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database, Plus, Image, Menu, Info } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -55,17 +54,41 @@ import Navigation from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
 
-// Define default HTML code template
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Web App</title>
+  <title>My App</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    p {
+      line-height: 1.5;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to my web application!</h1>
-  <p>Start building your amazing app here.</p>
+  <div class="container">
+    <h1>The Preview hasn't been built yet.</h1>
+    <p>Ask our AI Assistant to build something to see the app here! Or Edit the Code yourself.</p>
+  </div>
 </body>
 </html>`;
 
@@ -78,7 +101,7 @@ const initialFiles = [
 ];
 
 const initialMessages = [
-  { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the app you'd like to build and I'll help you create it with HTML, CSS, and JavaScript." }
+  { role: "assistant", content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them." }
 ];
 
 const DAILY_CREDIT_LIMIT = 25;
@@ -457,8 +480,7 @@ const Index = () => {
         
         try {
           // Create enhanced system prompt
-          const systemPrompt = `You are a professional web developer AI assistant with expertise in HTML, CSS and JavaScript. Your task is to design and create beautiful, functional web applications based on user requests.
-
+          const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
 --- ${file.name} ---
@@ -471,32 +493,32 @@ User has uploaded an image, which you'll see in your input. Please analyze it an
 Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
-Analyze the image and the user's request carefully. Create a responsive, modern web application that implements the requested features or changes.
+Analyze the image and the user's request. Then, respond with the full updated files that incorporates the requested changes.
 
-Follow these guidelines:
-1. Return all modified or created files in this format:
+Follow these rules:
+1. Return all files that need to be modified in this format:
 --- filename.ext ---
 Full file content here
 
-2. Always return complete file content for each file
-3. Use semantic HTML5 elements and proper structure
-4. Implement responsive design using flexbox and/or grid
-5. Create visually appealing interfaces with attention to typography, spacing and color
-6. Use modern CSS techniques including variables, animations, and transitions
-7. Write clean, efficient JavaScript with proper error handling
-8. Ensure cross-browser compatibility and mobile responsiveness
-9. Implement proper user feedback for interactions (hover states, focus states)
-10. Optimize performance and loading times
-11. Consider accessibility best practices (ARIA attributes, keyboard navigation)
-12. Use consistent naming conventions and code organization
-13. Comment your code appropriately to explain complex logic
-14. Create intuitive navigation patterns and user flows
-15. Test edge cases and error conditions
-16. Implement proper form validation where needed
-17. Use localStorage for persistent data when appropriate
-18. Create smooth transitions between application states
-19. Ensure proper contrast for text readability
-20. Design with a mobile-first approach`;
+2. Always return the complete content for each file
+3. Don't include explanations, just the code files
+4. Make sure to include proper links between HTML, CSS, and JS files
+5. Don't include markdown formatting or code blocks, just the raw code
+6. Be creative and implement visual enhancements when appropriate
+7. Follow best practices for HTML, CSS, and JavaScript
+8. Make sure your code is clean, organized, and well-documented
+9. Implement responsive design elements when possible
+10. Consider accessibility in your implementations
+11. Create visually appealing color schemes and typography to match the uploaded image
+12. Recreate the design from the uploaded image as closely as possible
+13. Use the same colors, layout, and style as shown in the image
+14. Consider the context and purpose of the image when designing the site
+15. If the image contains text, try to incorporate that text into your design
+16. If the image shows a UI, recreate that UI in your code
+17. Use modern design principles for beautiful interfaces
+18. Utilize smooth animations and transitions when appropriate
+19. Ensure proper spacing and layout for optimal user experience
+20. Implement intuitive navigation and user interaction patterns`;
 
           const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
             method: "POST",
@@ -582,10 +604,10 @@ Full file content here
               updateFileContent(generatedText);
             }
             
-            // Add assistant response with detailed explanation
+            // Add assistant response
             setMessages(prev => [...prev, { 
               role: "assistant", 
-              content: "I've analyzed your image and created a website that matches its design elements. The site includes responsive layouts, matching color schemes, and appropriate typography. I've implemented interactive elements and animations to enhance user experience while maintaining the visual style from your image. Check the preview to see how it looks." 
+              content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results." 
             }]);
             
             if (showApiKeyInput) {
@@ -665,8 +687,7 @@ Full file content here
 
     try {
       // Create enhanced system prompt
-      const systemPrompt = `You are a professional web developer AI assistant with expertise in HTML, CSS and JavaScript. Your task is to design and create beautiful, functional web applications based on user requests.
-
+      const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
 --- ${file.name} ---
@@ -678,32 +699,37 @@ User request: "${userPrompt}"
 Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
 
-Analyze the code and the user's request carefully. Create a responsive, modern web application that implements the requested features or changes.
+Analyze the code and the user's request. Then, respond with the full updated files that incorporates the requested changes.
 
-Follow these guidelines:
-1. Return all modified or created files in this format:
+Follow these rules:
+1. Return all files that need to be modified in this format:
 --- filename.ext ---
 Full file content here
 
-2. Always return complete file content for each file
-3. Use semantic HTML5 elements and proper structure
-4. Implement responsive design using flexbox and/or grid
-5. Create visually appealing interfaces with attention to typography, spacing and color
-6. Use modern CSS techniques including variables, animations, and transitions
-7. Write clean, efficient JavaScript with proper error handling
-8. Ensure cross-browser compatibility and mobile responsiveness
-9. Implement proper user feedback for interactions (hover states, focus states)
-10. Optimize performance and loading times
-11. Consider accessibility best practices (ARIA attributes, keyboard navigation)
-12. Use consistent naming conventions and code organization
-13. Comment your code appropriately to explain complex logic
-14. Create intuitive navigation patterns and user flows
-15. Test edge cases and error conditions
-16. Implement proper form validation where needed
-17. Use localStorage for persistent data when appropriate
-18. Create smooth transitions between application states
-19. Ensure proper contrast for text readability
-20. Design with a mobile-first approach`;
+2. Always return the complete content for each file
+3. Don't include explanations, just the code files
+4. Make sure to include proper links between HTML, CSS, and JS files
+5. Don't include markdown formatting or code blocks, just the raw code
+6. Be creative and implement visual enhancements when appropriate
+7. Follow best practices for HTML, CSS, and JavaScript
+8. Make sure your code is clean, organized, and well-documented
+9. Implement responsive design elements when possible
+10. Consider accessibility in your implementations
+11. Use modern design principles for beautiful interfaces
+12. Create visually appealing color schemes and typography
+13. Utilize smooth animations and transitions when appropriate
+14. Ensure proper spacing and layout for optimal user experience
+15. Implement intuitive navigation and user interaction patterns
+16. Use consistent design language throughout the interface
+17. Add appropriate hover states and interactive elements
+18. Design with a focus on user experience and usability
+19. Consider performance optimizations in your implementations
+20. Maintain semantic HTML structure
+21. When implementing navigation between pages, create the necessary files and update links accordingly
+22. Ensure JavaScript code is properly added and functional
+23. Use modern CSS features like flexbox, grid, and custom properties
+24. Implement proper error handling in JavaScript code
+25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -786,10 +812,10 @@ Full file content here
           updateFileContent(generatedText);
         }
         
-        // Add assistant response with detailed explanation
+        // Add assistant response
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: "I've analyzed your request and implemented the changes. I've created a responsive web application with modern design principles, proper HTML structure, and efficient JavaScript. The code includes CSS animations for smooth transitions and is optimized for both desktop and mobile devices. Check the preview to see the results." 
+          content: "✅ Changes applied! Check the preview to see the results." 
         }]);
         
         if (showApiKeyInput) {
@@ -1224,7 +1250,7 @@ Full file content here
                     </Button>
                   </div>
                   <Input
-                    placeholder="Ask Boongle AI to build anything..."
+                    placeholder="Describe the changes you want to make..."
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
                     disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
@@ -1233,7 +1259,6 @@ Full file content here
                   <Button 
                     type="submit" 
                     disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
-                    className="rounded-full w-10 h-10 p-0 flex items-center justify-center bg-white border shadow-sm hover:bg-gray-50"
                   >
                     {isLoading ? (
                       <div className="flex items-center">
@@ -1243,7 +1268,7 @@ Full file content here
                         </div>
                       </div>
                     ) : (
-                      <ArrowUp className="h-4 w-4 text-black" />
+                      <Send className="h-4 w-4" />
                     )}
                   </Button>
                 </form>
