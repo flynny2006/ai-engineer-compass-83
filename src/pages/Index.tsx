@@ -1072,7 +1072,7 @@ Full file content here
                       <Image className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Input placeholder="Ask Lovable AI to help you build something amazing..." value={userPrompt} onChange={e => setUserPrompt(e.target.value)} disabled={isLoading || totalAvailableCredits <= 0 && !hasUnlimitedCredits} className="flex-1 rounded" />
+                  <Input placeholder="Ask Boongle AI to build anything..." value={userPrompt} onChange={e => setUserPrompt(e.target.value)} disabled={isLoading || totalAvailableCredits <= 0 && !hasUnlimitedCredits} className="flex-1 rounded" />
                   <Button type="submit" variant="circle" disabled={isLoading || totalAvailableCredits <= 0 && !hasUnlimitedCredits} className="transition-transform hover:scale-105 hover:shadow-lg">
                     {isLoading ? <div className="flex items-center justify-center">
                         <div className="w-5 h-5 relative animate-spin rounded-full border-2 border-solid border-gray-300 border-t-transparent"></div>
