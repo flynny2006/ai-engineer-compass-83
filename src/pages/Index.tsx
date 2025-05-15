@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Upload, Image, File, FolderPlus, FilePlus } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database, Plus, Image } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -52,7 +51,8 @@ import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
-import ImageUploader from "@/components/ImageUploader";
+import { Link } from "react-router-dom";
+import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -78,12 +78,16 @@ const DEFAULT_CODE = `<!DOCTYPE html>
     h1 {
       color: #333;
     }
+    p {
+      line-height: 1.5;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Hello World!</h1>
-    <p>This is a simple web page. Try describing changes you'd like to make.</p>
+    <h1>The Preview hasn't been built yet.</h1>
+    <p>Ask our AI Assistant to build something to see the app here! Or Edit the Code yourself.</p>
   </div>
 </body>
 </html>`;
@@ -139,6 +143,10 @@ const Index = () => {
   const [mainPreviewFile, setMainPreviewFile] = useState<string>(() => {
     return localStorage.getItem("main_preview_file") || "index.html";
   });
+  const [imageUpload, setImageUpload] = useState<File | null>(null);
+  const [showImageUpload, setShowImageUpload] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [buildError, setBuildError] = useState<boolean>(false);
   
   // Credits system
   const [dailyCredits, setDailyCredits] = useState<number>(() => {
@@ -168,11 +176,6 @@ const Index = () => {
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [showImageUploader, setShowImageUploader] = useState<boolean>(false);
-  const [showNewFileDialog, setShowNewFileDialog] = useState<boolean>(false);
-  const [newFileName, setNewFileName] = useState<string>("");
-  const [newFileType, setNewFileType] = useState<"html" | "css" | "js" | "json" | "txt">("html");
 
   // Combined credits
   const totalAvailableCredits = dailyCredits + lifetimeCredits;
@@ -199,6 +202,29 @@ const Index = () => {
     );
     setFiles(updatedFiles);
     localStorage.setItem("project_files", JSON.stringify(updatedFiles));
+    
+    // Check for potential code errors
+    checkForCodeErrors(content);
+  };
+  
+  // Check for code errors like triple backticks
+  const checkForCodeErrors = (content: string) => {
+    // Check if content ends with backticks or contains double backticks
+    const endsWithBackticks = content.trim().endsWith('```');
+    const containsDoubleBackticks = content.includes('``````');
+    
+    if (endsWithBackticks || containsDoubleBackticks) {
+      setBuildError(true);
+    } else {
+      setBuildError(false);
+    }
+  };
+  
+  // Fix code errors
+  const handleFixCodeErrors = () => {
+    setUserPrompt("Fix the code syntax. It appears to contain markdown backticks (```) that should be removed.");
+    handleSubmit(new Event('submit') as unknown as React.FormEvent);
+    setBuildError(false);
   };
 
   // Save credits to localStorage
@@ -329,7 +355,11 @@ const Index = () => {
   };
 
   const resetProject = () => {
-    // Modified: Do NOT restore credits when resetting project
+    // Store current credits before reset
+    const currentDailyCredits = dailyCredits;
+    const currentLifetimeCredits = lifetimeCredits;
+    const isUnlimited = hasUnlimitedCredits;
+    
     setFiles(initialFiles);
     setCurrentFile("index.html");
     setMainPreviewFile("index.html");
@@ -340,9 +370,14 @@ const Index = () => {
     localStorage.setItem("main_preview_file", "index.html");
     setEditorView("code");
     
+    // Restore credits after reset
+    setDailyCredits(currentDailyCredits);
+    setLifetimeCredits(currentLifetimeCredits);
+    setHasUnlimitedCredits(isUnlimited);
+    
     toast({
       title: "Project Reset",
-      description: "Your project has been reset to its default state."
+      description: "Your project has been reset to its default state. Credits were preserved."
     });
     
     setLastRefreshTime(Date.now());
@@ -377,96 +412,246 @@ const Index = () => {
       });
     }
   };
-
-  // Handle image upload with the correct property name
-  const handleImageUploaded = (imageData: string) => {
-    setUploadedImage(imageData);
-    setShowImageUploader(false);
-    
-    // Attach image to the next message
-    if (imageData) {
-      toast({
-        title: "Image Uploaded",
-        description: "Your image has been attached to your next message."
-      });
+  
+  // Handle image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setImageUpload(file);
+      setShowImageUpload(true);
     }
   };
-
-  const handleAddNewFile = () => {
-    if (!newFileName.trim()) {
-      toast({
-        title: "Invalid File Name",
-        description: "Please enter a valid file name.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Add proper extension if not provided
-    let fileName = newFileName;
-    if (!fileName.includes('.')) {
-      const extensions = {
-        html: ".html",
-        css: ".css",
-        js: ".js",
-        json: ".json",
-        txt: ".txt"
-      };
-      fileName = fileName + extensions[newFileType];
-    }
-    
-    // Check if file already exists
-    if (files.some(f => f.name === fileName)) {
-      toast({
-        title: "File Already Exists",
-        description: `The file "${fileName}" already exists.`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Create default content based on file type
-    let fileContent = "";
-    switch (newFileType) {
-      case "html":
-        fileContent = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${fileName}</title>\n</head>\n<body>\n  <h1>${fileName}</h1>\n</body>\n</html>`;
-        break;
-      case "css":
-        fileContent = `/* Styles for ${fileName} */\n\nbody {\n  font-family: system-ui, sans-serif;\n}`;
-        break;
-      case "js":
-        fileContent = `// JavaScript for ${fileName}\n\nconsole.log("${fileName} loaded");`;
-        break;
-      case "json":
-        fileContent = `{\n  "name": "${fileName.replace('.json', '')}",\n  "version": "1.0.0"\n}`;
-        break;
-      default:
-        fileContent = `Content for ${fileName}`;
-    }
-    
-    // Add the new file
-    const newFile = {
-      name: fileName,
-      content: fileContent,
-      type: fileName.split('.').pop() || newFileType
-    };
-    
-    setFiles(prev => [...prev, newFile]);
-    setCurrentFile(fileName);
-    setNewFileName("");
-    setShowNewFileDialog(false);
-    setEditorView("code");
-    
-    toast({
-      title: "File Created",
-      description: `Created new file: ${fileName}`
+  
+  // Convert image file to base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
     });
+  };
+  
+  // Confirm image upload
+  const confirmImageUpload = async () => {
+    if (imageUpload) {
+      try {
+        const base64Image = await convertToBase64(imageUpload);
+        
+        // Create a user message with the image
+        const userMessage = { 
+          role: "user", 
+          content: userPrompt || "Please build a website based on this image", 
+          image: base64Image 
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        setUserPrompt("");
+        setIsLoading(true);
+        setShowImageUpload(false);
+        setImageUpload(null);
+        
+        // Deduct credit if not unlimited
+        if (!hasUnlimitedCredits) {
+          if (lifetimeCredits > 0) {
+            setLifetimeCredits(prev => prev - 1);
+          } else {
+            setDailyCredits(prev => prev - 1);
+          }
+        }
+        
+        try {
+          // Create enhanced system prompt
+          const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
+Current project files:
+${files.map(file => `
+--- ${file.name} ---
+${file.content}
+`).join('\n')}
+
+User request: "${userPrompt || "Please build a website based on this image"}"
+User has uploaded an image, which you'll see in your input. Please analyze it and build a website based on it.
+
+Previous conversation:
+${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+Analyze the image and the user's request. Then, respond with the full updated files that incorporates the requested changes.
+
+Follow these rules:
+1. Return all files that need to be modified in this format:
+--- filename.ext ---
+Full file content here
+
+2. Always return the complete content for each file
+3. Don't include explanations, just the code files
+4. Make sure to include proper links between HTML, CSS, and JS files
+5. Don't include markdown formatting or code blocks, just the raw code
+6. Be creative and implement visual enhancements when appropriate
+7. Follow best practices for HTML, CSS, and JavaScript
+8. Make sure your code is clean, organized, and well-documented
+9. Implement responsive design elements when possible
+10. Consider accessibility in your implementations
+11. Create visually appealing color schemes and typography to match the uploaded image
+12. Recreate the design from the uploaded image as closely as possible
+13. Use the same colors, layout, and style as shown in the image
+14. Consider the context and purpose of the image when designing the site
+15. If the image contains text, try to incorporate that text into your design
+16. If the image shows a UI, recreate that UI in your code
+17. Use modern design principles for beautiful interfaces
+18. Utilize smooth animations and transitions when appropriate
+19. Ensure proper spacing and layout for optimal user experience
+20. Implement intuitive navigation and user interaction patterns`;
+
+          const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    { text: systemPrompt },
+                    { inline_data: { mime_type: imageUpload.type, data: base64Image.split(',')[1] } }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                topK: 40
+              }
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          // Process response as in regular submission
+          if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            // Extract the generated code
+            const generatedText = data.candidates[0].content.parts[0].text;
+            
+            // Process the response to extract file contents
+            const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
+            
+            if (fileMatches && fileMatches.length > 0) {
+              const updatedFiles = [...files];
+              const newFiles = [];
+              
+              fileMatches.forEach(match => {
+                const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                  const fileName = fileNameMatch[1].trim();
+                  let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
+                  
+                  // Get file extension
+                  const fileExt = fileName.split('.').pop() || "";
+                  
+                  // Check if file already exists
+                  const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
+                  
+                  if (existingFileIndex >= 0) {
+                    // Update existing file
+                    updatedFiles[existingFileIndex].content = fileContent;
+                  } else {
+                    // Add new file
+                    newFiles.push({
+                      name: fileName,
+                      content: fileContent,
+                      type: fileExt
+                    });
+                  }
+                }
+              });
+              
+              // Add new files to the list
+              const combinedFiles = [...updatedFiles, ...newFiles];
+              setFiles(combinedFiles);
+              
+              // Show toast for new files
+              if (newFiles.length > 0) {
+                toast({
+                  title: `Created ${newFiles.length} new file(s)`,
+                  description: `Added: ${newFiles.map(f => f.name).join(', ')}`
+                });
+              }
+            } else {
+              // If no file structure detected, treat it as changes to the current file
+              updateFileContent(generatedText);
+            }
+            
+            // Add assistant response
+            setMessages(prev => [...prev, { 
+              role: "assistant", 
+              content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results." 
+            }]);
+            
+            if (showApiKeyInput) {
+              saveApiKey();
+            }
+            
+            // Update preview
+            setLastRefreshTime(Date.now());
+          } else {
+            throw new Error("Invalid response format from API");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          setMessages(prev => [...prev, { 
+            role: "assistant", 
+            content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
+          }]);
+        } finally {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Image conversion error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to process the image. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+  
+  // Cancel image upload
+  const cancelImageUpload = () => {
+    setShowImageUpload(false);
+    setImageUpload(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userPrompt.trim() && !uploadedImage) return;
+    if (!userPrompt.trim()) return;
     if (!apiKey && showApiKeyInput) {
       toast({
         title: "API Key Required",
@@ -485,15 +670,9 @@ const Index = () => {
       return;
     }
     
-    const userMessage = { 
-      role: "user", 
-      content: userPrompt,
-      ...(uploadedImage ? { image: uploadedImage } : {})
-    };
-    
+    const userMessage = { role: "user", content: userPrompt };
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
-    setUploadedImage(null);
     setIsLoading(true);
     
     // Deduct credit if not unlimited
@@ -507,7 +686,7 @@ const Index = () => {
     }
 
     try {
-      // Create enhanced system prompt with improved image handling
+      // Create enhanced system prompt
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
@@ -519,8 +698,6 @@ User request: "${userPrompt}"
 
 Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-${uploadedImage ? "IMPORTANT: The user has attached an image to this request. This is a high priority task. You MUST analyze the image in extreme detail and create HTML/CSS/JS code that perfectly replicates the design exactly as shown. Pay close attention to all visual elements including colors, layout, spacing, typography, backgrounds, borders, shadows, and every UI component visible in the image. Ensure the code implementation matches the design at pixel-perfect level." : ""}
 
 Analyze the code and the user's request. Then, respond with the full updated files that incorporates the requested changes.
 
@@ -552,117 +729,27 @@ Full file content here
 22. Ensure JavaScript code is properly added and functional
 23. Use modern CSS features like flexbox, grid, and custom properties
 24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements
-26. Use color theory principles to create harmonious color schemes (complementary, analogous, triadic)
-27. Implement skeuomorphic design elements when appropriate for added realism
-28. Consider microinteractions to enhance user engagement
-29. Use parallax effects and subtle animations for depth
-30. Implement neumorphic design elements for a modern look
-31. Use glassmorphism effects for elegant, translucent interfaces
-32. Incorporate well-designed typography hierarchies with proper sizing and spacing
-33. Create visually balanced layouts using the rule of thirds
-34. Ensure contrast ratios meet WCAG accessibility standards
-35. Use whitespace effectively to create visual hierarchy and improve readability
-36. Implement dark mode considerations in all designs
-37. Use CSS variables for themeable components
-38. Create responsive layouts that work across all device sizes
-39. Implement proper loading states and transitions
-40. Use subtle hover animations to indicate interactivity
-41. Create cohesive UI component systems with consistent styling
-42. Use proper heading structures for semantic HTML
-43. Implement proper meta tags for SEO optimization
-44. Use image optimization techniques for better performance
-45. Create beautiful, custom form elements that maintain accessibility
-46. Use clean, scalable SVG icons where appropriate
-47. Implement proper focus states for keyboard navigation
-48. Use progressive enhancement principles in your implementations
-49. Consider the psychological impact of color choices in your designs
-50. Implement custom scrollbar styling that matches the design theme
-51. Maintain proper content hierarchy for better user understanding
-52. Use typography to establish a strong visual identity
-53. Create custom cursor effects for enhanced interactivity
-54. Implement data visualization with clean, minimal designs
-55. Use grid systems for consistent spacing and alignment
-56. Incorporate loading skeleton screens instead of spinners when possible
-57. Use proper transitions between interactive states
-58. Consider cultural color associations in your design choices
-59. Implement motion designs that respect users' motion preferences
-60. Use proper column widths and line lengths for optimal readability
-61. Create tactile and satisfying feedback for interactive elements
-62. Consider mobile-first design principles for responsive interfaces
-63. Use conditional loading techniques to improve performance on mobile
-64. Implement responsive touch targets for mobile users (minimum 44x44px)
-65. Optimize typography for readability on small screens
-66. Consider thumb reachability zones on mobile interfaces
-67. Use bottom navigation patterns for mobile interfaces
-68. Implement swipe gestures for natural mobile interaction
-69. Consider device-specific features like haptic feedback
-70. Adapt form inputs for optimal mobile experience
-71. Use viewport units for responsive sizing
-72. Consider landscape and portrait orientations
-73. Implement appropriate keyboard behavior on mobile
-74. Consider offline usage patterns for mobile users
-75. Optimize image loading and scaling for mobile devices
-76. Implement responsive spacing systems that adapt to screen sizes
-77. Consider reduced motion preferences for animations
-78. Use appropriate color contrasts for outdoor visibility
-79. Implement proper touch feedback states for mobile elements
-80. Consider mobile-specific UI patterns for complex interactions
+25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
 
-SPECIFIC IMAGE CLONING INSTRUCTIONS:
-81. When an image is attached, treat it as a HIGH-FIDELITY DESIGN SPEC that must be followed exactly
-82. Extract and use the EXACT color values from images using color eyedropper techniques
-83. Match typography precisely - font sizes, weights, line heights, and font families
-84. Replicate layouts pixel-perfectly with exact spacing between elements
-85. Recreate any gradients, shadows, or lighting effects visible in the image
-86. Implement identical button styles, form elements, and interactive components
-87. Use the same border-radius values on elements as shown in the image
-88. Match any background patterns or textures visible in the design
-89. Implement identical navigation structures and menu layouts
-90. Recreate card designs, grid layouts, and list structures exactly
-91. Use CSS Grid or Flexbox to achieve layouts identical to the image
-92. Implement the same iconography style or use matching icons
-93. Recreate any decorative elements, illustrations, or graphics
-94. Implement the same footer design and information architecture
-95. Use CSS custom properties to maintain consistent colors throughout the implementation
-96. Match any visible animations or transitions in the design
-97. Implement the exact same mobile layout if a mobile design is shown
-98. Pay special attention to active, hover, and focus states visible in the design
-99. Use responsive design techniques to ensure the design scales appropriately
-100. If a complete design system is apparent in the image, implement it consistently`;
-
-      // Fix the inline_data format to be compatible with TypeScript
-      let requestBody: any = {
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.8,
-          topK: 40
-        }
-      };
-      
-      // Add image to the request if present
-      if (uploadedImage) {
-        requestBody.contents[0].parts.push({ 
-          inline_data: {
-            mime_type: "image/jpeg",
-            data: uploadedImage.split(",")[1] // Remove the data:image/jpeg;base64, part
-          }
-        });
-      }
-
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: systemPrompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            topP: 0.8,
+            topK: 40
+          }
+        })
       });
 
       if (!response.ok) {
@@ -760,7 +847,7 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
 
   return (
     <div className={`flex flex-col h-screen bg-background ${theme}`}>
-      {/* Header Section */}
+      {/* Header */}
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
@@ -768,6 +855,12 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
           {isMobile && <h1 className="text-lg font-semibold">Boongle AI</h1>}
         </div>
         <div className="flex gap-2 items-center">
+          <Link to="/supabase">
+            <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "h-9 w-9 p-0" : ""}>
+              <Database className="h-4 w-4" />
+              {!isMobile && <span className="ml-1">Supabase</span>}
+            </Button>
+          </Link>
           <Navigation />
           <div className="flex gap-1 md:gap-2 items-center">
             <div className={cn("flex items-center gap-1 md:gap-2", isMobile ? "mr-1" : "mr-4")}>
@@ -805,7 +898,7 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reset Project</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Your credits will NOT be affected.
+                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -898,351 +991,292 @@ SPECIFIC IMAGE CLONING INSTRUCTIONS:
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Image Uploader Dialog */}
-      <Dialog open={showImageUploader} onOpenChange={setShowImageUploader}>
-        <DialogContent className={cn(
-          "sm:max-w-md",
-          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
-        )}>
+      
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Upload Image</DialogTitle>
+            <DialogTitle>Image Upload</DialogTitle>
             <DialogDescription>
-              Upload an image for the AI to analyze and clone
+              Upload an image to generate a website design
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <ImageUploader onImageUploaded={handleImageUploaded} />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* New File Dialog */}
-      <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
-        <DialogContent className={cn(
-          "sm:max-w-md",
-          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
-        )}>
-          <DialogHeader>
-            <DialogTitle>Create New File</DialogTitle>
-            <DialogDescription>
-              Add a new file to your project
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">File Name</label>
-              <Input 
-                placeholder="Enter file name..." 
-                value={newFileName} 
-                onChange={(e) => setNewFileName(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">File Type</label>
-              <div className="flex gap-2">
-                <Button 
-                  variant={newFileType === "html" ? "default" : "outline"} 
-                  size="sm" 
-                  onClick={() => setNewFileType("html")}
-                >
-                  HTML
-                </Button>
-                <Button 
-                  variant={newFileType === "css" ? "default" : "outline"} 
-                  size="sm" 
-                  onClick={() => setNewFileType("css")}
-                >
-                  CSS
-                </Button>
-                <Button 
-                  variant={newFileType === "js" ? "default" : "outline"} 
-                  size="sm" 
-                  onClick={() => setNewFileType("js")}
-                >
-                  JS
-                </Button>
-                <Button 
-                  variant={newFileType === "json" ? "default" : "outline"} 
-                  size="sm" 
-                  onClick={() => setNewFileType("json")}
-                >
-                  JSON
-                </Button>
-                <Button 
-                  variant={newFileType === "txt" ? "default" : "outline"} 
-                  size="sm" 
-                  onClick={() => setNewFileType("txt")}
-                >
-                  TXT
-                </Button>
+            {imageUpload && (
+              <div className="border rounded-md p-2 flex justify-center">
+                <img 
+                  src={URL.createObjectURL(imageUpload)} 
+                  alt="Uploaded" 
+                  className="max-h-[300px] object-contain"
+                />
               </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Add a description (optional)</label>
+              <Input 
+                placeholder="Describe what you want to build..." 
+                value={userPrompt} 
+                onChange={(e) => setUserPrompt(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewFileDialog(false)}>
+            <Button variant="outline" onClick={cancelImageUpload}>
               Cancel
             </Button>
-            <Button onClick={handleAddNewFile}>
-              Create
+            <Button onClick={confirmImageUpload}>
+              Generate Website
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left panel: Chat */}
-        <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col border-r">
-          <div
-            ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-4 space-y-4"
-          >
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "flex flex-col rounded-lg p-4",
-                  message.role === "assistant"
-                    ? "bg-muted border border-border"
-                    : "bg-primary text-primary-foreground"
-                )}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center text-xs",
-                      message.role === "assistant"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-background text-foreground"
-                    )}
-                  >
-                    {message.role === "assistant" ? "AI" : "U"}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {message.role === "assistant" ? "Assistant" : "You"}
-                  </span>
-                </div>
-                <div className="whitespace-pre-wrap text-sm">
-                  {message.content}
-                </div>
-                {message.image && (
-                  <div className="mt-2 rounded overflow-hidden">
-                    <img
-                      src={message.image}
-                      alt="Attached image"
-                      className="max-w-full h-auto max-h-[200px] object-contain"
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="p-4 border-t">
-            {showApiKeyInput && (
-              <div className="mb-4">
-                <div className="mb-2">
-                  <label className="text-sm font-medium">
-                    Enter your Gemini API Key
-                  </label>
-                  <div className="text-xs text-muted-foreground mb-2">
-                    Get your API key at{" "}
-                    <a
-                      href="https://aistudio.google.com/app/apikey"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      aistudio.google.com
-                    </a>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="API Key..."
-                    className="flex-1"
-                  />
-                  <Button onClick={saveApiKey}>Save</Button>
-                </div>
-              </div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-2">
+      <ResizablePanelGroup direction="horizontal" className="flex-1">
+        {/* Left Panel - Code Editor */}
+        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
+          <div className="border-r h-full flex flex-col">
+            <div className="p-2 bg-muted flex items-center justify-between">
+              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
+                <TabsList className={cn("grid w-60 grid-cols-2", isMobile && "w-full")}>
+                  <TabsTrigger value="code">Editor</TabsTrigger>
+                  <TabsTrigger value="files">File Explorer</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
               <div className="flex items-center gap-2">
-                {uploadedImage && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md w-full">
-                    <img
-                      src={uploadedImage}
-                      alt="Uploaded"
-                      className="w-10 h-10 object-cover rounded"
-                    />
-                    <div className="flex-1 text-sm truncate">Image attached</div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setUploadedImage(null)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
+                {editorView === "code" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {files.map((file) => (
+                        <DropdownMenuItem 
+                          key={file.name}
+                          onClick={() => setCurrentFile(file.name)}
+                          className={cn(
+                            "cursor-pointer",
+                            currentFile === file.name && "bg-accent"
+                          )}
+                        >
+                          {file.name}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={userPrompt}
-                  onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="Describe changes you want to make..."
-                  className="flex-1"
-                  disabled={isLoading}
+                
+                <PreviewSettings
+                  files={files}
+                  mainFile={mainPreviewFile}
+                  setMainFile={setMainPreviewFile}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowImageUploader(true)}
-                  disabled={isLoading}
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-                <Button type="submit" disabled={isLoading || (!userPrompt.trim() && !uploadedImage)}>
-                  {isLoading ? (
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
               </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <Button
-                    type="button"
+            </div>
+            
+            <div className="flex-1 h-full">
+              <Tabs value={editorView} className="h-full">
+                <TabsContent value="code" className="h-full mt-0">
+                  <CodeEditor
+                    value={getCurrentFileContent()}
+                    onChange={updateFileContent}
+                    language={getCurrentFileLanguage()}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  <FileExplorerEnhanced 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        {isFullscreen ? null : <ResizableHandle withHandle />}
+
+        {/* Right Panel - Chat and Preview */}
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
+          <ResizablePanelGroup direction="vertical">
+            {/* Preview Section */}
+            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
                     variant="ghost"
-                    size="sm"
-                    onClick={clearChatHistory}
-                    className="text-xs"
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
                   >
-                    Clear History
+                    <Maximize className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {isLoading
-                    ? "Thinking..."
-                    : hasUnlimitedCredits
-                    ? "Unlimited Credits"
-                    : `Credits: ${totalAvailableCredits}`}
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* Right panel: Editor and Preview */}
-        <div className="hidden md:block md:w-1/2 lg:w-3/5">
-          <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <div className="h-full flex flex-col">
-                <div className="border-b p-2 flex justify-between items-center">
-                  <Tabs 
-                    value={editorView} 
-                    onValueChange={(v) => setEditorView(v as "code" | "files")}
-                    className="w-full"
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <TabsList>
-                        <TabsTrigger value="code">Editor</TabsTrigger>
-                        <TabsTrigger value="files">Files</TabsTrigger>
-                      </TabsList>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowNewFileDialog(true)}
-                        >
-                          <FilePlus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={toggleFullscreen}
-                        >
-                          <Maximize className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Tabs>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <TabsContent
-                    value="code"
-                    className="h-full mt-0 overflow-hidden"
-                  >
-                    <div className="h-full">
-                      <CodeEditor
-                        value={getCurrentFileContent()}
-                        language={getCurrentFileLanguage()}
-                        onChange={updateFileContent}
-                      />
-                    </div>
-                  </TabsContent>
-                  <TabsContent
-                    value="files"
-                    className="h-full mt-0 p-2 overflow-y-auto"
-                  >
-                    <FileExplorer
-                      files={files}
-                      currentFile={currentFile}
-                      onSelectFile={setCurrentFile}
-                      onCreateFile={() => setShowNewFileDialog(true)}
-                    />
-                  </TabsContent>
+                <div className="flex-1 bg-white">
+                  <iframe 
+                    ref={previewIframeRef}
+                    title="Preview"
+                    className="w-full h-full"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
                 </div>
               </div>
             </ResizablePanel>
-            <ResizableHandle />
+
+            <ResizableHandle withHandle />
+
+            {/* Chat Section */}
             <ResizablePanel defaultSize={50} minSize={20}>
               <div className="h-full flex flex-col">
-                <div className="border-b p-2 flex justify-between items-center">
+                <div className="p-2 bg-muted flex items-center justify-between">
                   <div className="flex items-center">
-                    <span className="text-sm font-medium mx-2">Preview</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          {mainPreviewFile} <ChevronDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {files
-                          .filter((f) => f.name.endsWith(".html"))
-                          .map((file) => (
-                            <DropdownMenuItem
-                              key={file.name}
-                              onClick={() => setMainPreviewFile(file.name)}
-                            >
-                              {file.name}
-                            </DropdownMenuItem>
-                          ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Chat</span>
                   </div>
-                  <PreviewSettings />
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={clearChatHistory}
+                    title="Clear chat history"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex-1 overflow-hidden">
-                  <iframe
-                    ref={previewIframeRef}
-                    title="Preview"
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts"
+
+                {/* API Key Input */}
+                {showApiKeyInput && (
+                  <div className="border-b p-3">
+                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="AIza..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={saveApiKey}
+                      >
+                        <Save className="h-4 w-4 mr-2" /> Save
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your API key is stored locally and never sent to our servers.
+                    </p>
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                  <div className="space-y-4">
+                    {messages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div 
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          {msg.image && (
+                            <div className="mb-3">
+                              <img 
+                                src={msg.image} 
+                                alt="User uploaded" 
+                                className="max-w-full rounded-md max-h-[200px]" 
+                              />
+                            </div>
+                          )}
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
+                
+                {/* Build Error Message */}
+                {buildError && (
+                  <div className="border-t p-3 bg-destructive/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-destructive">Build Unsuccessful</span>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={handleFixCodeErrors}
+                      >
+                        Fix
+                      </Button>
+                    </div>
+                    <p className="text-sm mt-1 text-muted-foreground">
+                      The code contains syntax errors. There might be markdown backticks (```) in the code.
+                    </p>
+                  </div>
+                )}
+
+                {/* Input Area */}
+                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                  <div className="flex items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      ref={fileInputRef}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                      title="Upload image"
+                    >
+                      <Image className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="Describe the changes you want to make..."
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                    className="flex-1"
                   />
-                </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 relative">
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </form>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };

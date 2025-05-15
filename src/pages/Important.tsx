@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -84,8 +84,8 @@ const ImportantPage = () => {
         <CardContent>
           <p className="mb-4">Want to Advertise your OWN Webpage here? Contact us on Discord, to get much users on your own Webpage!</p>
           <Button className="w-full">
-            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" className="w-full h-full flex items-center justify-center">
-              Join Our Discord
+            <a href="https://discord.gg/hrq9cjXr27" target="_blank" rel="noopener noreferrer" className="w-full h-full flex items-center justify-center">
+              <ExternalLink className="h-4 w-4 mr-2" /> Join Our Discord
             </a>
           </Button>
         </CardContent>
