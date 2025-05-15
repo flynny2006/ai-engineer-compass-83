@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Upload, Image, File, FolderPlus, FilePlus } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -52,6 +52,7 @@ import CodeEditor from "@/components/CodeEditor";
 import PreviewSettings from "@/components/PreviewSettings";
 import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
+import ImageUploader from "@/components/ImageUploader";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -120,7 +121,7 @@ const Index = () => {
     return lastFile || "index.html";
   });
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Array<{role: string, content: string}>>(() => {
+  const [messages, setMessages] = useState<Array<{role: string, content: string, image?: string}>>(() => {
     const savedMessages = localStorage.getItem("chat_history");
     return savedMessages ? JSON.parse(savedMessages) : initialMessages;
   });
@@ -167,6 +168,11 @@ const Index = () => {
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [showImageUploader, setShowImageUploader] = useState<boolean>(false);
+  const [showNewFileDialog, setShowNewFileDialog] = useState<boolean>(false);
+  const [newFileName, setNewFileName] = useState<string>("");
+  const [newFileType, setNewFileType] = useState<"html" | "css" | "js" | "json" | "txt">("html");
 
   // Combined credits
   const totalAvailableCredits = dailyCredits + lifetimeCredits;
@@ -323,11 +329,7 @@ const Index = () => {
   };
 
   const resetProject = () => {
-    // Store current credits before reset
-    const currentDailyCredits = dailyCredits;
-    const currentLifetimeCredits = lifetimeCredits;
-    const isUnlimited = hasUnlimitedCredits;
-    
+    // Modified: Do NOT restore credits when resetting project
     setFiles(initialFiles);
     setCurrentFile("index.html");
     setMainPreviewFile("index.html");
@@ -338,14 +340,9 @@ const Index = () => {
     localStorage.setItem("main_preview_file", "index.html");
     setEditorView("code");
     
-    // Restore credits after reset
-    setDailyCredits(currentDailyCredits);
-    setLifetimeCredits(currentLifetimeCredits);
-    setHasUnlimitedCredits(isUnlimited);
-    
     toast({
       title: "Project Reset",
-      description: "Your project has been reset to its default state. Credits were preserved."
+      description: "Your project has been reset to its default state."
     });
     
     setLastRefreshTime(Date.now());
@@ -381,10 +378,95 @@ const Index = () => {
     }
   };
 
+  // Handle image upload with the correct property name
+  const handleImageUploaded = (imageData: string) => {
+    setUploadedImage(imageData);
+    setShowImageUploader(false);
+    
+    // Attach image to the next message
+    if (imageData) {
+      toast({
+        title: "Image Uploaded",
+        description: "Your image has been attached to your next message."
+      });
+    }
+  };
+
+  const handleAddNewFile = () => {
+    if (!newFileName.trim()) {
+      toast({
+        title: "Invalid File Name",
+        description: "Please enter a valid file name.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Add proper extension if not provided
+    let fileName = newFileName;
+    if (!fileName.includes('.')) {
+      const extensions = {
+        html: ".html",
+        css: ".css",
+        js: ".js",
+        json: ".json",
+        txt: ".txt"
+      };
+      fileName = fileName + extensions[newFileType];
+    }
+    
+    // Check if file already exists
+    if (files.some(f => f.name === fileName)) {
+      toast({
+        title: "File Already Exists",
+        description: `The file "${fileName}" already exists.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create default content based on file type
+    let fileContent = "";
+    switch (newFileType) {
+      case "html":
+        fileContent = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${fileName}</title>\n</head>\n<body>\n  <h1>${fileName}</h1>\n</body>\n</html>`;
+        break;
+      case "css":
+        fileContent = `/* Styles for ${fileName} */\n\nbody {\n  font-family: system-ui, sans-serif;\n}`;
+        break;
+      case "js":
+        fileContent = `// JavaScript for ${fileName}\n\nconsole.log("${fileName} loaded");`;
+        break;
+      case "json":
+        fileContent = `{\n  "name": "${fileName.replace('.json', '')}",\n  "version": "1.0.0"\n}`;
+        break;
+      default:
+        fileContent = `Content for ${fileName}`;
+    }
+    
+    // Add the new file
+    const newFile = {
+      name: fileName,
+      content: fileContent,
+      type: fileName.split('.').pop() || newFileType
+    };
+    
+    setFiles(prev => [...prev, newFile]);
+    setCurrentFile(fileName);
+    setNewFileName("");
+    setShowNewFileDialog(false);
+    setEditorView("code");
+    
+    toast({
+      title: "File Created",
+      description: `Created new file: ${fileName}`
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userPrompt.trim()) return;
+    if (!userPrompt.trim() && !uploadedImage) return;
     if (!apiKey && showApiKeyInput) {
       toast({
         title: "API Key Required",
@@ -403,9 +485,15 @@ const Index = () => {
       return;
     }
     
-    const userMessage = { role: "user", content: userPrompt };
+    const userMessage = { 
+      role: "user", 
+      content: userPrompt,
+      ...(uploadedImage ? { image: uploadedImage } : {})
+    };
+    
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
+    setUploadedImage(null);
     setIsLoading(true);
     
     // Deduct credit if not unlimited
@@ -419,7 +507,7 @@ const Index = () => {
     }
 
     try {
-      // Create enhanced system prompt
+      // Create enhanced system prompt with improved image handling
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
@@ -431,6 +519,8 @@ User request: "${userPrompt}"
 
 Previous conversation:
 ${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+${uploadedImage ? "IMPORTANT: The user has attached an image to this request. This is a high priority task. You MUST analyze the image in extreme detail and create HTML/CSS/JS code that perfectly replicates the design exactly as shown. Pay close attention to all visual elements including colors, layout, spacing, typography, backgrounds, borders, shadows, and every UI component visible in the image. Ensure the code implementation matches the design at pixel-perfect level." : ""}
 
 Analyze the code and the user's request. Then, respond with the full updated files that incorporates the requested changes.
 
@@ -517,27 +607,62 @@ Full file content here
 77. Consider reduced motion preferences for animations
 78. Use appropriate color contrasts for outdoor visibility
 79. Implement proper touch feedback states for mobile elements
-80. Consider mobile-specific UI patterns for complex interactions`;
+80. Consider mobile-specific UI patterns for complex interactions
 
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+SPECIFIC IMAGE CLONING INSTRUCTIONS:
+81. When an image is attached, treat it as a HIGH-FIDELITY DESIGN SPEC that must be followed exactly
+82. Extract and use the EXACT color values from images using color eyedropper techniques
+83. Match typography precisely - font sizes, weights, line heights, and font families
+84. Replicate layouts pixel-perfectly with exact spacing between elements
+85. Recreate any gradients, shadows, or lighting effects visible in the image
+86. Implement identical button styles, form elements, and interactive components
+87. Use the same border-radius values on elements as shown in the image
+88. Match any background patterns or textures visible in the design
+89. Implement identical navigation structures and menu layouts
+90. Recreate card designs, grid layouts, and list structures exactly
+91. Use CSS Grid or Flexbox to achieve layouts identical to the image
+92. Implement the same iconography style or use matching icons
+93. Recreate any decorative elements, illustrations, or graphics
+94. Implement the same footer design and information architecture
+95. Use CSS custom properties to maintain consistent colors throughout the implementation
+96. Match any visible animations or transitions in the design
+97. Implement the exact same mobile layout if a mobile design is shown
+98. Pay special attention to active, hover, and focus states visible in the design
+99. Use responsive design techniques to ensure the design scales appropriately
+100. If a complete design system is apparent in the image, implement it consistently`;
+
+      // Fix the inline_data format to be compatible with TypeScript
+      let requestBody: any = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: systemPrompt }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+          topK: 40
+        }
+      };
+      
+      // Add image to the request if present
+      if (uploadedImage) {
+        requestBody.contents[0].parts.push({ 
+          inline_data: {
+            mime_type: "image/jpeg",
+            data: uploadedImage.split(",")[1] // Remove the data:image/jpeg;base64, part
+          }
+        });
+      }
+
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: systemPrompt }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            topP: 0.8,
-            topK: 40
-          }
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -635,7 +760,7 @@ Full file content here
 
   return (
     <div className={`flex flex-col h-screen bg-background ${theme}`}>
-      {/* Header */}
+      {/* Header Section */}
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Code className="h-6 w-6" />
@@ -680,7 +805,7 @@ Full file content here
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reset Project</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Are you sure you want to continue?
+                    This will reset your project to its default state. All your code changes, file explorer, and chat history will be lost. Your credits will NOT be affected.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -774,205 +899,350 @@ Full file content here
         </DialogContent>
       </Dialog>
 
-      {/* Main Content */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Left Panel - Code Editor */}
-        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
-          <div className="border-r h-full flex flex-col">
-            <div className="p-2 bg-muted flex items-center justify-between">
-              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
-                <TabsList className={cn("grid w-60 grid-cols-2", isMobile && "w-full")}>
-                  <TabsTrigger value="code">Editor</TabsTrigger>
-                  <TabsTrigger value="files">File Explorer</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              <div className="flex items-center gap-2">
-                {editorView === "code" && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        {currentFile} <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {files.map((file) => (
-                        <DropdownMenuItem 
-                          key={file.name}
-                          onClick={() => setCurrentFile(file.name)}
-                          className={cn(
-                            "cursor-pointer",
-                            currentFile === file.name && "bg-accent"
-                          )}
-                        >
-                          {file.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                
-                <PreviewSettings
-                  files={files}
-                  mainFile={mainPreviewFile}
-                  setMainFile={setMainPreviewFile}
-                />
+      {/* Image Uploader Dialog */}
+      <Dialog open={showImageUploader} onOpenChange={setShowImageUploader}>
+        <DialogContent className={cn(
+          "sm:max-w-md",
+          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
+        )}>
+          <DialogHeader>
+            <DialogTitle>Upload Image</DialogTitle>
+            <DialogDescription>
+              Upload an image for the AI to analyze and clone
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <ImageUploader onImageUploaded={handleImageUploaded} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New File Dialog */}
+      <Dialog open={showNewFileDialog} onOpenChange={setShowNewFileDialog}>
+        <DialogContent className={cn(
+          "sm:max-w-md",
+          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
+        )}>
+          <DialogHeader>
+            <DialogTitle>Create New File</DialogTitle>
+            <DialogDescription>
+              Add a new file to your project
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">File Name</label>
+              <Input 
+                placeholder="Enter file name..." 
+                value={newFileName} 
+                onChange={(e) => setNewFileName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">File Type</label>
+              <div className="flex gap-2">
+                <Button 
+                  variant={newFileType === "html" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setNewFileType("html")}
+                >
+                  HTML
+                </Button>
+                <Button 
+                  variant={newFileType === "css" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setNewFileType("css")}
+                >
+                  CSS
+                </Button>
+                <Button 
+                  variant={newFileType === "js" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setNewFileType("js")}
+                >
+                  JS
+                </Button>
+                <Button 
+                  variant={newFileType === "json" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setNewFileType("json")}
+                >
+                  JSON
+                </Button>
+                <Button 
+                  variant={newFileType === "txt" ? "default" : "outline"} 
+                  size="sm" 
+                  onClick={() => setNewFileType("txt")}
+                >
+                  TXT
+                </Button>
               </div>
             </div>
-            
-            <div className="flex-1 h-full">
-              <Tabs value={editorView} className="h-full">
-                <TabsContent value="code" className="h-full mt-0">
-                  <CodeEditor
-                    value={getCurrentFileContent()}
-                    onChange={updateFileContent}
-                    language={getCurrentFileLanguage()}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
-                  <FileExplorer 
-                    files={files} 
-                    setFiles={setFiles} 
-                    currentFile={currentFile} 
-                    setCurrentFile={setCurrentFile} 
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>
           </div>
-        </ResizablePanel>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewFileDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddNewFile}>
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {isFullscreen ? null : <ResizableHandle withHandle />}
-
-        {/* Right Panel - Chat and Preview */}
-        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
-          <ResizablePanelGroup direction="vertical">
-            {/* Preview Section */}
-            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
-              <div className="h-full flex flex-col">
-                <div className="p-2 bg-muted flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Eye className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={toggleFullscreen}
-                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left panel: Chat */}
+        <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col border-r">
+          <div
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+          >
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "flex flex-col rounded-lg p-4",
+                  message.role === "assistant"
+                    ? "bg-muted border border-border"
+                    : "bg-primary text-primary-foreground"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-xs",
+                      message.role === "assistant"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-foreground"
+                    )}
                   >
-                    <Maximize className="h-4 w-4" />
+                    {message.role === "assistant" ? "AI" : "U"}
+                  </div>
+                  <span className="text-sm font-medium">
+                    {message.role === "assistant" ? "Assistant" : "You"}
+                  </span>
+                </div>
+                <div className="whitespace-pre-wrap text-sm">
+                  {message.content}
+                </div>
+                {message.image && (
+                  <div className="mt-2 rounded overflow-hidden">
+                    <img
+                      src={message.image}
+                      alt="Attached image"
+                      className="max-w-full h-auto max-h-[200px] object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="p-4 border-t">
+            {showApiKeyInput && (
+              <div className="mb-4">
+                <div className="mb-2">
+                  <label className="text-sm font-medium">
+                    Enter your Gemini API Key
+                  </label>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Get your API key at{" "}
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      aistudio.google.com
+                    </a>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="API Key..."
+                    className="flex-1"
+                  />
+                  <Button onClick={saveApiKey}>Save</Button>
+                </div>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-2">
+              <div className="flex items-center gap-2">
+                {uploadedImage && (
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md w-full">
+                    <img
+                      src={uploadedImage}
+                      alt="Uploaded"
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                    <div className="flex-1 text-sm truncate">Image attached</div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setUploadedImage(null)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  placeholder="Describe changes you want to make..."
+                  className="flex-1"
+                  disabled={isLoading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowImageUploader(true)}
+                  disabled={isLoading}
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+                <Button type="submit" disabled={isLoading || (!userPrompt.trim() && !uploadedImage)}>
+                  {isLoading ? (
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearChatHistory}
+                    className="text-xs"
+                  >
+                    Clear History
                   </Button>
                 </div>
-                <div className="flex-1 bg-white">
-                  <iframe 
-                    ref={previewIframeRef}
-                    title="Preview"
-                    className="w-full h-full"
-                    sandbox="allow-scripts allow-same-origin"
-                  />
+                <div className="text-xs text-muted-foreground">
+                  {isLoading
+                    ? "Thinking..."
+                    : hasUnlimitedCredits
+                    ? "Unlimited Credits"
+                    : `Credits: ${totalAvailableCredits}`}
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Right panel: Editor and Preview */}
+        <div className="hidden md:block md:w-1/2 lg:w-3/5">
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel defaultSize={50} minSize={20}>
+              <div className="h-full flex flex-col">
+                <div className="border-b p-2 flex justify-between items-center">
+                  <Tabs 
+                    value={editorView} 
+                    onValueChange={(v) => setEditorView(v as "code" | "files")}
+                    className="w-full"
+                  >
+                    <div className="flex justify-between items-center w-full">
+                      <TabsList>
+                        <TabsTrigger value="code">Editor</TabsTrigger>
+                        <TabsTrigger value="files">Files</TabsTrigger>
+                      </TabsList>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowNewFileDialog(true)}
+                        >
+                          <FilePlus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={toggleFullscreen}
+                        >
+                          <Maximize className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Tabs>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <TabsContent
+                    value="code"
+                    className="h-full mt-0 overflow-hidden"
+                  >
+                    <div className="h-full">
+                      <CodeEditor
+                        value={getCurrentFileContent()}
+                        language={getCurrentFileLanguage()}
+                        onChange={updateFileContent}
+                      />
+                    </div>
+                  </TabsContent>
+                  <TabsContent
+                    value="files"
+                    className="h-full mt-0 p-2 overflow-y-auto"
+                  >
+                    <FileExplorer
+                      files={files}
+                      currentFile={currentFile}
+                      onSelectFile={setCurrentFile}
+                      onCreateFile={() => setShowNewFileDialog(true)}
+                    />
+                  </TabsContent>
                 </div>
               </div>
             </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Chat Section */}
+            <ResizableHandle />
             <ResizablePanel defaultSize={50} minSize={20}>
               <div className="h-full flex flex-col">
-                <div className="p-2 bg-muted flex items-center justify-between">
+                <div className="border-b p-2 flex justify-between items-center">
                   <div className="flex items-center">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    <span className="text-sm font-medium">Chat</span>
+                    <span className="text-sm font-medium mx-2">Preview</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          {mainPreviewFile} <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        {files
+                          .filter((f) => f.name.endsWith(".html"))
+                          .map((file) => (
+                            <DropdownMenuItem
+                              key={file.name}
+                              onClick={() => setMainPreviewFile(file.name)}
+                            >
+                              {file.name}
+                            </DropdownMenuItem>
+                          ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={clearChatHistory}
-                    title="Clear chat history"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                  <PreviewSettings />
                 </div>
-
-                {/* API Key Input */}
-                {showApiKeyInput && (
-                  <div className="border-b p-3">
-                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="password"
-                        placeholder="AIza..."
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                      />
-                      <Button 
-                        size="sm" 
-                        onClick={saveApiKey}
-                      >
-                        <Save className="h-4 w-4 mr-2" /> Save
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Your API key is stored locally and never sent to our servers.
-                    </p>
-                  </div>
-                )}
-
-                {/* Messages */}
-                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
-                  <div className="space-y-4">
-                    {messages.map((msg, i) => (
-                      <div 
-                        key={i} 
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                      >
-                        <div 
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            msg.role === "user" 
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted"
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </div>
-
-                {/* Input Area */}
-                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
-                  <Input
-                    placeholder="Describe the changes you want to make..."
-                    value={userPrompt}
-                    onChange={(e) => setUserPrompt(e.target.value)}
-                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
-                    className="flex-1"
+                <div className="flex-1 overflow-hidden">
+                  <iframe
+                    ref={previewIframeRef}
+                    title="Preview"
+                    className="w-full h-full border-0"
+                    sandbox="allow-scripts"
                   />
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center">
-                        <div className="w-5 h-5 relative">
-                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
-                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </form>
+                </div>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        </div>
+      </div>
     </div>
   );
 };
