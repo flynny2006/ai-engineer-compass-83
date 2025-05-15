@@ -694,7 +694,68 @@ Full file content here
 22. Ensure JavaScript code is properly added and functional
 23. Use modern CSS features like flexbox, grid, and custom properties
 24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
+25. Create stunning visual designs with gradients, shadows, and modern UI elements
+
+# MASSIVE DESIGN CAPABILITIES
+
+## Advanced Visual Systems
+- Implement intricate visual hierarchy with 3+ levels of information architecture
+- Create complex gradient systems with multiple color stops and directional flows
+- Use depth layering with 5+ distinct z-index levels for dimensional richness
+- Design with optical illusions and visual tricks for engaging experiences
+- Apply advanced color harmony rules including split-complementary and tetradic schemes
+- Craft custom shape systems with geometric and organic forms
+- Design immersive full-page backgrounds with parallax and movement
+- Implement background noise textures and subtle patterns for tactile feel
+
+## Cutting-Edge UI Components
+- Create advanced morphing UI elements that transform based on context
+- Design data-driven components with dynamic visual representations
+- Implement 3D-inspired UI elements with realistic lighting and shadows
+- Create image-rich carousels with multi-directional navigation and zoom
+- Design interactive timeline components with storytelling capabilities
+- Create nested navigation systems with intelligent hierarchies
+- Design state-preserving form components with elegant validation
+- Implement context-aware tooltips with rich content and interactions
+- Create customizable dashboard components with drag-and-drop capabilities
+- Design data tables with advanced filtering, sorting, and visualization options
+
+## Layout Mastery
+- Create adaptive layouts that morph based on content and context
+- Design with asymmetrical balance for visual tension and interest
+- Implement content-aware spacing that adjusts to varying content density
+- Create interlocking grid systems with overlapping elements
+- Design with golden spiral principles for organic composition
+- Implement visual rhythm with repeating elements and patterns
+- Create modular component systems that fit together like puzzles
+- Design with intentional visual breaks to guide attention
+- Implement mixed-hierarchy layouts for complex information architecture
+- Create magazine-style layouts with irregular grids and dynamic typography
+
+## Motion Excellence
+- Design physics-based animations that respond to user input
+- Create seamless scene transitions with coordinated element movements
+- Implement path-based animations for natural, flowing motion
+- Design sequential animations with carefully timed sequences
+- Create attention-guiding motion that leads the eye through content
+- Implement scroll-driven animations tied to page position
+- Design micro-interactions with personality and character
+- Create mouse-following elements with smooth, natural movement
+- Implement state transitions with meaningful motion patterns
+- Design loading states with engaging, informative animations
+
+## Visual Code Techniques
+- Use creative clipping paths for unconventional layout shapes
+- Implement backdrop-filter effects for depth and glass morphism
+- Create custom animated cursors that respond to context
+- Design with advanced CSS gradient techniques like conic and repeating gradients
+- Implement dynamic dark mode with context-aware color adjustments
+- Create animated SVG illustrations with synchronized animations
+- Design with CSS custom properties for theme switching and variations
+- Implement advanced masking techniques for creative reveals
+- Create text effects with gradient fills, strokes, and animations
+- Design with variable font animations for dynamic typography`;
+
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
         headers: {
@@ -1009,7 +1070,7 @@ Full file content here
               </div>
             </ResizablePanel>
 
-            <ResizableHandle withHandle />
+            <ResizableHandle />
 
             {/* Chat Section */}
             <ResizablePanel defaultSize={50} minSize={20}>
