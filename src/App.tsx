@@ -11,7 +11,15 @@ import Pricing from "./pages/Pricing";
 import Important from "./pages/Important";
 import Supabase from "./pages/Supabase";
 
-const queryClient = new QueryClient();
+// Create a new QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

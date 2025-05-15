@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Download, File, FolderOpen, Trash, Plus, Edit, Save, FileText, Code, FileJson, FilePen } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Download, File, FolderOpen, Trash, Plus, Edit, Save, FileText, Code, FileJson, FilePen, Upload, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -41,6 +41,8 @@ const FileExplorerEnhanced: React.FC<FileExplorerProps> = ({
   const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
   const [fileToRename, setFileToRename] = useState<string>('');
   const [newName, setNewName] = useState<string>('');
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getFileIcon = (fileName: string) => {
     if (fileName.endsWith('.html')) return <Code className="h-4 w-4 text-orange-500" />;
@@ -48,6 +50,8 @@ const FileExplorerEnhanced: React.FC<FileExplorerProps> = ({
     if (fileName.endsWith('.js')) return <Code className="h-4 w-4 text-yellow-500" />;
     if (fileName.endsWith('.json')) return <FileJson className="h-4 w-4 text-green-500" />;
     if (fileName.endsWith('.md')) return <FilePen className="h-4 w-4 text-purple-500" />;
+    if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'].some(ext => fileName.toLowerCase().endsWith(ext))) 
+      return <Image className="h-4 w-4 text-pink-500" />;
     return <FileText className="h-4 w-4" />;
   };
 
@@ -102,6 +106,9 @@ const FileExplorerEnhanced: React.FC<FileExplorerProps> = ({
     } else if (fileExt === 'md') {
       fileType = 'md';
       defaultContent = '# New Document\n\nAdd your content here.';
+    } else if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(fileExt.toLowerCase())) {
+      fileType = 'binary';
+      defaultContent = ''; // Binary content will be handled separately
     }
 
     const newFile = {
@@ -249,6 +256,107 @@ const FileExplorerEnhanced: React.FC<FileExplorerProps> = ({
     });
   };
 
+  // Handle file upload trigger
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFiles = e.target.files;
+    if (!uploadedFiles || uploadedFiles.length === 0) return;
+
+    Array.from(uploadedFiles).forEach(uploadedFile => {
+      const fileName = uploadedFile.name;
+      
+      // Check if file already exists
+      if (files.some(file => file.name === fileName)) {
+        toast({
+          title: "Error",
+          description: `File ${fileName} already exists`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const fileReader = new FileReader();
+      
+      if (uploadedFile.type.startsWith('image/') || 
+          uploadedFile.type === 'application/pdf' || 
+          uploadedFile.name.endsWith('.svg')) {
+        // For binary files (images, PDFs, etc.)
+        fileReader.readAsDataURL(uploadedFile);
+        fileReader.onload = () => {
+          const content = fileReader.result as string;
+          const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+          
+          let fileType = 'binary';
+          if (uploadedFile.type.startsWith('image/')) {
+            fileType = 'image';
+          } else if (uploadedFile.type === 'application/pdf') {
+            fileType = 'pdf';
+          }
+
+          const newFile = {
+            name: fileName,
+            content: content,
+            type: fileType
+          };
+          
+          setFiles(prev => [...prev, newFile]);
+          
+          toast({
+            title: "File Uploaded",
+            description: `${fileName} has been uploaded successfully`
+          });
+        };
+      } else {
+        // For text files
+        fileReader.readAsText(uploadedFile);
+        fileReader.onload = () => {
+          const content = fileReader.result as string;
+          const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+          
+          let fileType = 'text';
+          if (fileExt === 'html') fileType = 'html';
+          else if (fileExt === 'css') fileType = 'css';
+          else if (fileExt === 'js') fileType = 'js';
+          else if (fileExt === 'json') fileType = 'json';
+          else if (fileExt === 'md') fileType = 'md';
+
+          const newFile = {
+            name: fileName,
+            content,
+            type: fileType
+          };
+          
+          setFiles(prev => [...prev, newFile]);
+          
+          toast({
+            title: "File Uploaded",
+            description: `${fileName} has been uploaded successfully`
+          });
+        };
+      }
+
+      fileReader.onerror = () => {
+        toast({
+          title: "Error",
+          description: `Failed to upload ${fileName}`,
+          variant: "destructive"
+        });
+      };
+    });
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setIsUploadDialogOpen(false);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-3 border-b flex justify-between items-center bg-muted">
@@ -258,8 +366,17 @@ const FileExplorerEnhanced: React.FC<FileExplorerProps> = ({
             size="sm" 
             variant="outline"
             onClick={() => setIsAddingFile(true)}
+            title="Create new file"
           >
             <Plus className="h-4 w-4" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => setIsUploadDialogOpen(true)}
+            title="Upload files"
+          >
+            <Upload className="h-4 w-4" />
           </Button>
           <Button 
             size="sm" 
@@ -382,6 +499,39 @@ const FileExplorerEnhanced: React.FC<FileExplorerProps> = ({
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRenamingFile(false)}>Cancel</Button>
             <Button onClick={renameFile}>Rename</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload File Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Files</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-6 flex flex-col items-center justify-center">
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+              multiple
+              accept="image/*,text/*,application/json,.html,.css,.js,.md,.svg"
+            />
+            <Button 
+              variant="outline" 
+              className="w-full h-32 border-dashed flex flex-col gap-2"
+              onClick={triggerFileUpload}
+            >
+              <Upload className="h-8 w-8 opacity-70" />
+              <span>Click to select files</span>
+              <span className="text-xs text-muted-foreground">
+                Supports images, html, css, js, and more
+              </span>
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
