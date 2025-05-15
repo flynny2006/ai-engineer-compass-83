@@ -110,6 +110,8 @@ const CREDIT_CODES = {
   "56722": 100,
   "757874": 500,
   "776561": 1600,
+  "49986": 800,  // PRO subscription
+  "77512": 2700, // Teams subscription
   // More can be added here in the future
 };
 
@@ -509,16 +511,31 @@ Full file content here
 8. Make sure your code is clean, organized, and well-documented
 9. Implement responsive design elements when possible
 10. Consider accessibility in your implementations
-11. Create visually appealing color schemes and typography to match the uploaded image
-12. Recreate the design from the uploaded image as closely as possible
-13. Use the same colors, layout, and style as shown in the image
-14. Consider the context and purpose of the image when designing the site
-15. If the image contains text, try to incorporate that text into your design
-16. If the image shows a UI, recreate that UI in your code
-17. Use modern design principles for beautiful interfaces
-18. Utilize smooth animations and transitions when appropriate
-19. Ensure proper spacing and layout for optimal user experience
-20. Implement intuitive navigation and user interaction patterns`;
+11. Use Tailwind CSS extensively for modern, beautiful UI designs
+12. Create visually appealing color schemes and typography
+13. Utilize smooth animations and transitions when appropriate
+14. Ensure proper spacing and layout for optimal user experience
+15. Implement intuitive navigation and user interaction patterns
+16. Use consistent design language throughout the interface
+17. Add appropriate hover states and interactive elements
+18. Design with a focus on user experience and usability
+19. Consider performance optimizations in your implementations
+20. Maintain semantic HTML structure
+21. When implementing navigation between pages, create the necessary files and update links accordingly
+22. Ensure JavaScript code is properly added and functional
+23. Use modern CSS features like flexbox, grid, and custom properties
+24. Implement proper error handling in JavaScript code
+25. Create stunning visual designs with gradients, shadows, and modern UI elements
+26. Use glass morphism, neumorphism and other modern design techniques when appropriate
+27. Implement responsive layouts that work on all device sizes
+28. Create beautiful UI components with subtle animations
+29. Use modern color palettes with harmonious combinations
+30. Create visually interesting layouts with asymmetrical designs
+31. Implement micro-interactions for enhanced user experience
+32. Use backdrop filters and blur effects for modern UI elements
+33. Create 3D-like effects with shadows and transforms
+34. Implement beautiful typography with careful font pairing
+35. Create custom buttons with hover and active states`;
 
           const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
             method: "POST",
@@ -675,6 +692,13 @@ Full file content here
     setUserPrompt("");
     setIsLoading(true);
     
+    // Add coding status message
+    const statusMessage = { 
+      role: "assistant", 
+      content: `Coding ${currentFile || 'project files'}... (This may take up to some minutes)` 
+    };
+    setMessages(prev => [...prev, statusMessage]);
+    
     // Deduct credit if not unlimited
     if (!hasUnlimitedCredits) {
       // First use lifetime credits, then daily credits
@@ -715,7 +739,7 @@ Full file content here
 8. Make sure your code is clean, organized, and well-documented
 9. Implement responsive design elements when possible
 10. Consider accessibility in your implementations
-11. Use modern design principles for beautiful interfaces
+11. Use Tailwind CSS extensively for modern, beautiful UI designs
 12. Create visually appealing color schemes and typography
 13. Utilize smooth animations and transitions when appropriate
 14. Ensure proper spacing and layout for optimal user experience
@@ -729,7 +753,17 @@ Full file content here
 22. Ensure JavaScript code is properly added and functional
 23. Use modern CSS features like flexbox, grid, and custom properties
 24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements`;
+25. Create stunning visual designs with gradients, shadows, and modern UI elements
+26. Use glass morphism, neumorphism and other modern design techniques when appropriate
+27. Implement responsive layouts that work on all device sizes
+28. Create beautiful UI components with subtle animations
+29. Use modern color palettes with harmonious combinations
+30. Create visually interesting layouts with asymmetrical designs
+31. Implement micro-interactions for enhanced user experience
+32. Use backdrop filters and blur effects for modern UI elements
+33. Create 3D-like effects with shadows and transforms
+34. Implement beautiful typography with careful font pairing
+35. Create custom buttons with hover and active states`;
 
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -813,10 +847,15 @@ Full file content here
         }
         
         // Add assistant response
-        setMessages(prev => [...prev, { 
-          role: "assistant", 
-          content: "✅ Changes applied! Check the preview to see the results." 
-        }]);
+        setMessages(prev => {
+          const filteredMessages = prev.filter(
+            msg => msg.content !== `Coding ${currentFile || 'project files'}... (This may take up to some minutes)`
+          );
+          return [...filteredMessages, { 
+            role: "assistant", 
+            content: "✅ Changes applied! Check the preview to see the results." 
+          }];
+        });
         
         if (showApiKeyInput) {
           saveApiKey();
@@ -828,16 +867,18 @@ Full file content here
         throw new Error("Invalid response format from API");
       }
     } catch (error) {
-      console.error("Error:", error);
-      setMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
-      }]);
-      toast({
-        title: "Error",
-        description: "Failed to process your request. Please check your API key and try again.",
-        variant: "destructive"
+      // Replace the status message with error message
+      setMessages(prev => {
+        const filteredMessages = prev.filter(
+          msg => msg.content !== `Coding ${currentFile || 'project files'}... (This may take up to some minutes)`
+        );
+        return [...filteredMessages, { 
+          role: "assistant", 
+          content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
+        }];
       });
+      
+      // ... keep existing code
     } finally {
       setIsLoading(false);
     }
