@@ -487,7 +487,9 @@ Full file content here
 17. Use modern design principles for beautiful interfaces
 18. Utilize smooth animations and transitions when appropriate
 19. Ensure proper spacing and layout for optimal user experience
-20. Implement intuitive navigation and user interaction patterns`;
+20. Implement intuitive navigation and user interaction patterns
+21. Apply dynamic hover animations for buttons, links, and interactive elements
+22. Use grid or flexbox layouts to ensure structure remains clean and adaptable`;
           const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
             method: "POST",
             headers: {
