@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,20 @@ import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
+
+// Define default HTML code template
+const DEFAULT_CODE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Web App</title>
+</head>
+<body>
+  <h1>Welcome to my web application!</h1>
+  <p>Start building your amazing app here.</p>
+</body>
+</html>`;
 
 // Define initial files structure
 const initialFiles = [
