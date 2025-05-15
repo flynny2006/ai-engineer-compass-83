@@ -10,7 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 export function isTouchDevice() {
   return typeof window !== "undefined" && 
     (('ontouchstart' in window) || 
-     (navigator.maxTouchPoints > 0))
+     (navigator.maxTouchPoints > 0) || 
+     (navigator.msMaxTouchPoints > 0))
 }
 
 // Format credit number with abbreviation for large numbers
