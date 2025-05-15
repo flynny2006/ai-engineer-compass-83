@@ -13,6 +13,14 @@ const renderApp = () => {
     }
     const root = createRoot(container);
     root.render(<App />);
+    
+    // Set current year in AI system prompt
+    const currentYear = new Date().getFullYear();
+    if (window.AISystemPrompt) {
+      window.AISystemPrompt = window.AISystemPrompt.replace(/\b(2023|2024)\b/g, currentYear.toString());
+    }
+    
+    console.log(`Application initialized successfully. Current year: ${currentYear}`);
   } catch (error) {
     console.error("Failed to render app:", error);
     // Fallback rendering in case of errors

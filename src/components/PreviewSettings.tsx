@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "react-router-dom";
-import { Eye, Info } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -33,81 +32,66 @@ const PreviewSettings: React.FC<PreviewSettingsProps> = ({
   };
 
   return (
-    <div className="flex space-x-2">
-      <Link to="/important">
-        <Button variant="outline" size={isMobile ? "icon" : "sm"} className="relative">
-          {isMobile ? (
-            <Info className="h-4 w-4" />
-          ) : (
-            <>
-              <Info className="h-4 w-4 mr-2" />
-              Important Info
-            </>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          size={isMobile ? "icon" : "sm"}
+          className={cn(
+            "relative",
+            isMobile && "h-9 w-9 rounded-md p-0"
           )}
+        >
+          <Eye className="h-4 w-4" />
+          {!isMobile && <span className="ml-2">Settings</span>}
         </Button>
-      </Link>
-      
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            size={isMobile ? "icon" : "sm"}
-            className={cn(
-              "relative",
-              isMobile && "h-9 w-9 rounded-md p-0"
-            )}
-          >
-            <Eye className="h-4 w-4" />
-            {!isMobile && <span className="ml-2">Preview</span>}
-          </Button>
-        </DialogTrigger>
-        <DialogContent className={cn(
-          "sm:max-w-[425px]",
-          isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
-        )}>
-          <DialogHeader>
-            <DialogTitle>Preview Settings</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="mainFile" className="text-sm font-medium">Main File</label>
-              <p className="text-xs text-muted-foreground">
-                Select the file that will be displayed in the preview by default.
-              </p>
-              <Select
-                value={selectedFile}
-                onValueChange={setSelectedFile}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a file" />
-                </SelectTrigger>
-                <SelectContent>
-                  {htmlFiles.length > 0 ? (
-                    htmlFiles.map(file => (
-                      <SelectItem key={file.name} value={file.name}>
-                        {file.name}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="index.html" disabled>
-                      No HTML files available
+      </DialogTrigger>
+      <DialogContent className={cn(
+        "sm:max-w-[425px]",
+        isMobile && "w-[90vw] max-w-[90vw] p-4 rounded-lg"
+      )}>
+        <DialogHeader>
+          <DialogTitle>Preview Settings</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="mainFile" className="text-sm font-medium">Main File</label>
+            <p className="text-xs text-muted-foreground">
+              Select the file that will be displayed in the preview by default.
+            </p>
+            <Select
+              value={selectedFile}
+              onValueChange={setSelectedFile}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a file" />
+              </SelectTrigger>
+              <SelectContent>
+                {htmlFiles.length > 0 ? (
+                  htmlFiles.map(file => (
+                    <SelectItem key={file.name} value={file.name}>
+                      {file.name}
                     </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+                  ))
+                ) : (
+                  <SelectItem value="index.html" disabled>
+                    No HTML files available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={applySettings}>
-              Apply
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={applySettings}>
+            Apply
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
