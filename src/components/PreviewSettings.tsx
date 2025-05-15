@@ -23,8 +23,8 @@ const PreviewSettings: React.FC<PreviewSettingsProps> = ({
   const [selectedFile, setSelectedFile] = useState(mainFile);
   const isMobile = useIsMobile();
   
-  // Get all HTML files
-  const htmlFiles = files.filter(file => file.name.endsWith('.html'));
+  // Get all HTML files - add a null check for files
+  const htmlFiles = files ? files.filter(file => file.name.endsWith('.html')) : [];
   
   // Apply settings and close dialog
   const applySettings = () => {
