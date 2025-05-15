@@ -1250,7 +1250,7 @@ Full file content here
                     </Button>
                   </div>
                   <Input
-                    placeholder="Describe the changes you want to make..."
+                    placeholder="Ask Lovable AI to help you build something amazing..."
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
                     disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
@@ -1258,17 +1258,19 @@ Full file content here
                   />
                   <Button 
                     type="submit" 
+                    variant="circle"
                     disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                    className="transition-transform hover:scale-105 hover:shadow-lg"
                   >
                     {isLoading ? (
-                      <div className="flex items-center">
-                        <div className="w-5 h-5 relative">
-                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
-                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
-                        </div>
+                      <div className="flex items-center justify-center">
+                        <div className="w-5 h-5 relative animate-spin rounded-full border-2 border-solid border-gray-300 border-t-transparent"></div>
                       </div>
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-up">
+                        <path d="m5 12 7-7 7 7"></path>
+                        <path d="M12 19V5"></path>
+                      </svg>
                     )}
                   </Button>
                 </form>
