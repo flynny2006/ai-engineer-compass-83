@@ -135,7 +135,7 @@ const Index = () => {
   });
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => !localStorage.getItem("gemini_api_key"));
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"editor" | "files" | "preview">("editor");
+  const [editorView, setEditorView] = useState<"code" | "files">("code");
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -368,7 +368,7 @@ const Index = () => {
     localStorage.setItem("project_files", JSON.stringify(initialFiles));
     localStorage.setItem("current_file", "index.html");
     localStorage.setItem("main_preview_file", "index.html");
-    setActiveTab("editor");
+    setEditorView("code");
     
     // Restore credits after reset
     setDailyCredits(currentDailyCredits);
@@ -883,38 +883,6 @@ Full file content here
                 {!isMobile && <span className="ml-1">Claim</span>}
               </Button>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  size={isMobile ? "icon" : "sm"} 
-                  variant="outline"
-                  className={isMobile ? "h-9 w-9 p-0" : ""}
-                >
-                  <Menu className="h-4 w-4" />
-                  {!isMobile && <span className="ml-1">Menu</span>}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link to="/important">
-                  <DropdownMenuItem>
-                    <Info className="h-4 w-4 mr-2" />
-                    Important Info
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuItem onClick={() => updatePreview()}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Run
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={clearChatHistory}>
-                  <Trash className="h-4 w-4 mr-2" />
-                  Clear Chat
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowApiKeyInput(!showApiKeyInput)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  API Settings
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
@@ -953,6 +921,18 @@ Full file content here
                 <Moon className="h-4 w-4" />
               )}
             </Toggle>
+            <Button 
+              size={isMobile ? "icon" : "sm"} 
+              variant="outline" 
+              onClick={() => {
+                updatePreview();
+                setLastRefreshTime(Date.now());
+              }}
+              className={isMobile ? "h-9 w-9 p-0" : ""}
+            >
+              <Play className="h-4 w-4" />
+              {!isMobile && <span className="ml-1">Run</span>}
+            </Button>
           </div>
         </div>
       </header>
@@ -1051,164 +1031,21 @@ Full file content here
         </DialogContent>
       </Dialog>
 
-      {/* Main Content - Reorganized with Chat on the left and code/preview tabs on the right */}
+      {/* Main Content */}
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Left Panel - Chat */}
-        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
-          <div className="h-full flex flex-col">
+        {/* Left Panel - Code Editor */}
+        <ResizablePanel defaultSize={50} minSize={30} className={`${isFullscreen ? 'hidden' : ''} h-full`}>
+          <div className="border-r h-full flex flex-col">
             <div className="p-2 bg-muted flex items-center justify-between">
-              <div className="flex items-center">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                <span className="text-sm font-medium">Chat</span>
-              </div>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={clearChatHistory}
-                title="Clear chat history"
-              >
-                <Trash className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* API Key Input */}
-            {showApiKeyInput && (
-              <div className="border-b p-3">
-                <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="password"
-                    placeholder="AIza..."
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={saveApiKey}
-                  >
-                    <Save className="h-4 w-4 mr-2" /> Save
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Your API key is stored locally and never sent to our servers.
-                </p>
-              </div>
-            )}
-
-            {/* Messages */}
-            <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
-              <div className="space-y-4">
-                {messages.map((msg, i) => (
-                  <div 
-                    key={i} 
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div 
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        msg.role === "user" 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-muted"
-                      }`}
-                    >
-                      {msg.image && (
-                        <div className="mb-3">
-                          <img 
-                            src={msg.image} 
-                            alt="User uploaded" 
-                            className="max-w-full rounded-md max-h-[200px]" 
-                          />
-                        </div>
-                      )}
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-            
-            {/* Build Error Message */}
-            {buildError && (
-              <div className="border-t p-3 bg-destructive/10">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-destructive">Build Unsuccessful</span>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    onClick={handleFixCodeErrors}
-                  >
-                    Fix
-                  </Button>
-                </div>
-                <p className="text-sm mt-1 text-muted-foreground">
-                  The code contains syntax errors. There might be markdown backticks (```) in the code.
-                </p>
-              </div>
-            )}
-
-            {/* Input Area */}
-            <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
-              <div className="flex items-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  ref={fileInputRef}
-                />
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
-                  title="Upload image"
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-              </div>
-              <Input
-                placeholder="Ask Boongle AI to build anything..."
-                value={userPrompt}
-                onChange={(e) => setUserPrompt(e.target.value)}
-                disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
-                className="flex-1"
-              />
-              <Button 
-                type="submit" 
-                disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="w-5 h-5 relative">
-                      <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
-                      <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
-                    </div>
-                  </div>
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
-          </div>
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        {/* Right Panel - Tabs with Editor, Files, and Preview */}
-        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
-          <div className="h-full flex flex-col">
-            <div className="p-2 bg-muted flex items-center justify-between">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "editor" | "files" | "preview")} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="editor">Editor</TabsTrigger>
+              <Tabs value={editorView} onValueChange={(value) => setEditorView(value as "code" | "files")} className="w-full">
+                <TabsList className={cn("grid w-60 grid-cols-2", isMobile && "w-full")}>
+                  <TabsTrigger value="code">Editor</TabsTrigger>
                   <TabsTrigger value="files">File Explorer</TabsTrigger>
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
                 </TabsList>
               </Tabs>
               
-              <div className="flex items-center gap-2 ml-2">
-                {activeTab === "editor" && (
+              <div className="flex items-center gap-2">
+                {editorView === "code" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm">
@@ -1232,36 +1069,60 @@ Full file content here
                   </DropdownMenu>
                 )}
                 
-                {activeTab === "preview" && (
-                  <PreviewSettings
-                    files={files}
-                    mainFile={mainPreviewFile}
-                    setMainFile={setMainPreviewFile}
-                  />
-                )}
+                <PreviewSettings
+                  files={files}
+                  mainFile={mainPreviewFile}
+                  setMainFile={setMainPreviewFile}
+                />
               </div>
             </div>
             
             <div className="flex-1 h-full">
-              <TabsContent value="editor" className="h-full mt-0 border-none p-0">
-                <CodeEditor
-                  value={getCurrentFileContent()}
-                  onChange={updateFileContent}
-                  language={getCurrentFileLanguage()}
-                />
-              </TabsContent>
-              
-              <TabsContent value="files" className="h-full mt-0 border-none p-0">
-                <FileExplorerEnhanced 
-                  files={files} 
-                  setFiles={setFiles} 
-                  currentFile={currentFile} 
-                  setCurrentFile={setCurrentFile} 
-                />
-              </TabsContent>
-              
-              <TabsContent value="preview" className="h-full mt-0 border-none p-0">
-                <div className="h-full bg-white">
+              <Tabs value={editorView} className="h-full">
+                <TabsContent value="code" className="h-full mt-0">
+                  <CodeEditor
+                    value={getCurrentFileContent()}
+                    onChange={updateFileContent}
+                    language={getCurrentFileLanguage()}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  <FileExplorerEnhanced 
+                    files={files} 
+                    setFiles={setFiles} 
+                    currentFile={currentFile} 
+                    setCurrentFile={setCurrentFile} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </ResizablePanel>
+
+        {isFullscreen ? null : <ResizableHandle withHandle />}
+
+        {/* Right Panel - Chat and Preview */}
+        <ResizablePanel defaultSize={50} minSize={30} className="h-full">
+          <ResizablePanelGroup direction="vertical">
+            {/* Preview Section */}
+            <ResizablePanel defaultSize={50} minSize={20} className="border-b">
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Eye className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Preview: {mainPreviewFile}</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
+                  >
+                    <Maximize className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 bg-white">
                   <iframe 
                     ref={previewIframeRef}
                     title="Preview"
@@ -1269,9 +1130,151 @@ Full file content here
                     sandbox="allow-scripts allow-same-origin"
                   />
                 </div>
-              </TabsContent>
-            </div>
-          </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Chat Section */}
+            <ResizablePanel defaultSize={50} minSize={20}>
+              <div className="h-full flex flex-col">
+                <div className="p-2 bg-muted flex items-center justify-between">
+                  <div className="flex items-center">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">Chat</span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={clearChatHistory}
+                    title="Clear chat history"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* API Key Input */}
+                {showApiKeyInput && (
+                  <div className="border-b p-3">
+                    <label className="block text-sm font-medium mb-1">Enter Gemini API Key</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="AIza..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={saveApiKey}
+                      >
+                        <Save className="h-4 w-4 mr-2" /> Save
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your API key is stored locally and never sent to our servers.
+                    </p>
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
+                  <div className="space-y-4">
+                    {messages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div 
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}
+                        >
+                          {msg.image && (
+                            <div className="mb-3">
+                              <img 
+                                src={msg.image} 
+                                alt="User uploaded" 
+                                className="max-w-full rounded-md max-h-[200px]" 
+                              />
+                            </div>
+                          )}
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </div>
+                
+                {/* Build Error Message */}
+                {buildError && (
+                  <div className="border-t p-3 bg-destructive/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-destructive">Build Unsuccessful</span>
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={handleFixCodeErrors}
+                      >
+                        Fix
+                      </Button>
+                    </div>
+                    <p className="text-sm mt-1 text-muted-foreground">
+                      The code contains syntax errors. There might be markdown backticks (```) in the code.
+                    </p>
+                  </div>
+                )}
+
+                {/* Input Area */}
+                <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
+                  <div className="flex items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      ref={fileInputRef}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                      title="Upload image"
+                    >
+                      <Image className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    placeholder="Describe the changes you want to make..."
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || (totalAvailableCredits <= 0 && !hasUnlimitedCredits)}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="w-5 h-5 relative">
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute"></div>
+                          <div className="w-5 h-5 border-2 border-t-transparent border-background rounded-full animate-spin absolute" style={{animationDelay: "0.2s"}}></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </form>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

@@ -16,10 +16,8 @@ const renderApp = () => {
     
     // Set current year in AI system prompt
     const currentYear = new Date().getFullYear();
-    
-    // Use optional chaining and type assertion for the window.AISystemPrompt property
-    if (typeof (window as any).AISystemPrompt === 'string') {
-      (window as any).AISystemPrompt = (window as any).AISystemPrompt.replace(/\b(2023|2024)\b/g, currentYear.toString());
+    if (window.AISystemPrompt) {
+      window.AISystemPrompt = window.AISystemPrompt.replace(/\b(2023|2024)\b/g, currentYear.toString());
     }
     
     console.log(`Application initialized successfully. Current year: ${currentYear}`);
