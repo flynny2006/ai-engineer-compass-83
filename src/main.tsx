@@ -16,7 +16,7 @@ const renderApp = () => {
     
     // Set current year in AI system prompt
     const currentYear = new Date().getFullYear();
-    if (window.AISystemPrompt) {
+    if (window?.AISystemPrompt) {
       window.AISystemPrompt = window.AISystemPrompt.replace(/\b(2023|2024)\b/g, currentYear.toString());
     }
     
