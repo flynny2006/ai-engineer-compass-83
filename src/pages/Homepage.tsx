@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
 import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
+import FileExplorerUpload from "@/components/FileExplorerUpload";
 
 interface Project {
   id: string;
@@ -26,6 +26,8 @@ const Homepage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>("");
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [imageFileName, setImageFileName] = useState<string | null>(null);
 
   // Load projects and API key from localStorage
   useEffect(() => {
@@ -208,6 +210,30 @@ const Homepage = () => {
     }
   };
 
+  // Handler for image upload
+  const handleImageUpload = (uploadedFile: { name: string, content: string | ArrayBuffer, type: string }) => {
+    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+    // The 'type' from FileExplorerUpload is the file extension.
+    // The 'content' will be a base64 string (DataURL) if it was read as an image.
+    if (
+      typeof uploadedFile.content === 'string' &&
+      (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
+    ) {
+      setAttachedImage(uploadedFile.content);
+      setImageFileName(uploadedFile.name);
+      toast({
+        title: "Image Attached",
+        description: `${uploadedFile.name} has been attached.`,
+      });
+    } else {
+      toast({
+        title: "Unsupported File Type",
+        description: "Please upload a valid image (PNG, JPG, GIF, SVG, WebP).",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black">
       <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
@@ -223,25 +249,52 @@ const Homepage = () => {
           
           <div className="w-full max-w-3xl mt-4 md:mt-8">
             <BorderTrail className="rounded-lg" variant="default" duration="slow">
-              <div className="relative bg-black rounded-lg flex">
-                <Textarea 
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe what you want to build..."
-                  className="bg-black text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16"
-                />
-                <Button 
-                  onClick={createNewProject}
-                  disabled={isLoading} 
-                  className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center absolute right-4 bottom-4"
-                  variant="circle"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+              <div className="bg-black rounded-lg p-4 space-y-4">
+                <div className="relative">
+                  <Textarea 
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe what you want to build..."
+                    className="bg-transparent text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16 w-full"
+                  />
+                  <Button 
+                    onClick={createNewProject}
+                    disabled={isLoading} 
+                    className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center absolute right-4 bottom-4"
+                    variant="circle"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    ) : (
+                      <ArrowUp className="h-6 w-6 text-black" />
+                    )}
+                  </Button>
+                </div>
+
+                <div>
+                  {attachedImage ? (
+                    <div className="p-3 bg-white/5 rounded-md border border-white/10">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm text-white/80 truncate pr-2">Attached: {imageFileName}</p>
+                        <Button 
+                          onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <img 
+                        src={attachedImage} 
+                        alt="Attached preview" 
+                        className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
+                      />
+                    </div>
                   ) : (
-                    <ArrowUp className="h-6 w-6 text-black" />
+                    <FileExplorerUpload onFileUpload={handleImageUpload} />
                   )}
-                </Button>
+                </div>
               </div>
             </BorderTrail>
             
