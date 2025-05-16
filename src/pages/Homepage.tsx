@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
 import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp } from "lucide-react";
+import { BorderTrail } from "@/components/ui/border-trail";
 
 interface Project {
   id: string;
@@ -80,6 +81,15 @@ const Homepage = () => {
       localStorage.setItem("last_prompt", prompt);
       localStorage.setItem("current_project_id", projectId);
       
+      // Save the API key if entered
+      if (apiKey) {
+        localStorage.setItem("api_key", apiKey);
+        localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
+      }
+      
+      // Remove any previous project files to ensure a fresh start
+      localStorage.removeItem("project_files");
+      
       // Navigate to project page
       setTimeout(() => {
         navigate(`/project?id=${projectId}`);
@@ -97,6 +107,13 @@ const Homepage = () => {
 
   const loadProject = (projectId: string) => {
     localStorage.setItem("current_project_id", projectId);
+    
+    // Save the API key if entered, to sync between homepage and editor
+    if (apiKey) {
+      localStorage.setItem("api_key", apiKey);
+      localStorage.setItem("gemini_api_key", apiKey);
+    }
+    
     navigate(`/project?id=${projectId}`);
   };
 
@@ -155,6 +172,7 @@ const Homepage = () => {
   const saveApiKey = () => {
     try {
       localStorage.setItem("api_key", apiKey);
+      localStorage.setItem("gemini_api_key", apiKey); // Sync with editor
       toast({
         title: "API Key saved",
         description: "Your API key has been saved successfully.",
@@ -183,8 +201,7 @@ const Homepage = () => {
           </div>
           
           <div className="w-full max-w-3xl mt-4 md:mt-8">
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-300 animate-pulse-glow"></div>
+            <BorderTrail className="rounded-lg" variant="default" duration="slow">
               <div className="relative bg-black rounded-lg flex">
                 <Textarea 
                   value={prompt}
@@ -205,7 +222,7 @@ const Homepage = () => {
                   )}
                 </Button>
               </div>
-            </div>
+            </BorderTrail>
             
             <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
               <Button

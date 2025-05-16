@@ -103,13 +103,19 @@ export default {
 					'50%': {
 						boxShadow: '0 0 20px rgba(var(--primary-rgb), 0.8)'
 					}
+				},
+				'border-trail': {
+					to: {
+						transform: 'rotate(360deg)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
-				'pulse-glow': 'pulse-glow 3s ease-in-out infinite'
+				'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
+				'border-trail': 'border-trail var(--animation-duration) linear infinite'
 			}
 		}
 	},

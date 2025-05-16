@@ -17,6 +17,32 @@ const ProjectEditor = () => {
     // If there's a project ID in the URL, set it as current
     if (projectId) {
       localStorage.setItem("current_project_id", projectId);
+      
+      // Load project files based on project ID
+      const savedProjects = localStorage.getItem("saved_projects");
+      if (savedProjects) {
+        const projects = JSON.parse(savedProjects);
+        const project = projects.find((p: any) => p.id === projectId);
+        
+        if (project) {
+          // If project has saved files, load them
+          if (project.files && project.files.length > 0) {
+            localStorage.setItem("project_files", JSON.stringify(project.files));
+          } else {
+            // If no saved files for this project yet, use defaults from Index.tsx
+            localStorage.removeItem("project_files");
+          }
+          
+          // Save last accessed timestamp
+          const updatedProjects = projects.map((p: any) => 
+            p.id === projectId 
+              ? { ...p, lastModified: new Date().toISOString() } 
+              : p
+          );
+          localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+        }
+      }
+      
       setInitializing(false);
     } else {
       // Check if there's already a current project ID in localStorage
@@ -40,6 +66,13 @@ const ProjectEditor = () => {
     const style = document.createElement('style');
     style.textContent = `
       .toaster .toast[data-title="Navigation"] {
+        display: none !important;
+      }
+      
+      /* Hide all navigation-related toasts */
+      .toast-title:contains('Navigation'), 
+      div[data-toast-title="Navigation"],
+      .sonner-toast:has([data-toast-title="Navigation"]) {
         display: none !important;
       }
     `;
