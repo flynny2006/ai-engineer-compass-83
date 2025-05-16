@@ -6,10 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp, Zap, BookOpen, Rocket } from "lucide-react";
+import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
-import HomepageNav from "@/components/HomepageNav";
 
 interface Project {
   id: string;
@@ -49,16 +48,6 @@ const Homepage = () => {
   }, []);
 
   const createNewProject = () => {
-    // Project limit for free plan
-    if (projects.length >= 5) {
-      toast({
-        title: "Project Limit Reached",
-        description: "The free plan allows up to 5 projects. Please upgrade for more.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!prompt.trim()) {
       toast({
         title: "Empty prompt",
@@ -247,139 +236,99 @@ const Homepage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
-      <HomepageNav />
       <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
-        <div className="w-full pt-12 pb-16 text-center">
-          <h1 className="text-white font-bold text-4xl md:text-5xl lg:text-6xl animate-fade-in">
-            What do you want to build today?
-          </h1>
-          <p className="text-gray-400 mt-4 text-lg">
-            Build fullstack <span className="font-bold text-white">web</span> and <span className="font-bold text-white">mobile</span> apps in seconds.
-          </p>
-        </div>
-          
-        <div className="w-full max-w-3xl mx-auto">
-          <BorderTrail className="rounded-lg" variant="default" duration="slow">
-            <div className="bg-black rounded-lg p-4 space-y-4">
-              <div className="relative">
-                <Textarea 
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Ask Boongle AI to build anything..."
-                  className="bg-transparent text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16 w-full"
-                />
-                <Button 
-                  onClick={createNewProject}
-                  disabled={isLoading} 
-                  className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center absolute right-4 bottom-4"
-                  variant="circle"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                  ) : (
-                    <ArrowUp className="h-6 w-6 text-black" />
-                  )}
-                </Button>
-              </div>
-
-              <div>
-                {attachedImage ? (
-                  <div className="p-3 bg-white/5 rounded-md border border-white/10">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-sm text-white/80 truncate pr-2">Attached: {imageFileName}</p>
-                      <Button 
-                        onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <img 
-                      src={attachedImage} 
-                      alt="Attached preview" 
-                      className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
-                    />
-                  </div>
-                ) : (
-                  <FileExplorerUpload onFileUpload={handleImageUpload} />
-                )}
-              </div>
-            </div>
-          </BorderTrail>
-          
-          <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
-            <Button
-              onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-              variant="outline"
-              className="border-white/20 text-white/80 hover:bg-white/10 w-full sm:w-auto"
-            >
-              <Key className="h-4 w-4 mr-2" />
-              {apiKey ? "Change API Key" : "Set API Key"}
-            </Button>
+        <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
+          <div className="text-center">
+            <h1 className="text-white font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in">
+              What do you want to build today?
+            </h1>
+            <p className="text-gray-400 mt-4 text-lg">
+              Build fullstack <span className="font-bold text-white">web</span> and <span className="font-bold text-white">mobile</span> apps in seconds.
+            </p>
           </div>
+          
+          <div className="w-full max-w-3xl mt-4 md:mt-8">
+            <BorderTrail className="rounded-lg" variant="default" duration="slow">
+              <div className="bg-black rounded-lg p-4 space-y-4">
+                <div className="relative">
+                  <Textarea 
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Ask Boongle AI to build anything..."
+                    className="bg-transparent text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16 w-full"
+                  />
+                  <Button 
+                    onClick={createNewProject}
+                    disabled={isLoading} 
+                    className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center absolute right-4 bottom-4"
+                    variant="circle"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    ) : (
+                      <ArrowUp className="h-6 w-6 text-black" />
+                    )}
+                  </Button>
+                </div>
 
-          {showApiKeyInput && (
-            <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
-              <label className="block text-white text-sm mb-2">API Key</label>
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your API key"
-                  className="bg-black text-white border-white/20"
-                />
-                <Button onClick={saveApiKey}>Save</Button>
+                <div>
+                  {attachedImage ? (
+                    <div className="p-3 bg-white/5 rounded-md border border-white/10">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm text-white/80 truncate pr-2">Attached: {imageFileName}</p>
+                        <Button 
+                          onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <img 
+                        src={attachedImage} 
+                        alt="Attached preview" 
+                        className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
+                      />
+                    </div>
+                  ) : (
+                    <FileExplorerUpload onFileUpload={handleImageUpload} />
+                  )}
+                </div>
               </div>
+            </BorderTrail>
+            
+            <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
+              <Button
+                onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                variant="outline"
+                className="border-white/20 text-white/80 hover:bg-white/10 w-full sm:w-auto"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                {apiKey ? "Change API Key" : "Set API Key"}
+              </Button>
             </div>
-          )}
-        </div>
 
-        {/* New "How to get Started" Section */}
-        <div className="mt-24 mb-16 w-full max-w-4xl mx-auto text-white">
-          <Separator className="bg-white/20 my-12" />
-          <h2 className="text-3xl font-bold text-center mb-12">How to get Started with Boongle AI?</h2>
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div className="bg-white/5 p-6 rounded-lg border border-white/10 hover:border-primary/50 transition-colors">
-              <div className="flex justify-center mb-4">
-                <div className="bg-primary/20 p-3 rounded-full">
-                  <Zap className="h-8 w-8 text-primary" />
+            {showApiKeyInput && (
+              <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
+                <label className="block text-white text-sm mb-2">API Key</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter your API key"
+                    className="bg-black text-white border-white/20"
+                  />
+                  <Button onClick={saveApiKey}>Save</Button>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">1. Describe Your Idea</h3>
-              <p className="text-gray-400 text-sm">
-                Simply type what you want to build in the prompt area. Be as descriptive or as brief as you like.
-              </p>
-            </div>
-            <div className="bg-white/5 p-6 rounded-lg border border-white/10 hover:border-primary/50 transition-colors">
-              <div className="flex justify-center mb-4">
-                <div className="bg-primary/20 p-3 rounded-full">
-                  <BookOpen className="h-8 w-8 text-primary" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">2. Review & Iterate</h3>
-              <p className="text-gray-400 text-sm">
-                Boongle AI will generate the initial project. Review the code and UI, then ask for changes or additions.
-              </p>
-            </div>
-            <div className="bg-white/5 p-6 rounded-lg border border-white/10 hover:border-primary/50 transition-colors">
-              <div className="flex justify-center mb-4">
-                <div className="bg-primary/20 p-3 rounded-full">
-                  <Rocket className="h-8 w-8 text-primary" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">3. Launch Your App</h3>
-              <p className="text-gray-400 text-sm">
-                Once you're happy, deploy your application with a few clicks and share it with the world!
-              </p>
-            </div>
+            )}
           </div>
         </div>
 
         {projects.length > 0 && (
-          <div className="w-full max-w-3xl mx-auto mb-12">
+          <div className="mt-12 w-full max-w-3xl mx-auto">
             <Separator className="bg-white/20 my-8" />
             <h2 className="text-white text-2xl font-semibold mb-6">Your Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
