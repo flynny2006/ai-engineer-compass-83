@@ -173,35 +173,41 @@ const Homepage = () => {
     <div className="flex flex-col min-h-screen bg-black">
       <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
-          <h1 className="text-white font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in">
-            What do you want to build today?
-          </h1>
+          <div className="text-center">
+            <h1 className="text-white font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in">
+              What do you want to build today?
+            </h1>
+            <p className="text-gray-400 mt-4 text-lg">
+              Build fullstack <span className="font-bold text-white">web</span> and <span className="font-bold text-white">mobile</span> apps in seconds.
+            </p>
+          </div>
           
           <div className="w-full max-w-3xl mt-4 md:mt-8">
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-blue-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-300 animate-pulse-glow"></div>
-              <Textarea 
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what you want to build..."
-                className="relative bg-black text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400"
-              />
+              <div className="relative bg-black rounded-lg flex">
+                <Textarea 
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe what you want to build..."
+                  className="bg-black text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16"
+                />
+                <Button 
+                  onClick={createNewProject}
+                  disabled={isLoading} 
+                  className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center absolute right-4 bottom-4"
+                  variant="circle"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                  ) : (
+                    <ArrowUp className="h-6 w-6 text-black" />
+                  )}
+                </Button>
+              </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
-              <Button 
-                onClick={createNewProject}
-                disabled={isLoading} 
-                className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center"
-                variant="circle"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                ) : (
-                  <ArrowUp className="h-6 w-6 text-black" />
-                )}
-              </Button>
-
+            <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
               <Button
                 onClick={() => setShowApiKeyInput(!showApiKeyInput)}
                 variant="outline"
