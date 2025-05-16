@@ -1,8 +1,10 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// Assuming 'highlight' function is available from this path.
+// If this path or function is incorrect, syntax highlighting won't work.
+import { highlight } from "@/lib/syntaxHighlighter"; 
 
 interface CodeEditorProps {
   value: string;
@@ -12,11 +14,13 @@ interface CodeEditorProps {
 
 const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) => {
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState<number>(1);
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+  const [highlightedCode, setHighlightedCode] = useState<string>("");
+
   // HTML suggestions for autocomplete
   const htmlSuggestions = [
     { tag: "div", snippet: "<div></div>" },
@@ -78,10 +82,24 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
     if (value) {
       const lines = value.split('\n').length;
       setLineCount(lines);
+      // Update highlighted code
+      // Ensure `highlight` is a function and handles potential errors.
+      if (typeof highlight === 'function') {
+        try {
+          setHighlightedCode(highlight(value, language));
+        } catch (e) {
+          console.error("Syntax highlighting error:", e);
+          setHighlightedCode(value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")); // Fallback to escaped text
+        }
+      } else {
+         // Fallback if highlight function is not available
+        setHighlightedCode(value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+      }
     } else {
       setLineCount(1);
+      setHighlightedCode("");
     }
-  }, [value]);
+  }, [value, language]);
   
   // Handle key combinations
   useEffect(() => {
@@ -125,7 +143,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
   // Render line numbers
   const renderLineNumbers = () => {
     return Array.from({ length: lineCount }, (_, i) => i + 1).map(num => (
-      <div key={num} className="text-right pr-2 text-muted-foreground text-xs select-none">
+      <div key={num} className="text-right pr-2 text-muted-foreground text-xs select-none leading-normal">
         {num}
       </div>
     ));
@@ -211,8 +229,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
     }
   };
   
+  const editorStyles: React.CSSProperties = {
+    fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+    fontSize: '0.875rem', // text-sm
+    lineHeight: 1.6, // leading-normal might be slightly different, adjust if needed
+    tabSize: 2,
+    WebkitTapHighlightColor: 'transparent',
+    padding: '1rem', // p-4
+  };
+
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full bg-background">
       {showSearch && (
         <div className="bg-background border-b p-2 flex items-center">
           <form onSubmit={handleSearch} className="flex items-center w-full">
@@ -239,24 +266,34 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
           </form>
         </div>
       )}
-      <div className="flex flex-1 overflow-hidden font-mono text-sm">
-        <div className="bg-muted py-4 flex flex-col overflow-hidden">
-          {renderLineNumbers()}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="bg-muted py-4 flex flex-col overflow-y-auto no-scrollbar select-none" style={{ lineHeight: editorStyles.lineHeight }}>
+          {/* Line numbers need to sync with text area content exactly */}
+          {Array.from({ length: lineCount }, (_, i) => i + 1).map(num => (
+            <div key={num} className="text-right pr-2 text-muted-foreground text-xs" style={{ height: `calc(${editorStyles.fontSize} * ${editorStyles.lineHeight})`}}>
+              {num}
+            </div>
+          ))}
         </div>
-        <textarea
-          ref={editorRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          spellCheck={false}
-          className={`flex-1 p-4 bg-background resize-none overflow-auto w-full border-0 focus:outline-none code-editor`}
-          style={{
-            fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-            lineHeight: 1.5,
-            tabSize: 2,
-            paddingLeft: '0.5rem'
-          }}
-        />
+        <div className="relative flex-1 w-full h-full">
+          <pre
+            ref={highlightRef}
+            aria-hidden="true"
+            className="absolute inset-0 overflow-auto m-0 p-0 font-mono text-sm bg-background code-editor-highlight"
+            style={{ ...editorStyles, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
+            dangerouslySetInnerHTML={{ __html: highlightedCode + '\n' }} // Ensure last line is rendered if empty
+          />
+          <textarea
+            ref={editorRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onScroll={handleScroll}
+            spellCheck={false}
+            className={`absolute inset-0 resize-none overflow-auto m-0 p-0 font-mono text-sm bg-transparent text-transparent caret-white border-0 focus:outline-none w-full h-full code-editor`}
+            style={editorStyles}
+          />
+        </div>
       </div>
     </div>
   );
