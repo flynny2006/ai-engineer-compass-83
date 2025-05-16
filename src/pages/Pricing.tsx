@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,21 @@ const PricingPage = () => {
       ],
       buttonText: "Choose Teams",
       popular: false
+    },
+    {
+      name: "Big Teams",
+      price: "$15",
+      description: "Ultimate features for large-scale collaboration",
+      features: [
+        "Unlimited Credits",
+        "Publish Projects & Access Code",
+        "Earlier Access to new Features",
+        "Free Pro Subscription 1 Month for a Friend",
+        "50 fast requests"
+      ],
+      buttonText: "Choose Big Teams",
+      popular: false,
+      claimCode: "47772"
     }
   ];
 
@@ -66,7 +80,7 @@ const PricingPage = () => {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {pricingPlans.map((plan) => (
           <Card key={plan.name} className={`flex flex-col ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
             <CardHeader>
@@ -91,7 +105,7 @@ const PricingPage = () => {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className={`w-full ${plan.popular ? '' : 'bg-muted-foreground hover:bg-muted-foreground/90'}`}>
+              <Button className={`w-full ${plan.popular ? '' : 'bg-muted-foreground hover:bg-muted-foreground/90 text-white'}`}>
                 <DollarSign className="h-4 w-4 mr-2" /> {plan.buttonText}
               </Button>
             </CardFooter>

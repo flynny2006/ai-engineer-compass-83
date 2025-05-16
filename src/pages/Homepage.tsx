@@ -254,7 +254,7 @@ const Homepage = () => {
                   <Textarea 
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe what you want to build..."
+                    placeholder="Ask Boongle AI to build anything..."
                     className="bg-transparent text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16 w-full"
                   />
                   <Button 
