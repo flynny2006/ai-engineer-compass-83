@@ -4,9 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Send, ArrowRight } from "lucide-react";
+import { Send, ArrowRight, Trash2, Copy, Key } from "lucide-react";
 
 interface Project {
   id: string;
@@ -22,8 +23,10 @@ const Homepage = () => {
   const [prompt, setPrompt] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
+  const [apiKey, setApiKey] = useState<string>("");
 
-  // Load projects from localStorage
+  // Load projects and API key from localStorage
   useEffect(() => {
     try {
       const savedProjects = localStorage.getItem("saved_projects");
@@ -31,8 +34,13 @@ const Homepage = () => {
         const parsedProjects = JSON.parse(savedProjects);
         setProjects(parsedProjects);
       }
+      
+      const savedApiKey = localStorage.getItem("api_key");
+      if (savedApiKey) {
+        setApiKey(savedApiKey);
+      }
     } catch (error) {
-      console.error("Error loading projects:", error);
+      console.error("Error loading data:", error);
     }
   }, []);
 
@@ -74,7 +82,7 @@ const Homepage = () => {
       
       // Navigate to project page
       setTimeout(() => {
-        navigate("/project");
+        navigate(`/project?id=${projectId}`);
       }, 500);
     } catch (error) {
       console.error("Error saving project:", error);
@@ -89,7 +97,76 @@ const Homepage = () => {
 
   const loadProject = (projectId: string) => {
     localStorage.setItem("current_project_id", projectId);
-    navigate("/project");
+    navigate(`/project?id=${projectId}`);
+  };
+
+  const deleteProject = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    
+    try {
+      const updatedProjects = projects.filter(project => project.id !== projectId);
+      setProjects(updatedProjects);
+      localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+      
+      toast({
+        title: "Project deleted",
+        description: "The project has been successfully deleted.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the project.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const duplicateProject = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    
+    try {
+      const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const duplicatedProject = {
+        ...project,
+        id: projectId,
+        name: `Copy of ${project.name}`,
+        createdAt: new Date().toISOString(),
+        lastModified: new Date().toISOString(),
+      };
+      
+      const updatedProjects = [...projects, duplicatedProject];
+      setProjects(updatedProjects);
+      localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+      
+      toast({
+        title: "Project duplicated",
+        description: "A copy of the project has been created.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate the project.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveApiKey = () => {
+    try {
+      localStorage.setItem("api_key", apiKey);
+      toast({
+        title: "API Key saved",
+        description: "Your API key has been saved successfully.",
+      });
+      setShowApiKeyInput(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save API key.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -111,11 +188,11 @@ const Homepage = () => {
               />
             </div>
             
-            <div className="flex justify-center mt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
               <Button 
                 onClick={createNewProject}
                 disabled={isLoading} 
-                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-8 py-6 rounded-full text-lg font-medium hover:opacity-90 transition-all"
+                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-8 py-6 rounded-full text-lg font-medium hover:opacity-90 transition-all w-full sm:w-auto"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
@@ -129,7 +206,32 @@ const Homepage = () => {
                   </div>
                 )}
               </Button>
+
+              <Button
+                onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                variant="outline"
+                className="border-white/20 text-white/80 hover:bg-white/10 w-full sm:w-auto"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                {apiKey ? "Change API Key" : "Set API Key"}
+              </Button>
             </div>
+
+            {showApiKeyInput && (
+              <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
+                <label className="block text-white text-sm mb-2">API Key</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter your API key"
+                    className="bg-black text-white border-white/20"
+                  />
+                  <Button onClick={saveApiKey}>Save</Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -148,9 +250,25 @@ const Homepage = () => {
                   <p className="text-gray-400 text-sm mt-1">
                     Created: {new Date(project.createdAt).toLocaleDateString()}
                   </p>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300 p-0">
-                      <ArrowRight className="h-4 w-4 mr-1" /> Open
+                  <div className="flex justify-end mt-4 gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => duplicateProject(e, project)} 
+                      className="text-blue-400 hover:text-blue-300 p-1"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => deleteProject(e, project.id)} 
+                      className="text-red-400 hover:text-red-300 p-1"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300 p-1">
+                      <ArrowRight className="h-4 w-4" /> Open
                     </Button>
                   </div>
                 </div>
