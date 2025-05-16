@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Assuming 'highlight' function is available from this path.
-// If this path or function is incorrect, syntax highlighting won't work.
-import { highlight } from "@/lib/syntaxHighlighter"; 
+// Changed import from 'highlight' to 'highlightCode'
+import { highlightCode } from "@/lib/syntaxHighlighter"; 
 
 interface CodeEditorProps {
   value: string;
@@ -14,7 +13,8 @@ interface CodeEditorProps {
 
 const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) => {
   const editorRef = useRef<HTMLTextAreaElement>(null);
-  const highlightRef = useRef<HTMLDivElement>(null);
+  // Changed type from HTMLDivElement to HTMLPreElement
+  const highlightRef = useRef<HTMLPreElement>(null);
   const [lineCount, setLineCount] = useState<number>(1);
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -83,16 +83,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
       const lines = value.split('\n').length;
       setLineCount(lines);
       // Update highlighted code
-      // Ensure `highlight` is a function and handles potential errors.
-      if (typeof highlight === 'function') {
+      // Ensure `highlightCode` is a function and handles potential errors.
+      // Changed function call from highlight to highlightCode
+      if (typeof highlightCode === 'function') {
         try {
-          setHighlightedCode(highlight(value, language));
+          setHighlightedCode(highlightCode(value, language));
         } catch (e) {
           console.error("Syntax highlighting error:", e);
           setHighlightedCode(value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")); // Fallback to escaped text
         }
       } else {
-         // Fallback if highlight function is not available
+         // Fallback if highlightCode function is not available
         setHighlightedCode(value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
       }
     } else {
@@ -149,8 +150,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
     ));
   };
   
-  // Handle tab key for indentation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Handle tab key for indentation and other editor behaviors
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget;
     
     // Handle tab key
@@ -199,14 +200,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
       if (tagStart !== -1 && !textBeforeCursor.substring(tagStart).includes('>')) {
         const tagText = textBeforeCursor.substring(tagStart + 1);
         
-        // Only suggest if we have at least 2 characters after "<"
+        // Only suggest if we have at least 1 character after "<"
         if (tagText.length >= 1) {
           // Find matching suggestions
           const matches = htmlSuggestions.filter(s => 
             s.tag.toLowerCase().startsWith(tagText.toLowerCase())
           );
           
-          if (matches.length > 0 && e.key === 'Tab') {
+          if (matches.length > 0 && e.key === 'Tab') { // Trigger suggestion on Tab
             e.preventDefault();
             // Insert the first suggestion
             const replacement = matches[0].snippet;
@@ -287,8 +288,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
             ref={editorRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onScroll={handleScroll}
+            onKeyDown={handleEditorKeyDown} // Renamed from handleKeyDown to handleEditorKeyDown to avoid conflict
             spellCheck={false}
             className={`absolute inset-0 resize-none overflow-auto m-0 p-0 font-mono text-sm bg-transparent text-transparent caret-white border-0 focus:outline-none w-full h-full code-editor`}
             style={editorStyles}
