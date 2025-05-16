@@ -32,7 +32,7 @@ const ProjectEditor = () => {
       navigate(`/project?id=${currentProjectId}`, { replace: true });
       setInitializing(false);
     }
-  }, [navigate, location]);
+  }, [navigate, location.search]);
 
   // Disable navigation messages
   useEffect(() => {

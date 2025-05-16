@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Send, ArrowRight, Trash2, Copy, Key } from "lucide-react";
+import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp } from "lucide-react";
 
 interface Project {
   id: string;
@@ -192,18 +192,13 @@ const Homepage = () => {
               <Button 
                 onClick={createNewProject}
                 disabled={isLoading} 
-                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-8 py-6 rounded-full text-lg font-medium hover:opacity-90 transition-all w-full sm:w-auto"
+                className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center"
+                variant="circle"
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    <span>Creating...</span>
-                  </div>
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Send className="h-5 w-5" />
-                    <span>Start Building</span>
-                  </div>
+                  <ArrowUp className="h-6 w-6 text-black" />
                 )}
               </Button>
 
