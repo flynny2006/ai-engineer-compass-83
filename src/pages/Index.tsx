@@ -21,6 +21,8 @@ import { packageJsonContent } from "@/data/packageJson";
 import Navigation from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
+import FileExplorerUpload from '@/components/FileExplorerUpload';
+
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -280,6 +282,8 @@ const Index = () => {
       behavior: "smooth"
     });
   };
+  
+  // Enhanced updatePreview function to handle navigation
   const updatePreview = () => {
     if (previewIframeRef.current) {
       const iframe = previewIframeRef.current;
@@ -297,7 +301,7 @@ const Index = () => {
           // If there's no head tag, we need to add one with the styles
           htmlContent = htmlContent.replace('<html>', '<html>\n<head>\n<style>' + cssFile.content + '</style>\n</head>');
         } else if (htmlContent && cssFile) {
-          // If there is a head tag, insert styles before it closes
+          // Add styles if there's already a head tag
           htmlContent = htmlContent.replace('</head>', `<style>${cssFile.content}</style>\n</head>`);
         }
 
@@ -305,12 +309,99 @@ const Index = () => {
         if (htmlContent && jsFile) {
           htmlContent = htmlContent.replace('</body>', `<script>${jsFile.content}</script>\n</body>`);
         }
+
+        // Add navigation listener script to intercept clicks on links
+        const navigationScript = `
+          <script>
+            document.addEventListener('click', function(e) {
+              const link = e.target.closest('a');
+              if (link && link.href) {
+                e.preventDefault();
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('http') && !href.startsWith('#')) {
+                  window.parent.postMessage({ type: 'navigate', href: href }, '*');
+                } else {
+                  window.open(link.href, '_blank');
+                }
+              }
+            });
+          </script>
+        `;
+
+        htmlContent = htmlContent.replace('</body>', `${navigationScript}</body>`);
+        
         iframeDoc.open();
         iframeDoc.write(htmlContent);
         iframeDoc.close();
       }
     }
   };
+
+  // Handle file upload
+  const handleFileUpload = (uploadedFile: { name: string, content: string | ArrayBuffer, type: string }) => {
+    const newFile = {
+      name: uploadedFile.name,
+      content: uploadedFile.content,
+      type: uploadedFile.type
+    };
+    
+    // Check if file already exists
+    const existingFileIndex = files.findIndex(f => f.name === uploadedFile.name);
+    
+    if (existingFileIndex >= 0) {
+      // Update existing file
+      const updatedFiles = [...files];
+      updatedFiles[existingFileIndex] = newFile;
+      setFiles(updatedFiles);
+    } else {
+      // Add new file
+      setFiles([...files, newFile]);
+    }
+    
+    // Set as current file
+    setCurrentFile(uploadedFile.name);
+  };
+
+  // Listen for navigation events from the iframe
+  useEffect(() => {
+    const handleIframeMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'navigate') {
+        const targetFile = event.data.href;
+        // Find the file in our files array
+        const fileExists = files.some(f => f.name === targetFile);
+        
+        if (fileExists) {
+          // Set as main preview file
+          setMainPreviewFile(targetFile);
+          toast({
+            title: "Navigation",
+            description: `Navigated to ${targetFile}`
+          });
+        } else {
+          toast({
+            title: "File not found",
+            description: `The file ${targetFile} does not exist in your project`,
+            variant: "destructive"
+          });
+        }
+      }
+    };
+    
+    window.addEventListener('message', handleIframeMessage);
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+    };
+  }, [files]);
+
+  // Load initial prompt if available (from homepage)
+  useEffect(() => {
+    const lastPrompt = localStorage.getItem("last_prompt");
+    if (lastPrompt) {
+      setUserPrompt(lastPrompt);
+      localStorage.removeItem("last_prompt"); // Clear after loading
+    }
+  }, []);
+  
   const saveApiKey = () => {
     if (apiKey) {
       localStorage.setItem("gemini_api_key", apiKey);
@@ -1040,6 +1131,10 @@ Full file content here
                 </TabsContent>
                 
                 <TabsContent value="files" className="h-full mt-0 overflow-hidden">
+                  {/* Add file upload component */}
+                  <div className="p-2">
+                    <FileExplorerUpload onFileUpload={handleFileUpload} />
+                  </div>
                   <FileExplorerEnhanced files={files} setFiles={setFiles} currentFile={currentFile} setCurrentFile={setCurrentFile} />
                 </TabsContent>
               </Tabs>
