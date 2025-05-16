@@ -79,6 +79,9 @@ const Homepage = () => {
       
       // Store current prompt as "last_prompt" for the project page
       localStorage.setItem("last_prompt", prompt);
+      
+      // Set the current project ID BEFORE navigation
+      // This is important for project-specific storage
       localStorage.setItem("current_project_id", projectId);
       
       // Save the API key if entered
@@ -86,9 +89,6 @@ const Homepage = () => {
         localStorage.setItem("api_key", apiKey);
         localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
       }
-      
-      // Remove any previous project files to ensure a fresh start
-      localStorage.removeItem("project_files");
       
       // Navigate to project page
       setTimeout(() => {
@@ -106,6 +106,8 @@ const Homepage = () => {
   };
 
   const loadProject = (projectId: string) => {
+    // Set the current project ID BEFORE navigation 
+    // This is critical for project isolation
     localStorage.setItem("current_project_id", projectId);
     
     // Save the API key if entered, to sync between homepage and editor
@@ -114,6 +116,7 @@ const Homepage = () => {
       localStorage.setItem("gemini_api_key", apiKey);
     }
     
+    // Navigate to the project with the ID in the URL
     navigate(`/project?id=${projectId}`);
   };
 
@@ -124,6 +127,13 @@ const Homepage = () => {
       const updatedProjects = projects.filter(project => project.id !== projectId);
       setProjects(updatedProjects);
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+      
+      // Also remove project-specific storage items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(`${projectId}_`)) {
+          localStorage.removeItem(key);
+        }
+      });
       
       toast({
         title: "Project deleted",
@@ -155,6 +165,17 @@ const Homepage = () => {
       const updatedProjects = [...projects, duplicatedProject];
       setProjects(updatedProjects);
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+      
+      // Also duplicate all project-specific storage items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(`${project.id}_`)) {
+          const newKey = key.replace(project.id, projectId);
+          const value = localStorage.getItem(key);
+          if (value) {
+            localStorage.setItem(newKey, value);
+          }
+        }
+      });
       
       toast({
         title: "Project duplicated",

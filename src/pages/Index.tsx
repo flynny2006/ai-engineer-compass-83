@@ -22,6 +22,7 @@ import Navigation from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
 import FileExplorerUpload from '@/components/FileExplorerUpload';
+import { useProjectFiles } from "@/hooks/use-project-files";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -97,23 +98,27 @@ const Index = () => {
     setTheme
   } = useTheme();
   const isMobile = useIsMobile();
-  const [files, setFiles] = useState(() => {
-    const savedFiles = localStorage.getItem("project_files");
-    return savedFiles ? JSON.parse(savedFiles) : initialFiles;
-  });
-  const [currentFile, setCurrentFile] = useState(() => {
-    const lastFile = localStorage.getItem("current_file");
-    return lastFile || "index.html";
-  });
+  
+  // Use the enhanced useProjectFiles hook
+  const {
+    files, 
+    setFiles,
+    currentFile, 
+    setCurrentFile,
+    mainPreviewFile, 
+    setMainPreviewFile,
+    updateFileContent,
+    getCurrentProjectId,
+    getStorageKey
+  } = useProjectFiles(initialFiles);
+  
   const [userPrompt, setUserPrompt] = useState<string>("");
   const [messages, setMessages] = useState<Array<{
     role: string;
     content: string;
     image?: string;
-  }>>(() => {
-    const savedMessages = localStorage.getItem("chat_history");
-    return savedMessages ? JSON.parse(savedMessages) : initialMessages;
-  });
+  }>>(initialMessages);
+  
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>(() => {
     return localStorage.getItem("gemini_api_key") || "";
@@ -125,13 +130,32 @@ const Index = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
-  const [mainPreviewFile, setMainPreviewFile] = useState<string>(() => {
-    return localStorage.getItem("main_preview_file") || "index.html";
-  });
   const [imageUpload, setImageUpload] = useState<File | null>(null);
   const [showImageUpload, setShowImageUpload] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [buildError, setBuildError] = useState<boolean>(false);
+
+  // Load chat messages from localStorage when component mounts or project ID changes
+  useEffect(() => {
+    const projectId = getCurrentProjectId();
+    if (!projectId) return;
+    
+    try {
+      const chatKey = getStorageKey("chat_history");
+      const savedMessages = localStorage.getItem(chatKey);
+      
+      if (savedMessages) {
+        setMessages(JSON.parse(savedMessages));
+      } else {
+        setMessages(initialMessages);
+        // Save initial messages to project-specific storage
+        localStorage.setItem(chatKey, JSON.stringify(initialMessages));
+      }
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+      setMessages(initialMessages);
+    }
+  }, [getCurrentProjectId, getStorageKey]);
 
   // Credits system
   const [dailyCredits, setDailyCredits] = useState<number>(() => {
@@ -178,19 +202,6 @@ const Index = () => {
     if (currentFile.endsWith('.ts') || currentFile.endsWith('.tsx')) return 'ts';
     if (currentFile.endsWith('.json')) return 'json';
     return 'text';
-  };
-
-  // Update file content
-  const updateFileContent = (content: string) => {
-    const updatedFiles = files.map(file => file.name === currentFile ? {
-      ...file,
-      content
-    } : file);
-    setFiles(updatedFiles);
-    localStorage.setItem("project_files", JSON.stringify(updatedFiles));
-
-    // Check for potential code errors
-    checkForCodeErrors(content);
   };
 
   // Check for code errors like triple backticks
@@ -260,23 +271,24 @@ const Index = () => {
   // Update the preview when files change
   useEffect(() => {
     updatePreview();
-    // Save files to localStorage
-    localStorage.setItem("project_files", JSON.stringify(files));
-    localStorage.setItem("current_file", currentFile);
-    localStorage.setItem("main_preview_file", mainPreviewFile);
   }, [files, currentFile, mainPreviewFile, lastRefreshTime]);
 
   // Save messages to localStorage
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem("chat_history", JSON.stringify(messages));
+      const projectId = getCurrentProjectId();
+      if (!projectId) return;
+      
+      const chatKey = getStorageKey("chat_history");
+      localStorage.setItem(chatKey, JSON.stringify(messages));
     }
-  }, [messages]);
+  }, [messages, getCurrentProjectId, getStorageKey]);
 
   // Scroll to bottom of messages
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth"
@@ -415,7 +427,8 @@ const Index = () => {
   const clearChatHistory = () => {
     if (window.confirm("Are you sure you want to clear the chat history?")) {
       setMessages(initialMessages);
-      localStorage.removeItem("chat_history");
+      const chatKey = getStorageKey("chat_history");
+      localStorage.removeItem(chatKey);
       toast({
         title: "Chat History Cleared",
         description: "Your conversation history has been cleared."
@@ -427,24 +440,53 @@ const Index = () => {
     const currentDailyCredits = dailyCredits;
     const currentLifetimeCredits = lifetimeCredits;
     const isUnlimited = hasUnlimitedCredits;
+    
+    // Reset all project-specific data
     setFiles(initialFiles);
     setCurrentFile("index.html");
     setMainPreviewFile("index.html");
     setMessages(initialMessages);
-    localStorage.removeItem("chat_history");
-    localStorage.setItem("project_files", JSON.stringify(initialFiles));
-    localStorage.setItem("current_file", "index.html");
-    localStorage.setItem("main_preview_file", "index.html");
     setEditorView("code");
+    
+    // Clear project-specific localStorage
+    if (getCurrentProjectId()) {
+      const projectId = getCurrentProjectId();
+      
+      // Update project storage with reset state
+      localStorage.setItem(getStorageKey("project_files"), JSON.stringify(initialFiles));
+      localStorage.setItem(getStorageKey("current_file"), "index.html");
+      localStorage.setItem(getStorageKey("main_preview_file"), "index.html");
+      localStorage.setItem(getStorageKey("chat_history"), JSON.stringify(initialMessages));
+      
+      // Update the project in saved_projects
+      const savedProjects = localStorage.getItem("saved_projects");
+      if (savedProjects) {
+        const projects = JSON.parse(savedProjects);
+        const updatedProjects = projects.map((project: any) => {
+          if (project.id === projectId) {
+            return {
+              ...project,
+              files: initialFiles,
+              lastModified: new Date().toISOString()
+            };
+          }
+          return project;
+        });
+        
+        localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+      }
+    }
 
     // Restore credits after reset
     setDailyCredits(currentDailyCredits);
     setLifetimeCredits(currentLifetimeCredits);
     setHasUnlimitedCredits(isUnlimited);
+    
     toast({
       title: "Project Reset",
       description: "Your project has been reset to its default state. Credits were preserved."
     });
+    
     setLastRefreshTime(Date.now());
   };
   const toggleFullscreen = () => {
@@ -704,6 +746,7 @@ Full file content here
       fileInputRef.current.value = '';
     }
   };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userPrompt.trim()) return;
@@ -953,7 +996,8 @@ Full file content here
     }
   };
   const creditPercentage = dailyCredits / DAILY_CREDIT_LIMIT * 100;
-  return <div className={`flex flex-col h-screen bg-background ${theme}`}>
+  return (
+    <div className={`flex flex-col h-screen bg-background ${theme}`}>
       {/* Header */}
       <header className="border-b p-4 bg-background flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -1245,6 +1289,8 @@ Full file content here
           </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;

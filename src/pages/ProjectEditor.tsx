@@ -16,34 +16,35 @@ const ProjectEditor = () => {
     
     // If there's a project ID in the URL, set it as current
     if (projectId) {
+      // Set the current project ID
       localStorage.setItem("current_project_id", projectId);
       
-      // Load project files based on project ID
+      // Load project data based on project ID
       const savedProjects = localStorage.getItem("saved_projects");
       if (savedProjects) {
         const projects = JSON.parse(savedProjects);
         const project = projects.find((p: any) => p.id === projectId);
         
         if (project) {
-          // If project has saved files, load them
-          if (project.files && project.files.length > 0) {
-            localStorage.setItem("project_files", JSON.stringify(project.files));
-          } else {
-            // If no saved files for this project yet, use defaults from Index.tsx
-            localStorage.removeItem("project_files");
-          }
-          
-          // Save last accessed timestamp
+          // Update last accessed timestamp
           const updatedProjects = projects.map((p: any) => 
             p.id === projectId 
               ? { ...p, lastModified: new Date().toISOString() } 
               : p
           );
           localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+          
+          // No need to explicitly set project files here - the Index component
+          // will handle loading the correct files for the current project
+          
+          setInitializing(false);
+        } else {
+          toast({
+            title: "Project not found",
+            description: "The requested project could not be found."
+          });
         }
       }
-      
-      setInitializing(false);
     } else {
       // Check if there's already a current project ID in localStorage
       const currentProjectId = localStorage.getItem("current_project_id");

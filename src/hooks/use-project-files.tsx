@@ -21,40 +21,53 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
   const getStorageKey = useCallback((key: string) => {
     const projectId = getCurrentProjectId();
     return projectId ? `${projectId}_${key}` : key;
-  }, []);
+  }, [getCurrentProjectId]);
   
-  // Load files from localStorage on initial mount
+  // Load files from localStorage on initial mount or when project ID changes
   useEffect(() => {
     const projectId = getCurrentProjectId();
+    if (!projectId) return;
     
     try {
-      // First check for project-specific files
-      const savedFiles = localStorage.getItem(getStorageKey("project_files"));
-      
-      // If no project-specific files, check for general project_files
-      const generalFiles = localStorage.getItem("project_files");
+      // Check for project-specific files in localStorage
+      const projectFilesKey = getStorageKey("project_files");
+      const savedFiles = localStorage.getItem(projectFilesKey);
       
       if (savedFiles) {
+        // Use the saved project files
         setFiles(JSON.parse(savedFiles));
-      } else if (generalFiles) {
-        // Use general files if no project-specific files exist
-        const parsedFiles = JSON.parse(generalFiles);
-        setFiles(parsedFiles);
-        // Save as project-specific files
-        localStorage.setItem(getStorageKey("project_files"), generalFiles);
       } else {
-        // Use initial files if no saved files exist
-        setFiles(initialFiles);
+        // Check if there are files in the saved_projects array
+        const savedProjects = localStorage.getItem("saved_projects");
+        if (savedProjects) {
+          const projects = JSON.parse(savedProjects);
+          const project = projects.find((p: any) => p.id === projectId);
+          
+          if (project && project.files && project.files.length > 0) {
+            // Use the files from the project
+            setFiles(project.files);
+            // Save these files to project-specific storage
+            localStorage.setItem(projectFilesKey, JSON.stringify(project.files));
+          } else {
+            // Use initial files if no saved files exist for this project
+            setFiles(initialFiles);
+            // Save initial files to project-specific storage
+            localStorage.setItem(projectFilesKey, JSON.stringify(initialFiles));
+          }
+        } else {
+          // Fallback to initial files
+          setFiles(initialFiles);
+          // Save initial files to project-specific storage
+          localStorage.setItem(projectFilesKey, JSON.stringify(initialFiles));
+        }
       }
       
-      // Load current file
-      const lastFile = localStorage.getItem(getStorageKey("current_file")) || 
-                       localStorage.getItem("current_file");
+      // Load current file for this project
+      const lastFile = localStorage.getItem(getStorageKey("current_file"));
       setCurrentFile(lastFile || "index.html");
       
-      // Load main preview file
-      const mainFile = localStorage.getItem(getStorageKey("main_preview_file")) || 
-                       localStorage.getItem("main_preview_file");
+      // Load main preview file for this project
+      const mainFile = localStorage.getItem(getStorageKey("main_preview_file"));
       setMainPreviewFile(mainFile || "index.html");
     } catch (error) {
       console.error("Error loading files:", error);
@@ -63,19 +76,20 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
       setCurrentFile("index.html");
       setMainPreviewFile("index.html");
     }
-  }, [initialFiles, getStorageKey]);
+  }, [initialFiles, getStorageKey, getCurrentProjectId]);
   
   // Save files to localStorage when they change
   useEffect(() => {
-    if (files.length > 0 && getCurrentProjectId()) {
+    const projectId = getCurrentProjectId();
+    if (files.length > 0 && projectId) {
       try {
+        // Save to project-specific storage
         localStorage.setItem(getStorageKey("project_files"), JSON.stringify(files));
         
         // Update the project in saved_projects
         const savedProjects = localStorage.getItem("saved_projects");
         if (savedProjects) {
           const projects = JSON.parse(savedProjects);
-          const projectId = getCurrentProjectId();
           
           const updatedProjects = projects.map((project: any) => {
             if (project.id === projectId) {
@@ -94,21 +108,23 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
         console.error("Error saving files:", error);
       }
     }
-  }, [files, getStorageKey]);
+  }, [files, getStorageKey, getCurrentProjectId]);
   
   // Save current file when it changes
   useEffect(() => {
-    if (currentFile && getCurrentProjectId()) {
+    const projectId = getCurrentProjectId();
+    if (currentFile && projectId) {
       localStorage.setItem(getStorageKey("current_file"), currentFile);
     }
-  }, [currentFile, getStorageKey]);
+  }, [currentFile, getStorageKey, getCurrentProjectId]);
   
   // Save main preview file when it changes
   useEffect(() => {
-    if (mainPreviewFile && getCurrentProjectId()) {
+    const projectId = getCurrentProjectId();
+    if (mainPreviewFile && projectId) {
       localStorage.setItem(getStorageKey("main_preview_file"), mainPreviewFile);
     }
-  }, [mainPreviewFile, getStorageKey]);
+  }, [mainPreviewFile, getStorageKey, getCurrentProjectId]);
   
   const updateFileContent = useCallback((fileName: string, content: string) => {
     setFiles(prevFiles => 
@@ -126,5 +142,7 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
     mainPreviewFile,
     setMainPreviewFile,
     updateFileContent,
+    getCurrentProjectId,
+    getStorageKey
   };
 };
