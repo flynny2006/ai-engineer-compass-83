@@ -46,16 +46,16 @@ const HomepageNav = () => {
             {planDetails.name} - {typeof planDetails.maxProjects === 'number' ? `Maximum ${planDetails.maxProjects} Projects` : planDetails.maxProjects}
           </div>
           
-          <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild>
+          <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild className="text-black dark:text-white">
             <Link to="/supabase" className="flex items-center">
               <Database className="h-4 w-4 mr-0 sm:mr-2" />
-              <span className="hidden sm:inline text-black dark:text-white">Supabase</span>
+              <span className="hidden sm:inline">Supabase</span>
             </Link>
           </Button>
-          <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild>
+          <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild className="text-black dark:text-white">
             <Link to="/pricing" className="flex items-center">
               <Gift className="h-4 w-4 mr-0 sm:mr-2" />
-              <span className="hidden sm:inline text-black dark:text-white">Pricing</span>
+              <span className="hidden sm:inline">Pricing</span>
             </Link>
           </Button>
         </div>

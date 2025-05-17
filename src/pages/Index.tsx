@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database, Plus, Image, Menu, Info } from "lucide-react";
+import { Code, Send, Play, Eye, MessageSquare, Sun, Moon, Save, Trash, Maximize, RefreshCcw, ChevronDown, FileText, Gift, Settings, Database, Plus, Image, Menu, Info, FileCode } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Toggle } from "@/components/ui/toggle";
@@ -134,6 +134,19 @@ const Index = () => {
   const [showImageUpload, setShowImageUpload] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [buildError, setBuildError] = useState<boolean>(false);
+  
+  // AI generation status
+  const [aiStatus, setAiStatus] = useState<{
+    active: boolean;
+    currentFile: string;
+    progress: number;
+    files: { name: string; status: 'pending' | 'coding' | 'complete' }[];
+  }>({
+    active: false,
+    currentFile: '',
+    progress: 0,
+    files: []
+  });
 
   // Load chat messages from localStorage when component mounts or project ID changes
   useEffect(() => {
@@ -523,6 +536,18 @@ const Index = () => {
         setShowImageUpload(false);
         setImageUpload(null);
 
+        // Set AI status as active for the chat
+        setAiStatus({
+          active: true,
+          currentFile: '',
+          progress: 0,
+          files: [
+            { name: 'index.html', status: 'pending' },
+            { name: 'styles.css', status: 'pending' },
+            { name: 'script.js', status: 'pending' }
+          ]
+        });
+
         if (!hasUnlimitedCredits) {
           if (lifetimeCredits > 0) {
             setLifetimeCredits(prev => prev - 1);
@@ -643,6 +668,14 @@ Full file content here
               updateFileContent(currentFile, generatedText);
             }
 
+            // Complete AI status
+            setAiStatus(prev => ({
+              ...prev,
+              active: false,
+              progress: 100,
+              files: prev.files.map(file => ({ ...file, status: 'complete' }))
+            }));
+            
             setMessages(prev => [...prev, {
               role: "assistant",
               content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results."
@@ -710,6 +743,18 @@ Full file content here
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
     setIsLoading(true);
+
+    // Set AI status as active for the chat
+    setAiStatus({
+      active: true,
+      currentFile: '',
+      progress: 0,
+      files: [
+        { name: 'index.html', status: 'pending' },
+        { name: 'styles.css', status: 'pending' },
+        { name: 'script.js', status: 'pending' }
+      ]
+    });
 
     if (!hasUnlimitedCredits) {
       if (lifetimeCredits > 0) {
@@ -889,6 +934,14 @@ Full file content here
           updateFileContent(currentFile, generatedText);
         }
 
+        // Complete AI status
+        setAiStatus(prev => ({
+          ...prev,
+          active: false,
+          progress: 100,
+          files: prev.files.map(file => ({ ...file, status: 'complete' }))
+        }));
+
         setMessages(prev => [...prev, {
           role: "assistant",
           content: "✅ Changes applied! Check the preview to see the results."
@@ -907,11 +960,6 @@ Full file content here
         role: "assistant",
         content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
       }]);
-      toast({
-        title: "Error",
-        description: "Failed to process your request. Please check your API key and try again.",
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }
@@ -978,9 +1026,9 @@ Full file content here
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Toggle>
             <Button size={isMobile ? "icon" : "sm"} variant={theme === 'light' ? "modern" : "outline"} onClick={() => {
-            updatePreview();
-            setLastRefreshTime(Date.now());
-          }} className={isMobile ? "h-9 w-9 p-0" : ""}>
+              updatePreview();
+              setLastRefreshTime(Date.now());
+            }} className={isMobile ? "h-9 w-9 p-0" : ""}>
               <Play className="h-4 w-4" />
               {!isMobile && <span className="ml-1">Run</span>}
             </Button>
@@ -1154,6 +1202,42 @@ Full file content here
                     <Trash className="h-4 w-4" />
                   </Button>
                 </div>
+
+                {/* AI Generation Status Panel */}
+                {aiStatus.active && (
+                  <div className="bg-black/80 backdrop-blur-md p-4 border border-white/10 text-white mb-4 mx-2 mt-2 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileCode className="text-blue-400 animate-pulse" />
+                      <h4 className="text-sm font-semibold">AI Generation - 2025</h4>
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-blue-500 h-full rounded-full" style={{width: `${aiStatus.progress}%`}}></div>
+                      </div>
+                      
+                      <p className="text-blue-300 font-medium">
+                        {aiStatus.currentFile && (
+                          <>Currently coding: <span className="text-white">{aiStatus.currentFile}</span></>
+                        )}
+                      </p>
+                      
+                      <div className="space-y-1 mt-2">
+                        {aiStatus.files.map((file, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              file.status === 'complete' ? 'bg-green-500' : 
+                              file.status === 'coding' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
+                            }`}></div>
+                            <span className={
+                              file.status === 'complete' ? 'text-green-300' : 
+                              file.status === 'coding' ? 'text-blue-300' : 'text-gray-400'
+                            }>{file.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* API Key Input */}
                 {showApiKeyInput && <div className="border-b p-3">

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from "react";
-import { Search, FileCode } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,17 +15,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [aiStatus, setAiStatus] = useState<{
-    active: boolean;
-    currentFile: string;
-    progress: number;
-    files: { name: string; status: 'pending' | 'coding' | 'complete' }[];
-  }>({
-    active: false,
-    currentFile: '',
-    progress: 0,
-    files: []
-  });
   
   // HTML suggestions for autocomplete
   const htmlSuggestions = [
@@ -93,32 +81,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
       setLineCount(1);
     }
   }, [value]);
-  
-  // Simulate AI coding activity for demonstration
-  useEffect(() => {
-    // Mock data for AI generation process visualization
-    const mockFiles = [
-      { name: 'index.html', status: 'complete' as const },
-      { name: 'app.tsx', status: 'coding' as const },
-      { name: 'styles.css', status: 'pending' as const }
-    ];
-    
-    // Demo only - in production this would connect to real AI progress events
-    const interval = setInterval(() => {
-      // Randomly toggle AI activity for demo purposes
-      if (Math.random() > 0.7) {
-        setAiStatus(prev => ({
-          ...prev,
-          active: !prev.active,
-          currentFile: mockFiles[Math.floor(Math.random() * mockFiles.length)].name,
-          files: mockFiles,
-          progress: Math.min(100, prev.progress + Math.random() * 15)
-        }));
-      }
-    }, 3000);
-    
-    return () => clearInterval(interval);
-  }, []);
   
   // Handle key combinations
   useEffect(() => {
@@ -197,42 +159,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
   
   return (
     <div className="flex flex-col h-full w-full bg-background/80 relative">
-      {/* AI Generation Status Panel */}
-      {aiStatus.active && (
-        <div className="absolute top-0 right-0 z-50 bg-black/80 backdrop-blur-md p-4 rounded-bl-lg border border-white/10 text-white w-64">
-          <div className="flex items-center gap-2 mb-3">
-            <FileCode className="text-blue-400 animate-pulse" />
-            <h4 className="text-sm font-semibold">AI Generation - 2025</h4>
-          </div>
-          <div className="space-y-2 text-xs">
-            <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-blue-500 h-full rounded-full" style={{width: `${aiStatus.progress}%`}}></div>
-            </div>
-            
-            <p className="text-blue-300 font-medium">
-              {aiStatus.currentFile && (
-                <>Currently coding: <span className="text-white">{aiStatus.currentFile}</span></>
-              )}
-            </p>
-            
-            <div className="space-y-1 mt-2">
-              {aiStatus.files.map((file, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    file.status === 'complete' ? 'bg-green-500' : 
-                    file.status === 'coding' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
-                  }`}></div>
-                  <span className={
-                    file.status === 'complete' ? 'text-green-300' : 
-                    file.status === 'coding' ? 'text-blue-300' : 'text-gray-400'
-                  }>{file.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {showSearch && (
         <div className="bg-background/90 border-b p-2 flex items-center">
           <form onSubmit={handleSearch} className="flex items-center w-full">
