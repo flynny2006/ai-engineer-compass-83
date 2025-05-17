@@ -249,12 +249,18 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           spellCheck={false}
-          className={`flex-1 p-4 bg-background resize-none overflow-auto w-full border-0 focus:outline-none code-editor`}
+          className="flex-1 p-4 bg-background resize-none overflow-auto w-full border-0 focus:outline-none code-editor"
           style={{
             fontFamily: '"JetBrains Mono", "Fira Code", monospace',
             lineHeight: 1.5,
             tabSize: 2,
-            paddingLeft: '0.5rem'
+            paddingLeft: '0.5rem',
+            overflow: 'auto',
+            whiteSpace: 'pre',
+            height: '100%',
+            position: 'relative',
+            top: 0,
+            left: 0
           }}
         />
       </div>

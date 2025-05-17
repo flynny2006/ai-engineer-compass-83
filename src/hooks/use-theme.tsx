@@ -94,43 +94,46 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.style.setProperty("--syntax-operator", "35 90% 61%"); // Gold for operators
       root.style.setProperty("--syntax-function", "35 90% 61%"); // Gold for functions
     } else {
-      // Reset custom properties when in light mode
-      root.style.removeProperty("--background");
-      root.style.removeProperty("--foreground");
-      root.style.removeProperty("--card");
-      root.style.removeProperty("--card-foreground");
-      root.style.removeProperty("--popover");
-      root.style.removeProperty("--popover-foreground");
-      root.style.removeProperty("--primary");
-      root.style.removeProperty("--primary-foreground");
-      root.style.removeProperty("--secondary");
-      root.style.removeProperty("--secondary-foreground");
-      root.style.removeProperty("--muted");
-      root.style.removeProperty("--muted-foreground");
-      root.style.removeProperty("--accent");
-      root.style.removeProperty("--accent-foreground");
-      root.style.removeProperty("--destructive");
-      root.style.removeProperty("--destructive-foreground");
-      root.style.removeProperty("--border");
-      root.style.removeProperty("--input");
-      root.style.removeProperty("--ring");
-      root.style.removeProperty("--sidebar-background");
-      root.style.removeProperty("--sidebar-foreground");
-      root.style.removeProperty("--sidebar-primary");
-      root.style.removeProperty("--sidebar-primary-foreground");
-      root.style.removeProperty("--sidebar-accent");
-      root.style.removeProperty("--sidebar-accent-foreground");
-      root.style.removeProperty("--sidebar-border");
-      root.style.removeProperty("--syntax-keyword");
-      root.style.removeProperty("--syntax-string");
-      root.style.removeProperty("--syntax-comment");
-      root.style.removeProperty("--syntax-number");
-      root.style.removeProperty("--syntax-class");
-      root.style.removeProperty("--syntax-property");
-      root.style.removeProperty("--syntax-tag");
-      root.style.removeProperty("--syntax-attribute");
-      root.style.removeProperty("--syntax-operator");
-      root.style.removeProperty("--syntax-function");
+      // Enhanced light mode with cleaner, more modern aesthetics
+      root.style.setProperty("--background", "0 0% 100%"); // Pure white background
+      root.style.setProperty("--foreground", "222 47% 11%"); // Dark blue-gray text
+      
+      root.style.setProperty("--card", "0 0% 100%"); // White card
+      root.style.setProperty("--card-foreground", "222 47% 11%"); // Dark blue-gray text
+      
+      root.style.setProperty("--popover", "0 0% 100%"); // White popover
+      root.style.setProperty("--popover-foreground", "222 47% 11%"); // Dark blue-gray text
+      
+      root.style.setProperty("--primary", "262 83% 58%"); // Vibrant purple primary
+      root.style.setProperty("--primary-foreground", "0 0% 100%"); // White primary text
+      
+      root.style.setProperty("--secondary", "220 14% 96%"); // Light gray secondary
+      root.style.setProperty("--secondary-foreground", "222 47% 11%"); // Dark blue-gray secondary text
+      
+      root.style.setProperty("--muted", "220 14% 96%"); // Light gray muted
+      root.style.setProperty("--muted-foreground", "220 8% 46%"); // Gray text for muted
+      
+      root.style.setProperty("--accent", "220 14% 96%"); // Light gray accent
+      root.style.setProperty("--accent-foreground", "222 47% 11%"); // Dark blue-gray accent text
+      
+      root.style.setProperty("--destructive", "0 84% 60%"); // Bright red destructive
+      root.style.setProperty("--destructive-foreground", "210 20% 98%"); // Light destructive text
+      
+      root.style.setProperty("--border", "220 13% 91%"); // Light gray border
+      root.style.setProperty("--input", "220 13% 91%"); // Light gray input
+      root.style.setProperty("--ring", "262 83% 58%"); // Purple ring
+      
+      // Light mode syntax highlighting - cleaner, more readable colors
+      root.style.setProperty("--syntax-keyword", "262 60% 50%"); // Purple for keywords
+      root.style.setProperty("--syntax-string", "22 80% 45%"); // Orange-brown for strings
+      root.style.setProperty("--syntax-comment", "220 10% 50%"); // Gray for comments
+      root.style.setProperty("--syntax-number", "195 70% 50%"); // Blue for numbers
+      root.style.setProperty("--syntax-class", "280 60% 50%"); // Magenta for classes
+      root.style.setProperty("--syntax-property", "210 80% 45%"); // Blue for properties
+      root.style.setProperty("--syntax-tag", "330 70% 45%"); // Pink for tags
+      root.style.setProperty("--syntax-attribute", "90 60% 40%"); // Green for attributes
+      root.style.setProperty("--syntax-operator", "35 80% 45%"); // Orange for operators
+      root.style.setProperty("--syntax-function", "210 80% 45%"); // Blue for functions
     }
   }, [theme]);
 

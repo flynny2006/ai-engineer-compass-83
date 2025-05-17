@@ -1,11 +1,15 @@
+
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, DollarSign, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/hooks/use-theme";
 
 const PricingPage = () => {
+  const { theme } = useTheme();
+  
   const pricingPlans = [
     {
       name: "Free",
@@ -61,7 +65,7 @@ const PricingPage = () => {
   ];
 
   return (
-    <div className="container mx-auto py-16 px-4">
+    <div className={`container mx-auto py-16 px-4 ${theme === 'light' ? 'bg-gray-50' : ''}`}>
       <div className="mb-6">
         <Link to="/">
           <Button variant="outline" className="flex items-center gap-2">
@@ -71,8 +75,10 @@ const PricingPage = () => {
         </Link>
       </div>
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Simple, transparent pricing</h1>
-        <p className="text-lg text-muted-foreground">
+        <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-800">
+          Simple, transparent pricing
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Choose the plan that works best for you or your team.
         </p>
         <p className="text-sm text-muted-foreground mt-2">
@@ -80,13 +86,22 @@ const PricingPage = () => {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
         {pricingPlans.map((plan) => (
-          <Card key={plan.name} className={`flex flex-col ${plan.popular ? 'border-primary shadow-lg' : ''}`}>
-            <CardHeader>
+          <Card 
+            key={plan.name} 
+            className={`flex flex-col transform transition-all duration-200 hover:scale-105 ${
+              plan.popular 
+                ? `${theme === 'light' 
+                   ? 'border-violet-500 shadow-lg ring-1 ring-violet-500' 
+                   : 'border-primary shadow-lg'}`
+                : ''
+            }`}
+          >
+            <CardHeader className={`${plan.popular && theme === 'light' ? 'bg-gradient-to-br from-violet-50 to-purple-100 rounded-t-lg' : ''}`}>
               <div className="flex justify-between items-center">
                 <CardTitle>{plan.name}</CardTitle>
-                {plan.popular && <Badge className="bg-primary">Popular</Badge>}
+                {plan.popular && <Badge className={`${theme === 'light' ? 'bg-violet-500' : 'bg-primary'}`}>Popular</Badge>}
               </div>
               <CardDescription>{plan.description}</CardDescription>
             </CardHeader>
@@ -98,14 +113,20 @@ const PricingPage = () => {
               <ul className="space-y-3">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-center">
-                    <Check className="h-4 w-4 mr-3 text-primary" />
+                    <Check className={`h-4 w-4 mr-3 ${theme === 'light' ? 'text-violet-600' : 'text-primary'}`} />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className={`w-full ${plan.popular ? '' : 'bg-muted-foreground hover:bg-muted-foreground/90 text-white'}`}>
+              <Button 
+                className={`w-full ${
+                  plan.popular 
+                    ? `${theme === 'light' ? 'bg-violet-600 hover:bg-violet-700 text-white' : ''}`
+                    : `${theme === 'light' ? 'bg-gray-700 hover:bg-gray-800 text-white' : 'bg-muted-foreground hover:bg-muted-foreground/90 text-white'}`
+                }`}
+              >
                 <DollarSign className="h-4 w-4 mr-2" /> {plan.buttonText}
               </Button>
             </CardFooter>
