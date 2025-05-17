@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp, Compass, Rocket, Code, Users } from "lucide-react";
+import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp, Compass, Rocket, Code, Users, Building } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
@@ -19,6 +20,13 @@ interface Project {
   lastModified: string;
 }
 
+interface Partner {
+  id: number;
+  name: string;
+  description: string;
+  logoUrl?: string; 
+}
+
 const Homepage = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -29,6 +37,25 @@ const Homepage = () => {
   const [apiKey, setApiKey] = useState<string>("");
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<string>("");
+  const [showingAiExplanation, setShowingAiExplanation] = useState<boolean>(false);
+
+  // Sample partners data
+  const partners = [
+    { id: 1, name: "Acme Tech", description: "Leading AI infrastructure provider", logoUrl: "placeholder.svg" },
+    { id: 2, name: "DataFlow Inc.", description: "Enterprise data solutions", logoUrl: "placeholder.svg" },
+    { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
+  ];
+
+  // AI explanations for the app
+  const aiExplanations = [
+    "Boongle AI uses advanced transformer models to convert natural language into functional code.",
+    "Our system analyzes your prompt and generates optimized React components with best practices.",
+    "In 2025, AI code generation has evolved to understand complex requirements and developer intent.",
+    "The Boongle engine can maintain state, handle user interactions, and create responsive designs automatically.",
+    "Our AI has been trained on millions of high-quality web applications to deliver production-ready code.",
+    "We continuously improve our models with developer feedback to enhance code quality and reliability."
+  ];
 
   // Load projects and API key from localStorage
   useEffect(() => {
@@ -43,6 +70,20 @@ const Homepage = () => {
       if (savedApiKey) {
         setApiKey(savedApiKey);
       }
+      
+      // Start AI explanation rotation
+      const interval = setInterval(() => {
+        const randomExplanation = aiExplanations[Math.floor(Math.random() * aiExplanations.length)];
+        setAiExplanation(randomExplanation);
+        setShowingAiExplanation(true);
+        
+        // Hide after 8 seconds
+        setTimeout(() => {
+          setShowingAiExplanation(false);
+        }, 8000);
+      }, 12000);
+      
+      return () => clearInterval(interval);
     } catch (error) {
       console.error("Error loading data:", error);
     }
@@ -229,10 +270,9 @@ const Homepage = () => {
   };
 
   // Handler for image upload
-  const handleImageUpload = (uploadedFile: { name: string, content: string | ArrayBuffer, type: string }) => {
+  const handleImageUpload = (uploadedFile: { name: string, content: string, type: string }) => {
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     // The 'type' from FileExplorerUpload is the file extension.
-    // The 'content' will be a base64 string (DataURL) if it was read as an image.
     if (
       typeof uploadedFile.content === 'string' &&
       (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
@@ -257,6 +297,15 @@ const Homepage = () => {
       <HomepageNav />
       <main className="flex-1"> {/* Added main tag for semantics */}
         <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
+          {showingAiExplanation && (
+            <div className="fixed bottom-8 right-8 max-w-md p-4 bg-gradient-to-r from-green-500/80 to-blue-500/80 text-white rounded-lg shadow-lg backdrop-blur-md border border-white/20 animate-fade-in z-50">
+              <p className="text-sm">
+                <span className="font-bold mr-2">🤖 AI:</span>
+                {aiExplanation}
+              </p>
+            </div>
+          )}
+          
           <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
             <div className="text-center">
               <h1 className="text-white font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in">
@@ -322,7 +371,7 @@ const Homepage = () => {
                 <Button
                   onClick={() => setShowApiKeyInput(!showApiKeyInput)}
                   variant="outline"
-                  className="border-white/20 text-white/80 hover:bg-white/10 w-full sm:w-auto"
+                  className={`border-white/20 ${theme === 'light' ? 'text-black' : 'text-white/80'} hover:bg-white/10 w-full sm:w-auto`}
                 >
                   <Key className="h-4 w-4 mr-2" />
                   {apiKey ? "Change API Key" : "Set API Key"}
@@ -424,6 +473,47 @@ const Homepage = () => {
               </div>
             </div>
           )}
+          
+          {/* Partners Section */}
+          <div className="mt-12 w-full max-w-3xl mx-auto">
+            <Separator className="bg-white/20 my-8" />
+            <h2 className="text-white text-2xl font-semibold mb-6">Our Partners</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {partners.map((partner) => (
+                <div 
+                  key={partner.id}
+                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 flex flex-col items-center text-center"
+                >
+                  <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
+                    {partner.logoUrl ? (
+                      <img 
+                        src={partner.logoUrl} 
+                        alt={`${partner.name} logo`}
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <Building className="h-8 w-8 text-white/60" />
+                    )}
+                  </div>
+                  <h3 className="text-white font-medium">{partner.name}</h3>
+                  <p className="text-gray-400 text-sm mt-1">
+                    {partner.description}
+                  </p>
+                </div>
+              ))}
+              
+              <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm border border-white/10 rounded-lg p-6 flex flex-col items-center text-center">
+                <Users className="h-10 w-10 text-green-400 mb-3" />
+                <h3 className="text-white font-medium">Become a Partner</h3>
+                <p className="text-gray-400 text-sm mt-2">
+                  Contact us to get featured as a partner here!
+                </p>
+                <Button className="mt-4" variant={theme === 'light' ? 'modern' : 'default'}>
+                  Contact Us
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

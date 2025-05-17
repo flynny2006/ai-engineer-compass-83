@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -131,9 +130,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
     ));
   };
   
-  // Fix: Create a separate onChange handler for textarea to fix editing issues
+  // Critical fix: Create a separate onChange handler for textarea to fix editing issues
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value);
+    // Get the new value directly from the event target
+    const newValue = e.target.value;
+    onChange(newValue);
   };
   
   // Handle tab key for indentation
@@ -154,72 +155,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
         textarea.selectionStart = textarea.selectionEnd = start + 2;
       }, 0);
     }
-    
-    // Auto close HTML tags (only for HTML files)
-    if (language === 'html' && e.key === '>') {
-      const cursorPos = textarea.selectionStart;
-      const textBeforeCursor = value.substring(0, cursorPos);
-      
-      // Check if we're typing a tag and not a closing tag
-      const openingTagMatch = textBeforeCursor.match(/<(\w+)(?:\s+[^>]*)$/);
-      if (openingTagMatch && !textBeforeCursor.endsWith('</')) {
-        const tagName = openingTagMatch[1];
-        // Self-closing tags
-        const selfClosingTags = ['img', 'input', 'br', 'hr', 'meta', 'link'];
-        if (!selfClosingTags.includes(tagName)) {
-          setTimeout(() => {
-            const newValue = value.substring(0, cursorPos) + '>' + `</${tagName}>` + value.substring(cursorPos);
-            onChange(newValue);
-            textarea.selectionStart = textarea.selectionEnd = cursorPos + 1;
-          }, 0);
-        }
-      }
-    }
-    
-    // Auto suggestions for HTML
-    if (language === 'html' && e.key !== 'Enter' && e.key !== 'Escape') {
-      const cursorPos = textarea.selectionStart;
-      const textBeforeCursor = value.substring(0, cursorPos);
-      
-      // Check if we're starting to type a tag
-      const tagStart = textBeforeCursor.lastIndexOf('<');
-      if (tagStart !== -1 && !textBeforeCursor.substring(tagStart).includes('>')) {
-        const tagText = textBeforeCursor.substring(tagStart + 1);
-        
-        // Only suggest if we have at least 2 characters after "<"
-        if (tagText.length >= 1) {
-          // Find matching suggestions
-          const matches = htmlSuggestions.filter(s => 
-            s.tag.toLowerCase().startsWith(tagText.toLowerCase())
-          );
-          
-          if (matches.length > 0 && e.key === 'Tab') {
-            e.preventDefault();
-            // Insert the first suggestion
-            const replacement = matches[0].snippet;
-            const newValue = value.substring(0, tagStart) + replacement + value.substring(cursorPos);
-            onChange(newValue);
-            
-            // Position cursor appropriately inside the inserted tag
-            const cursorOffset = replacement.includes('></')
-              ? replacement.indexOf('>') + 1
-              : replacement.includes('""')
-              ? replacement.indexOf('""') + 1
-              : replacement.length;
-            
-            setTimeout(() => {
-              textarea.selectionStart = textarea.selectionEnd = tagStart + cursorOffset;
-            }, 0);
-          }
-        }
-      }
-    }
   };
   
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full bg-background/80">
       {showSearch && (
-        <div className="bg-background border-b p-2 flex items-center">
+        <div className="bg-background/90 border-b p-2 flex items-center">
           <form onSubmit={handleSearch} className="flex items-center w-full">
             <Search className="h-4 w-4 mr-2 text-muted-foreground" />
             <Input
@@ -245,7 +186,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
         </div>
       )}
       <div className="flex flex-1 overflow-hidden font-mono text-sm">
-        <div className="bg-muted py-4 flex flex-col overflow-hidden">
+        <div className="bg-muted/80 py-4 flex flex-col overflow-hidden">
           {renderLineNumbers()}
         </div>
         <textarea
@@ -262,7 +203,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
             paddingLeft: '0.5rem',
             overflow: 'auto',
             whiteSpace: 'pre',
-            height: '100%',
+            caretColor: 'currentColor',
             position: 'relative',
             top: 0,
             left: 0
