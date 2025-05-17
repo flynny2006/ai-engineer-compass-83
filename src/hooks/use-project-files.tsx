@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-type FileType = {
+export type FileType = {
   name: string;
   content: string;
   type: string;
@@ -134,6 +134,37 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
     );
   }, []);
   
+  // Handles file upload by converting ArrayBuffer to string
+  const handleFileUpload = useCallback((uploadedFile: { name: string, content: string | ArrayBuffer, type: string }) => {
+    // Convert ArrayBuffer to string if needed
+    const fileContent = typeof uploadedFile.content === 'string' 
+      ? uploadedFile.content 
+      : new TextDecoder().decode(uploadedFile.content);
+    
+    const newFile: FileType = {
+      name: uploadedFile.name,
+      content: fileContent,
+      type: uploadedFile.type
+    };
+    
+    // Check if file already exists
+    setFiles(prevFiles => {
+      const existingFileIndex = prevFiles.findIndex(f => f.name === uploadedFile.name);
+      if (existingFileIndex >= 0) {
+        // Update existing file
+        const updatedFiles = [...prevFiles];
+        updatedFiles[existingFileIndex] = newFile;
+        return updatedFiles;
+      } else {
+        // Add new file
+        return [...prevFiles, newFile];
+      }
+    });
+    
+    // Set as current file
+    setCurrentFile(uploadedFile.name);
+  }, []);
+  
   return {
     files,
     setFiles,
@@ -143,6 +174,7 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
     setMainPreviewFile,
     updateFileContent,
     getCurrentProjectId,
-    getStorageKey
+    getStorageKey,
+    handleFileUpload
   };
 };

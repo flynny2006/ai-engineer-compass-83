@@ -108,6 +108,14 @@ export default {
 					to: {
 						transform: 'rotate(360deg)'
 					}
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'50%': {
+						transform: 'translateY(-8px)'
+					}
 				}
 			},
 			animation: {
@@ -115,7 +123,8 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
 				'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
-				'border-trail': 'border-trail var(--animation-duration) linear infinite'
+				'border-trail': 'border-trail var(--animation-duration) linear infinite',
+				'float': 'float 5s ease-in-out infinite'
 			}
 		}
 	},

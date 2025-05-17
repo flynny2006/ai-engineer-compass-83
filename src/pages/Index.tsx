@@ -22,7 +22,7 @@ import Navigation from "@/components/Navigation";
 import { Link } from "react-router-dom";
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
 import FileExplorerUpload from '@/components/FileExplorerUpload';
-import { useProjectFiles } from "@/hooks/use-project-files";
+import { useProjectFiles, FileType } from "@/hooks/use-project-files";
 
 const DEFAULT_CODE = `<!DOCTYPE html>
 <html lang="en">
@@ -63,7 +63,7 @@ const DEFAULT_CODE = `<!DOCTYPE html>
 </html>`;
 
 // Define initial files structure
-const initialFiles = [{
+const initialFiles: FileType[] = [{
   name: "index.html",
   content: DEFAULT_CODE,
   type: "html"
@@ -80,23 +80,22 @@ const initialFiles = [{
   content: packageJsonContent,
   type: "json"
 }];
+
 const initialMessages = [{
   role: "assistant",
   content: "Welcome! I'm your AI coding assistant. Describe the changes you'd like to make to the code and I'll help implement them."
 }];
+
 const DAILY_CREDIT_LIMIT = 25;
 const UNLIMITED_CODE = "3636";
 const CREDIT_CODES = {
   "56722": 100,
   "757874": 500,
   "776561": 1600
-  // More can be added here in the future
 };
+
 const Index = () => {
-  const {
-    theme,
-    setTheme
-  } = useTheme();
+  const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
   
   // Use the enhanced useProjectFiles hook
@@ -109,7 +108,8 @@ const Index = () => {
     setMainPreviewFile,
     updateFileContent,
     getCurrentProjectId,
-    getStorageKey
+    getStorageKey,
+    handleFileUpload
   } = useProjectFiles(initialFiles);
   
   const [userPrompt, setUserPrompt] = useState<string>("");
@@ -161,12 +161,7 @@ const Index = () => {
   const [dailyCredits, setDailyCredits] = useState<number>(() => {
     const savedCredits = localStorage.getItem("daily_credits");
     if (savedCredits) {
-      const {
-        value,
-        lastReset
-      } = JSON.parse(savedCredits);
-
-      // Check if we need to reset credits (new day)
+      const { value, lastReset } = JSON.parse(savedCredits);
       const today = new Date().setHours(0, 0, 0, 0);
       const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
       if (today > lastResetDate) {
@@ -195,6 +190,7 @@ const Index = () => {
     const file = files.find(f => f.name === currentFile);
     return file ? file.content : "";
   };
+  
   const getCurrentFileLanguage = () => {
     if (currentFile.endsWith('.html')) return 'html';
     if (currentFile.endsWith('.css')) return 'css';
@@ -206,7 +202,6 @@ const Index = () => {
 
   // Check for code errors like triple backticks
   const checkForCodeErrors = (content: string) => {
-    // Check if content ends with backticks or contains double backticks
     const endsWithBackticks = content.trim().endsWith('```');
     const containsDoubleBackticks = content.includes('``````');
     if (endsWithBackticks || containsDoubleBackticks) {
@@ -249,9 +244,7 @@ const Index = () => {
     const checkAndResetCredits = () => {
       const savedCredits = localStorage.getItem("daily_credits");
       if (savedCredits) {
-        const {
-          lastReset
-        } = JSON.parse(savedCredits);
+        const { lastReset } = JSON.parse(savedCredits);
         const today = new Date().setHours(0, 0, 0, 0);
         const lastResetDate = new Date(lastReset).setHours(0, 0, 0, 0);
         if (today > lastResetDate) {
@@ -260,10 +253,7 @@ const Index = () => {
       }
     };
 
-    // Set up interval to check credits reset (every minute)
     const interval = setInterval(checkAndResetCredits, 60000);
-
-    // Check on component mount
     checkAndResetCredits();
     return () => clearInterval(interval);
   }, []);
@@ -305,24 +295,18 @@ const Index = () => {
         const cssFile = files.find(f => f.name === "styles.css");
         const jsFile = files.find(f => f.name === "script.js");
 
-        // Construct the HTML with linked CSS and JS
         let htmlContent = htmlFile ? htmlFile.content : DEFAULT_CODE;
 
-        // Ensure the HTML structure is complete and add style/script tags if needed
         if (htmlContent && !htmlContent.includes('</head>') && cssFile) {
-          // If there's no head tag, we need to add one with the styles
           htmlContent = htmlContent.replace('<html>', '<html>\n<head>\n<style>' + cssFile.content + '</style>\n</head>');
         } else if (htmlContent && cssFile) {
-          // Add styles if there's already a head tag
           htmlContent = htmlContent.replace('</head>', `<style>${cssFile.content}</style>\n</head>`);
         }
 
-        // Add JavaScript before closing body tag
         if (htmlContent && jsFile) {
           htmlContent = htmlContent.replace('</body>', `<script>${jsFile.content}</script>\n</body>`);
         }
 
-        // Add navigation listener script to intercept clicks on links
         const navigationScript = `
           <script>
             document.addEventListener('click', function(e) {
@@ -349,41 +333,14 @@ const Index = () => {
     }
   };
 
-  // Handle file upload
-  const handleFileUpload = (uploadedFile: { name: string, content: string | ArrayBuffer, type: string }) => {
-    const newFile = {
-      name: uploadedFile.name,
-      content: uploadedFile.content,
-      type: uploadedFile.type
-    };
-    
-    // Check if file already exists
-    const existingFileIndex = files.findIndex(f => f.name === uploadedFile.name);
-    
-    if (existingFileIndex >= 0) {
-      // Update existing file
-      const updatedFiles = [...files];
-      updatedFiles[existingFileIndex] = newFile;
-      setFiles(updatedFiles);
-    } else {
-      // Add new file
-      setFiles([...files, newFile]);
-    }
-    
-    // Set as current file
-    setCurrentFile(uploadedFile.name);
-  };
-
   // Listen for navigation events from the iframe
   useEffect(() => {
     const handleIframeMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'navigate') {
         const targetFile = event.data.href;
-        // Find the file in our files array
         const fileExists = files.some(f => f.name === targetFile);
         
         if (fileExists) {
-          // Set as main preview file
           setMainPreviewFile(targetFile);
           toast({
             title: "Navigation",
@@ -403,14 +360,14 @@ const Index = () => {
     return () => {
       window.removeEventListener('message', handleIframeMessage);
     };
-  }, [files]);
+  }, [files, setMainPreviewFile]);
 
   // Load initial prompt if available (from homepage)
   useEffect(() => {
     const lastPrompt = localStorage.getItem("last_prompt");
     if (lastPrompt) {
       setUserPrompt(lastPrompt);
-      localStorage.removeItem("last_prompt"); // Clear after loading
+      localStorage.removeItem("last_prompt");
     }
   }, []);
   
@@ -424,6 +381,7 @@ const Index = () => {
       });
     }
   };
+  
   const clearChatHistory = () => {
     if (window.confirm("Are you sure you want to clear the chat history?")) {
       setMessages(initialMessages);
@@ -435,30 +393,25 @@ const Index = () => {
       });
     }
   };
+  
   const resetProject = () => {
-    // Store current credits before reset
     const currentDailyCredits = dailyCredits;
     const currentLifetimeCredits = lifetimeCredits;
     const isUnlimited = hasUnlimitedCredits;
     
-    // Reset all project-specific data
     setFiles(initialFiles);
     setCurrentFile("index.html");
     setMainPreviewFile("index.html");
     setMessages(initialMessages);
     setEditorView("code");
     
-    // Clear project-specific localStorage
     if (getCurrentProjectId()) {
       const projectId = getCurrentProjectId();
-      
-      // Update project storage with reset state
       localStorage.setItem(getStorageKey("project_files"), JSON.stringify(initialFiles));
       localStorage.setItem(getStorageKey("current_file"), "index.html");
       localStorage.setItem(getStorageKey("main_preview_file"), "index.html");
       localStorage.setItem(getStorageKey("chat_history"), JSON.stringify(initialMessages));
       
-      // Update the project in saved_projects
       const savedProjects = localStorage.getItem("saved_projects");
       if (savedProjects) {
         const projects = JSON.parse(savedProjects);
@@ -477,7 +430,6 @@ const Index = () => {
       }
     }
 
-    // Restore credits after reset
     setDailyCredits(currentDailyCredits);
     setLifetimeCredits(currentLifetimeCredits);
     setHasUnlimitedCredits(isUnlimited);
@@ -489,9 +441,11 @@ const Index = () => {
     
     setLastRefreshTime(Date.now());
   };
+  
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+  
   const handleClaimCode = () => {
     if (claimCode === UNLIMITED_CODE) {
       setHasUnlimitedCredits(true);
@@ -501,7 +455,6 @@ const Index = () => {
         description: "You now have unlimited credits to use the AI."
       });
     } else if (CREDIT_CODES[claimCode as keyof typeof CREDIT_CODES]) {
-      // Add credits to lifetime credits
       const bonusCredits = CREDIT_CODES[claimCode as keyof typeof CREDIT_CODES];
       setLifetimeCredits(prev => prev + bonusCredits);
       setShowClaimDialog(false);
@@ -523,7 +476,6 @@ const Index = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
         toast({
           title: "File too large",
           description: "Please upload an image smaller than 5MB.",
@@ -560,7 +512,6 @@ const Index = () => {
       try {
         const base64Image = await convertToBase64(imageUpload);
 
-        // Create a user message with the image
         const userMessage = {
           role: "user",
           content: userPrompt || "Please build a website based on this image",
@@ -572,7 +523,6 @@ const Index = () => {
         setShowImageUpload(false);
         setImageUpload(null);
 
-        // Deduct credit if not unlimited
         if (!hasUnlimitedCredits) {
           if (lifetimeCredits > 0) {
             setLifetimeCredits(prev => prev - 1);
@@ -581,7 +531,6 @@ const Index = () => {
           }
         }
         try {
-          // Create enhanced system prompt
           const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
@@ -653,32 +602,25 @@ Full file content here
           }
           const data = await response.json();
 
-          // Process response as in regular submission
           if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            // Extract the generated code
             const generatedText = data.candidates[0].content.parts[0].text;
 
-            // Process the response to extract file contents
             const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
             if (fileMatches && fileMatches.length > 0) {
               const updatedFiles = [...files];
-              const newFiles = [];
+              const newFiles: FileType[] = [];
               fileMatches.forEach(match => {
                 const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
                 if (fileNameMatch && fileNameMatch[1]) {
                   const fileName = fileNameMatch[1].trim();
                   let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
 
-                  // Get file extension
                   const fileExt = fileName.split('.').pop() || "";
 
-                  // Check if file already exists
                   const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
                   if (existingFileIndex >= 0) {
-                    // Update existing file
                     updatedFiles[existingFileIndex].content = fileContent;
                   } else {
-                    // Add new file
                     newFiles.push({
                       name: fileName,
                       content: fileContent,
@@ -688,11 +630,9 @@ Full file content here
                 }
               });
 
-              // Add new files to the list
               const combinedFiles = [...updatedFiles, ...newFiles];
               setFiles(combinedFiles);
 
-              // Show toast for new files
               if (newFiles.length > 0) {
                 toast({
                   title: `Created ${newFiles.length} new file(s)`,
@@ -700,11 +640,9 @@ Full file content here
                 });
               }
             } else {
-              // If no file structure detected, treat it as changes to the current file
-              updateFileContent(generatedText);
+              updateFileContent(currentFile, generatedText);
             }
 
-            // Add assistant response
             setMessages(prev => [...prev, {
               role: "assistant",
               content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results."
@@ -713,7 +651,6 @@ Full file content here
               saveApiKey();
             }
 
-            // Update preview
             setLastRefreshTime(Date.now());
           } else {
             throw new Error("Invalid response format from API");
@@ -758,7 +695,6 @@ Full file content here
       return;
     }
 
-    // Check if user has credits available
     if (totalAvailableCredits <= 0 && !hasUnlimitedCredits) {
       toast({
         title: "Credit Limit Reached",
@@ -775,9 +711,7 @@ Full file content here
     setUserPrompt("");
     setIsLoading(true);
 
-    // Deduct credit if not unlimited
     if (!hasUnlimitedCredits) {
-      // First use lifetime credits, then daily credits
       if (lifetimeCredits > 0) {
         setLifetimeCredits(prev => prev - 1);
       } else {
@@ -785,7 +719,6 @@ Full file content here
       }
     }
     try {
-      // Create enhanced system prompt
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
 ${files.map(file => `
@@ -915,32 +848,25 @@ Full file content here
       }
       const data = await response.json();
 
-      // Check if we have valid response data
       if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-        // Extract the generated code
         const generatedText = data.candidates[0].content.parts[0].text;
 
-        // Process the response to extract file contents
         const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
         if (fileMatches && fileMatches.length > 0) {
           const updatedFiles = [...files];
-          const newFiles = [];
+          const newFiles: FileType[] = [];
           fileMatches.forEach(match => {
             const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
             if (fileNameMatch && fileNameMatch[1]) {
               const fileName = fileNameMatch[1].trim();
               let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
 
-              // Get file extension
               const fileExt = fileName.split('.').pop() || "";
 
-              // Check if file already exists
               const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
               if (existingFileIndex >= 0) {
-                // Update existing file
                 updatedFiles[existingFileIndex].content = fileContent;
               } else {
-                // Add new file
                 newFiles.push({
                   name: fileName,
                   content: fileContent,
@@ -950,11 +876,9 @@ Full file content here
             }
           });
 
-          // Add new files to the list
           const combinedFiles = [...updatedFiles, ...newFiles];
           setFiles(combinedFiles);
 
-          // Show toast for new files
           if (newFiles.length > 0) {
             toast({
               title: `Created ${newFiles.length} new file(s)`,
@@ -962,11 +886,9 @@ Full file content here
             });
           }
         } else {
-          // If no file structure detected, treat it as changes to the current file
-          updateFileContent(generatedText);
+          updateFileContent(currentFile, generatedText);
         }
 
-        // Add assistant response
         setMessages(prev => [...prev, {
           role: "assistant",
           content: "✅ Changes applied! Check the preview to see the results."
@@ -975,7 +897,6 @@ Full file content here
           saveApiKey();
         }
 
-        // Update preview
         setLastRefreshTime(Date.now());
       } else {
         throw new Error("Invalid response format from API");
@@ -995,7 +916,14 @@ Full file content here
       setIsLoading(false);
     }
   };
+
+  // Fix for CodeEditor onChange handler
+  const handleFileContentChange = (newContent: string) => {
+    updateFileContent(currentFile, newContent);
+  };
+  
   const creditPercentage = dailyCredits / DAILY_CREDIT_LIMIT * 100;
+  
   return (
     <div className={`flex flex-col h-screen bg-background ${theme}`}>
       {/* Header */}
@@ -1007,7 +935,7 @@ Full file content here
         </div>
         <div className="flex gap-2 items-center">
           <Link to="/supabase">
-            <Button variant="outline" size={isMobile ? "icon" : "sm"} className={isMobile ? "h-9 w-9 p-0" : ""}>
+            <Button variant={theme === 'light' ? "modern" : "outline"} size={isMobile ? "icon" : "sm"} className={isMobile ? "h-9 w-9 p-0" : ""}>
               <Database className="h-4 w-4" />
               {!isMobile && <span className="ml-1">Supabase</span>}
             </Button>
@@ -1019,14 +947,14 @@ Full file content here
                 {hasUnlimitedCredits ? "∞" : `${totalAvailableCredits}`} Credits
               </span>
               {!hasUnlimitedCredits && !isMobile && <Progress value={creditPercentage} className="w-24 h-2" />}
-              <Button size={isMobile ? "icon" : "sm"} variant="outline" onClick={() => setShowClaimDialog(true)} className={isMobile ? "h-9 w-9 p-0" : ""}>
+              <Button size={isMobile ? "icon" : "sm"} variant={theme === 'light' ? "modern" : "outline"} onClick={() => setShowClaimDialog(true)} className={isMobile ? "h-9 w-9 p-0" : ""}>
                 <Gift className="h-4 w-4" />
                 {!isMobile && <span className="ml-1">Claim</span>}
               </Button>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size={isMobile ? "icon" : "sm"} variant="outline" className={isMobile ? "h-9 w-9 p-0" : ""}>
+                <Button size={isMobile ? "icon" : "sm"} variant={theme === 'light' ? "modern" : "outline"} className={isMobile ? "h-9 w-9 p-0" : ""}>
                   <RefreshCcw className="h-4 w-4" />
                   {!isMobile && <span className="ml-1">Reset</span>}
                 </Button>
@@ -1049,7 +977,7 @@ Full file content here
             <Toggle aria-label="Toggle theme" pressed={theme === "dark"} onPressedChange={pressed => setTheme(pressed ? "dark" : "light")} className={isMobile ? "h-9 w-9 p-0" : ""}>
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Toggle>
-            <Button size={isMobile ? "icon" : "sm"} variant="outline" onClick={() => {
+            <Button size={isMobile ? "icon" : "sm"} variant={theme === 'light' ? "modern" : "outline"} onClick={() => {
             updatePreview();
             setLastRefreshTime(Date.now());
           }} className={isMobile ? "h-9 w-9 p-0" : ""}>
@@ -1171,11 +1099,14 @@ Full file content here
             <div className="flex-1 h-full">
               <Tabs value={editorView} className="h-full">
                 <TabsContent value="code" className="h-full mt-0">
-                  <CodeEditor value={getCurrentFileContent()} onChange={updateFileContent} language={getCurrentFileLanguage()} />
+                  <CodeEditor 
+                    value={getCurrentFileContent()} 
+                    onChange={handleFileContentChange}
+                    language={getCurrentFileLanguage()}
+                  />
                 </TabsContent>
                 
                 <TabsContent value="files" className="h-full mt-0 overflow-hidden">
-                  {/* Add file upload component */}
                   <div className="p-2">
                     <FileExplorerUpload onFileUpload={handleFileUpload} />
                   </div>

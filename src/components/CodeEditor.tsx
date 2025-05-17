@@ -131,6 +131,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
     ));
   };
   
+  // Fix: Create a separate onChange handler for textarea to fix editing issues
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange(e.target.value);
+  };
+  
   // Handle tab key for indentation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget;
@@ -246,7 +251,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
         <textarea
           ref={editorRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           spellCheck={false}
           className="flex-1 p-4 bg-background resize-none overflow-auto w-full border-0 focus:outline-none code-editor"
