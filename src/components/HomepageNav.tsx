@@ -49,13 +49,13 @@ const HomepageNav = () => {
           <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild>
             <Link to="/supabase" className="flex items-center">
               <Database className="h-4 w-4 mr-0 sm:mr-2" />
-              <span className="hidden sm:inline">Supabase</span>
+              <span className="hidden sm:inline text-black dark:text-white">Supabase</span>
             </Link>
           </Button>
           <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild>
             <Link to="/pricing" className="flex items-center">
               <Gift className="h-4 w-4 mr-0 sm:mr-2" />
-              <span className="hidden sm:inline">Pricing</span>
+              <span className="hidden sm:inline text-black dark:text-white">Pricing</span>
             </Link>
           </Button>
         </div>
