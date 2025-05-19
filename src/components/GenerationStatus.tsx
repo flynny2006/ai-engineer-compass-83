@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 
 export type StatusItem = {
   id: string;
@@ -33,7 +33,7 @@ const GenerationStatus: React.FC<GenerationStatusProps> = ({ items, visible }) =
               <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
             )}
             {item.status === 'error' && (
-              <CheckCircle2 className="h-4 w-4 text-red-500 flex-shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
             )}
             {item.status === 'pending' && (
               <div className="h-4 w-4 border-2 border-white/30 rounded-full flex-shrink-0" />

@@ -2,6 +2,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+
+interface ModelOption {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface AnimatedAIInputProps {
   value: string;
@@ -13,7 +20,15 @@ interface AnimatedAIInputProps {
   onAttach?: () => void;
   showAttachButton?: boolean;
   className?: string;
+  onModelChange?: (modelId: string) => void;
+  selectedModel?: string;
 }
+
+// Model options for the switcher
+const models: ModelOption[] = [
+  { id: 'gemini-1.5', name: 'Gemini 1.5 Flash', description: 'Fast and efficient for most tasks' },
+  { id: 'gemini-2.0', name: 'Gemini 2.0 Flash', description: 'Advanced capabilities for complex tasks' }
+];
 
 export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
   value,
@@ -25,6 +40,8 @@ export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
   onAttach,
   showAttachButton = true,
   className = "",
+  onModelChange,
+  selectedModel = "gemini-1.5",
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -57,14 +74,51 @@ export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
     }
   };
 
+  // Model selection
+  const handleModelSelect = (modelId: string) => {
+    if (onModelChange) {
+      onModelChange(modelId);
+    }
+  };
+
   return (
-    <div 
-      className={`relative overflow-hidden rounded-xl transition-all duration-300 ${
-        isFocused ? "shadow-lg ring-1 ring-white/20" : "shadow"
-      } ${disabled ? "opacity-70" : ""} ${className}`}
-    >
+    <div className={`relative ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
-        <div className={`flex items-center overflow-hidden bg-black/60 backdrop-blur-md border border-white/10 rounded-xl transition-all ${isFocused ? "border-white/30" : ""}`}>
+        <div className={`flex items-center overflow-hidden bg-black/60 backdrop-blur-md border border-white/10 rounded-xl transition-all ${isFocused ? "shadow-lg ring-1 ring-white/20 border-white/30" : ""}`}>
+          {/* Model selector */}
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <button 
+                type="button" 
+                className="flex-shrink-0 ml-2 px-2 py-1 text-sm text-white/70 hover:text-white transition-colors bg-white/5 rounded-md"
+                onClick={(e) => e.preventDefault()}
+              >
+                {models.find(m => m.id === selectedModel)?.name || 'Select Model'}
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-56 bg-black/90 backdrop-blur-lg border border-white/10 text-white p-0">
+              <div className="p-2">
+                <p className="text-xs text-white/70 mb-2">Select Model</p>
+                {models.map(model => (
+                  <button
+                    key={model.id}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                      selectedModel === model.id 
+                        ? 'bg-white/10 text-white' 
+                        : 'hover:bg-white/5 text-white/80'
+                    }`}
+                    onClick={() => handleModelSelect(model.id)}
+                  >
+                    <div className="font-medium">{model.name}</div>
+                    {model.description && (
+                      <div className="text-xs text-white/60 mt-1">{model.description}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+          
           {showAttachButton && onAttach && (
             <button
               type="button"

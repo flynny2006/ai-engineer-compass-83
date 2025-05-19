@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ const Homepage = () => {
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [generationStatus, setGenerationStatus] = useState<StatusItem[]>([]);
   const [showStatus, setShowStatus] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
 
   // Sample partners data
   const partners = [
@@ -73,12 +73,12 @@ const Homepage = () => {
     
     // Simulate the generation process with real-time updates
     const steps = [
-      { id: '1', text: 'Analyzing prompt...', status: 'loading' as const },
-      { id: '2', text: 'Creating project structure', status: 'loading' as const },
-      { id: '3', text: 'Generating index.html', status: 'pending' as const },
-      { id: '4', text: 'Generating styles.css', status: 'pending' as const },
-      { id: '5', text: 'Generating app.js', status: 'pending' as const },
-      { id: '6', text: 'Building React components', status: 'pending' as const },
+      { id: '1', text: 'Analyzing prompt...', status: 'loading' as const, timestamp: Date.now() },
+      { id: '2', text: 'Creating project structure', status: 'loading' as const, timestamp: Date.now() + 100 },
+      { id: '3', text: 'Generating index.html', status: 'pending' as const, timestamp: Date.now() + 200 },
+      { id: '4', text: 'Generating styles.css', status: 'pending' as const, timestamp: Date.now() + 300 },
+      { id: '5', text: 'Generating app.js', status: 'pending' as const, timestamp: Date.now() + 400 },
+      { id: '6', text: 'Building React components', status: 'pending' as const, timestamp: Date.now() + 500 },
     ];
     
     // Add initial step
@@ -179,6 +179,7 @@ const Homepage = () => {
       
       // Store current prompt as "last_prompt" for the project page
       localStorage.setItem("last_prompt", prompt);
+      localStorage.setItem("selected_model", selectedModel);
       
       // Set the current project ID BEFORE navigation
       // This is important for project-specific storage
@@ -343,10 +344,19 @@ const Homepage = () => {
     }
   };
 
+  // Handle model change
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    toast({
+      title: "Model Changed",
+      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : "Gemini 2.0 Flash"}`,
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       <HomepageNav />
-      <main className="flex-1"> {/* Added main tag for semantics */}
+      <main className="flex-1">
         <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
           {/* Real-time generation status */}
           <GenerationStatus items={generationStatus} visible={showStatus} />
@@ -357,7 +367,7 @@ const Homepage = () => {
                 What do you want to build today?
               </h1>
               <p className="text-gray-400 mt-4 text-lg">
-                Build fullstack <span className="font-bold text-white">web</span> and <span className="font-bold text-white">mobile</span> apps in seconds.
+                Prompt, run, edit, and deploy full-stack <span className="font-bold text-white">web</span> and <span className="font-bold text-white">mobile</span> apps.
               </p>
             </div>
             
@@ -372,6 +382,8 @@ const Homepage = () => {
                     isLoading={isLoading}
                     onAttach={() => document.getElementById('fileUpload')?.click()}
                     className="min-h-[120px]"
+                    onModelChange={handleModelChange}
+                    selectedModel={selectedModel}
                   />
 
                   <div>
@@ -438,33 +450,41 @@ const Homepage = () => {
               How to get Started with Boongle AI?
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div className="bg-white/5 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-green-400/20 transition-shadow duration-300">
-                <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
-                  <Compass className="h-10 w-10 text-green-400" />
+              <BorderTrail className="rounded-xl" variant="primary" duration="slow" spacing="sm">
+                <div className="bg-white/5 p-8 rounded-xl border-none flex flex-col items-center shadow-xl hover:shadow-green-400/20 transition-shadow duration-300">
+                  <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
+                    <Compass className="h-10 w-10 text-green-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Step 1: Describe Your Idea</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Step 1: Describe Your Idea</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
-                </p>
-              </div>
-              <div className="bg-white/5 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-blue-400/20 transition-shadow duration-300">
-                <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
-                  <Code className="h-10 w-10 text-blue-400" />
+              </BorderTrail>
+
+              <BorderTrail className="rounded-xl" variant="default" duration="slow" spacing="sm">
+                <div className="bg-white/5 p-8 rounded-xl border-none flex flex-col items-center shadow-xl hover:shadow-blue-400/20 transition-shadow duration-300">
+                  <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
+                    <Code className="h-10 w-10 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Step 2: AI Generates Code</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Step 2: AI Generates Code</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
-                </p>
-              </div>
-              <div className="bg-white/5 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-purple-400/20 transition-shadow duration-300">
-                <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
-                  <Rocket className="h-10 w-10 text-purple-400" />
+              </BorderTrail>
+
+              <BorderTrail className="rounded-xl" variant="destructive" duration="slow" spacing="sm">
+                <div className="bg-white/5 p-8 rounded-xl border-none flex flex-col items-center shadow-xl hover:shadow-purple-400/20 transition-shadow duration-300">
+                  <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
+                    <Rocket className="h-10 w-10 text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Step 3: Iterate & Launch</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Refine your app with further instructions, add features, and deploy your project to the world with a single click.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Step 3: Iterate & Launch</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Refine your app with further instructions, add features, and deploy your project to the world with a single click.
-                </p>
-              </div>
+              </BorderTrail>
             </div>
           </div>
 
@@ -516,38 +536,45 @@ const Homepage = () => {
             <h2 className="text-white text-2xl font-semibold mb-6">Our Partners</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {partners.map((partner) => (
-                <div 
-                  key={partner.id}
-                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 flex flex-col items-center text-center"
+                <BorderTrail 
+                  key={partner.id} 
+                  className="rounded-lg" 
+                  variant="primary" 
+                  duration="default" 
+                  spacing="sm"
                 >
-                  <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
-                    {partner.logoUrl ? (
-                      <img 
-                        src={partner.logoUrl} 
-                        alt={`${partner.name} logo`}
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      <Building className="h-8 w-8 text-white/60" />
-                    )}
+                  <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 flex flex-col items-center text-center border-none">
+                    <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
+                      {partner.logoUrl ? (
+                        <img 
+                          src={partner.logoUrl} 
+                          alt={`${partner.name} logo`}
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <Building className="h-8 w-8 text-white/60" />
+                      )}
+                    </div>
+                    <h3 className="text-white font-medium">{partner.name}</h3>
+                    <p className="text-gray-400 text-sm mt-1">
+                      {partner.description}
+                    </p>
                   </div>
-                  <h3 className="text-white font-medium">{partner.name}</h3>
-                  <p className="text-gray-400 text-sm mt-1">
-                    {partner.description}
-                  </p>
-                </div>
+                </BorderTrail>
               ))}
               
-              <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm border border-white/10 rounded-lg p-6 flex flex-col items-center text-center">
-                <Users className="h-10 w-10 text-green-400 mb-3" />
-                <h3 className="text-white font-medium">Become a Partner</h3>
-                <p className="text-gray-400 text-sm mt-2">
-                  Contact us to get featured as a partner here!
-                </p>
-                <Button className="mt-4" variant={theme === 'light' ? 'modern' : 'default'}>
-                  Contact Us
-                </Button>
-              </div>
+              <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
+                <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center border-none">
+                  <Users className="h-10 w-10 text-green-400 mb-3" />
+                  <h3 className="text-white font-medium">Become a Partner</h3>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Contact us to get featured as a partner here!
+                  </p>
+                  <Button className="mt-4" variant={theme === 'light' ? 'modern' : 'default'}>
+                    Contact Us
+                  </Button>
+                </div>
+              </BorderTrail>
             </div>
           </div>
           
@@ -558,33 +585,41 @@ const Homepage = () => {
               <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">20x Faster than Coding</span>
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div className="bg-gradient-to-br from-blue-500/10 to-green-500/10 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-blue-400/20 transition-all duration-300 hover:-translate-y-1">
-                <div className="bg-blue-500/10 p-4 rounded-full mb-6 ring-2 ring-blue-500/20">
-                  <Zap className="h-10 w-10 text-yellow-400" />
+              <BorderTrail className="rounded-xl" variant="default" duration="default" spacing="sm">
+                <div className="bg-gradient-to-br from-blue-500/10 to-green-500/10 p-8 rounded-xl flex flex-col items-center shadow-xl transition-all duration-300 hover:-translate-y-1 border-none">
+                  <div className="bg-blue-500/10 p-4 rounded-full mb-6 ring-2 ring-blue-500/20">
+                    <Zap className="h-10 w-10 text-yellow-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Lightning Fast</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Lightning Fast</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-purple-400/20 transition-all duration-300 hover:-translate-y-1">
-                <div className="bg-purple-500/10 p-4 rounded-full mb-6 ring-2 ring-purple-500/20">
-                  <Timer className="h-10 w-10 text-purple-400" />
+              </BorderTrail>
+
+              <BorderTrail className="rounded-xl" variant="primary" duration="default" spacing="sm">
+                <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-8 rounded-xl flex flex-col items-center shadow-xl transition-all duration-300 hover:-translate-y-1 border-none">
+                  <div className="bg-purple-500/10 p-4 rounded-full mb-6 ring-2 ring-purple-500/20">
+                    <Timer className="h-10 w-10 text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">Completely Free</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Completely Free</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-green-500/10 to-teal-500/10 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-green-400/20 transition-all duration-300 hover:-translate-y-1">
-                <div className="bg-green-500/10 p-4 rounded-full mb-6 ring-2 ring-green-500/20">
-                  <Eye className="h-10 w-10 text-green-400" />
+              </BorderTrail>
+
+              <BorderTrail className="rounded-xl" variant="destructive" duration="default" spacing="sm">
+                <div className="bg-gradient-to-br from-green-500/10 to-teal-500/10 p-8 rounded-xl flex flex-col items-center shadow-xl transition-all duration-300 hover:-translate-y-1 border-none">
+                  <div className="bg-green-500/10 p-4 rounded-full mb-6 ring-2 ring-green-500/20">
+                    <Eye className="h-10 w-10 text-green-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-3">See Live Preview Here</h3>
+                  <p className="text-gray-400 leading-relaxed">
+                    Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">See Live Preview Here</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
-                </p>
-              </div>
+              </BorderTrail>
             </div>
           </div>
         </div>
