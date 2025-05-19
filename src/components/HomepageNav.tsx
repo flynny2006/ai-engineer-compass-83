@@ -4,16 +4,24 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Database, Gift, Compass } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const HomepageNav = () => {
   const { theme } = useTheme();
   const [plan, setPlan] = useState<string>("FREE");
+  const [selectedModel, setSelectedModel] = useState<string>("Gemini 1.5 Flash");
   
   useEffect(() => {
     // Check if any plan code is claimed from localStorage
     const claimedPlan = localStorage.getItem("claimed_plan");
     if (claimedPlan) {
       setPlan(claimedPlan);
+    }
+    
+    // Load saved model preference if available
+    const savedModel = localStorage.getItem("selected_model");
+    if (savedModel) {
+      setSelectedModel(savedModel);
     }
   }, []);
   
@@ -30,6 +38,11 @@ const HomepageNav = () => {
         return { name: "FREE", maxProjects: 5, color: "text-gray-400" };
     }
   };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    localStorage.setItem("selected_model", model);
+  };
   
   const planDetails = getPlanDetails();
   
@@ -42,6 +55,22 @@ const HomepageNav = () => {
         </Link>
         
         <div className="flex items-center gap-2 sm:gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="hidden sm:flex bg-black/50 border border-white/20 text-white text-xs">
+                {selectedModel} <span className="ml-1 w-2 h-2 rounded-full bg-green-500"></span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleModelChange("Gemini 1.5 Flash")} className="cursor-pointer flex items-center justify-between">
+                Gemini 1.5 Flash {selectedModel === "Gemini 1.5 Flash" && <span className="ml-2 w-2 h-2 rounded-full bg-green-500"></span>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleModelChange("Gemini 2.0 Flash")} className="cursor-pointer flex items-center justify-between">
+                Gemini 2.0 Flash {selectedModel === "Gemini 2.0 Flash" && <span className="ml-2 w-2 h-2 rounded-full bg-green-500"></span>}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className={`hidden sm:flex items-center mr-2 ${planDetails.color} text-xs font-medium px-2 py-1 rounded-full border border-white/10`}>
             {planDetails.name} - {typeof planDetails.maxProjects === 'number' ? `Maximum ${planDetails.maxProjects} Projects` : planDetails.maxProjects}
           </div>

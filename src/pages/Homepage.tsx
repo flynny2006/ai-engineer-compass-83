@@ -3,14 +3,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Send, ArrowRight, Trash2, Copy, Key, ArrowUp, Compass, Rocket, Code, Users, Building } from "lucide-react";
+import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
+import AnimatedAIInput from "@/components/AnimatedAIInput";
+import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
 
 interface Project {
   id: string;
@@ -37,24 +38,14 @@ const Homepage = () => {
   const [apiKey, setApiKey] = useState<string>("");
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
-  const [aiExplanation, setAiExplanation] = useState<string>("");
-  const [showingAiExplanation, setShowingAiExplanation] = useState<boolean>(false);
+  const [generationStatus, setGenerationStatus] = useState<StatusItem[]>([]);
+  const [showStatus, setShowStatus] = useState<boolean>(false);
 
   // Sample partners data
   const partners = [
     { id: 1, name: "Acme Tech", description: "Leading AI infrastructure provider", logoUrl: "placeholder.svg" },
     { id: 2, name: "DataFlow Inc.", description: "Enterprise data solutions", logoUrl: "placeholder.svg" },
     { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
-  ];
-
-  // AI explanations for the app
-  const aiExplanations = [
-    "Boongle AI uses advanced transformer models to convert natural language into functional code.",
-    "Our system analyzes your prompt and generates optimized React components with best practices.",
-    "In 2025, AI code generation has evolved to understand complex requirements and developer intent.",
-    "The Boongle engine can maintain state, handle user interactions, and create responsive designs automatically.",
-    "Our AI has been trained on millions of high-quality web applications to deliver production-ready code.",
-    "We continuously improve our models with developer feedback to enhance code quality and reliability."
   ];
 
   // Load projects and API key from localStorage
@@ -70,24 +61,80 @@ const Homepage = () => {
       if (savedApiKey) {
         setApiKey(savedApiKey);
       }
-      
-      // Start AI explanation rotation
-      const interval = setInterval(() => {
-        const randomExplanation = aiExplanations[Math.floor(Math.random() * aiExplanations.length)];
-        setAiExplanation(randomExplanation);
-        setShowingAiExplanation(true);
-        
-        // Hide after 8 seconds
-        setTimeout(() => {
-          setShowingAiExplanation(false);
-        }, 8000);
-      }, 12000);
-      
-      return () => clearInterval(interval);
     } catch (error) {
       console.error("Error loading data:", error);
     }
   }, []);
+
+  const simulateGeneration = () => {
+    // Clear any existing status
+    setGenerationStatus([]);
+    setShowStatus(true);
+    
+    // Simulate the generation process with real-time updates
+    const steps = [
+      { id: '1', text: 'Analyzing prompt...', status: 'loading' as const },
+      { id: '2', text: 'Creating project structure', status: 'loading' as const },
+      { id: '3', text: 'Generating index.html', status: 'pending' as const },
+      { id: '4', text: 'Generating styles.css', status: 'pending' as const },
+      { id: '5', text: 'Generating app.js', status: 'pending' as const },
+      { id: '6', text: 'Building React components', status: 'pending' as const },
+    ];
+    
+    // Add initial step
+    setGenerationStatus([steps[0]]);
+    
+    // Update steps with simulated timing
+    setTimeout(() => {
+      setGenerationStatus([
+        { ...steps[0], status: 'complete' },
+        { ...steps[1] }
+      ]);
+      
+      setTimeout(() => {
+        setGenerationStatus(prev => [
+          ...prev,
+          { ...steps[2], status: 'loading' }
+        ]);
+        
+        setTimeout(() => {
+          setGenerationStatus(prev => prev.map(item => 
+            item.id === '2' ? { ...item, status: 'complete' } : item
+          ));
+          
+          setTimeout(() => {
+            setGenerationStatus(prev => prev.map(item => 
+              item.id === '3' ? { ...item, status: 'complete' } : item
+            ).concat({ ...steps[3], status: 'loading' }));
+            
+            setTimeout(() => {
+              setGenerationStatus(prev => prev.map(item => 
+                item.id === '4' ? { ...item, status: 'complete' } : item
+              ).concat({ ...steps[4], status: 'loading' }));
+              
+              setTimeout(() => {
+                setGenerationStatus(prev => prev.map(item => 
+                  item.id === '5' ? { ...item, status: 'complete' } : item
+                ).concat({ ...steps[5], status: 'loading' }));
+                
+                setTimeout(() => {
+                  setGenerationStatus(prev => prev.map(item => 
+                    item.id === '6' ? { ...item, status: 'complete' } : item
+                  ));
+                  
+                  // Hide status and navigate after completion
+                  setTimeout(() => {
+                    setShowStatus(false);
+                    // Continue with actual navigation
+                  }, 1000);
+                }, 800);
+              }, 700);
+            }, 600);
+          }, 500);
+        }, 400);
+      }, 600);
+    }, 500);
+  };
 
   const createNewProject = () => {
     if (projects.length >= 5) {
@@ -143,10 +190,14 @@ const Homepage = () => {
         localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
       }
       
-      // Navigate to project page
+      // Start the simulated generation process
+      simulateGeneration();
+      
+      // Navigate to project page after a delay
       setTimeout(() => {
+        setIsLoading(false);
         navigate(`/project?id=${projectId}`);
-      }, 500);
+      }, 5000);
     } catch (error) {
       console.error("Error saving project:", error);
       toast({
@@ -297,14 +348,8 @@ const Homepage = () => {
       <HomepageNav />
       <main className="flex-1"> {/* Added main tag for semantics */}
         <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
-          {showingAiExplanation && (
-            <div className="fixed bottom-8 right-8 max-w-md p-4 bg-gradient-to-r from-green-500/80 to-blue-500/80 text-white rounded-lg shadow-lg backdrop-blur-md border border-white/20 animate-fade-in z-50">
-              <p className="text-sm">
-                <span className="font-bold mr-2">🤖 AI:</span>
-                {aiExplanation}
-              </p>
-            </div>
-          )}
+          {/* Real-time generation status */}
+          <GenerationStatus items={generationStatus} visible={showStatus} />
           
           <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
             <div className="text-center">
@@ -319,26 +364,15 @@ const Homepage = () => {
             <div className="w-full max-w-3xl mt-4 md:mt-8">
               <BorderTrail className="rounded-lg" variant="default" duration="slow">
                 <div className="bg-black rounded-lg p-4 space-y-4">
-                  <div className="relative">
-                    <Textarea 
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Ask Boongle AI to build anything..."
-                      className="bg-transparent text-white border border-white/20 min-h-[180px] rounded-lg p-4 placeholder:text-gray-400 pr-16 w-full"
-                    />
-                    <Button 
-                      onClick={createNewProject}
-                      disabled={isLoading} 
-                      className="bg-white text-black hover:bg-gray-100 rounded-full p-0 h-14 w-14 shadow-md flex items-center justify-center absolute right-4 bottom-4"
-                      variant="circle"
-                    >
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                      ) : (
-                        <ArrowUp className="h-6 w-6 text-black" />
-                      )}
-                    </Button>
-                  </div>
+                  <AnimatedAIInput
+                    value={prompt}
+                    onChange={setPrompt}
+                    onSubmit={createNewProject}
+                    placeholder="Ask Boongle AI to build anything..."
+                    isLoading={isLoading}
+                    onAttach={() => document.getElementById('fileUpload')?.click()}
+                    className="min-h-[120px]"
+                  />
 
                   <div>
                     {attachedImage ? (
@@ -361,7 +395,9 @@ const Homepage = () => {
                         />
                       </div>
                     ) : (
-                      <FileExplorerUpload onFileUpload={handleImageUpload} />
+                      <div id="fileUpload">
+                        <FileExplorerUpload onFileUpload={handleImageUpload} />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -511,6 +547,43 @@ const Homepage = () => {
                 <Button className="mt-4" variant={theme === 'light' ? 'modern' : 'default'}>
                   Contact Us
                 </Button>
+              </div>
+            </div>
+          </div>
+          
+          {/* 20x Faster Section */}
+          <div className="w-full max-w-5xl mx-auto py-16 px-4">
+            <Separator className="bg-white/20 mb-16" />
+            <h2 className="text-3xl font-bold text-center text-white mb-12">
+              <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">20x Faster than Coding</span>
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8 text-center">
+              <div className="bg-gradient-to-br from-blue-500/10 to-green-500/10 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-blue-400/20 transition-all duration-300 hover:-translate-y-1">
+                <div className="bg-blue-500/10 p-4 rounded-full mb-6 ring-2 ring-blue-500/20">
+                  <Zap className="h-10 w-10 text-yellow-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">Lightning Fast</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-purple-400/20 transition-all duration-300 hover:-translate-y-1">
+                <div className="bg-purple-500/10 p-4 rounded-full mb-6 ring-2 ring-purple-500/20">
+                  <Timer className="h-10 w-10 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">Completely Free</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
+                </p>
+              </div>
+              <div className="bg-gradient-to-br from-green-500/10 to-teal-500/10 p-8 rounded-xl border border-white/10 flex flex-col items-center shadow-xl hover:shadow-green-400/20 transition-all duration-300 hover:-translate-y-1">
+                <div className="bg-green-500/10 p-4 rounded-full mb-6 ring-2 ring-green-500/20">
+                  <Eye className="h-10 w-10 text-green-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">See Live Preview Here</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
+                </p>
               </div>
             </div>
           </div>
