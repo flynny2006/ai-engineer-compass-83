@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -72,13 +73,13 @@ const Homepage = () => {
     setShowStatus(true);
     
     // Simulate the generation process with real-time updates
-    const steps = [
-      { id: '1', text: 'Analyzing prompt...', status: 'loading' as const, timestamp: Date.now() },
-      { id: '2', text: 'Creating project structure', status: 'loading' as const, timestamp: Date.now() + 100 },
-      { id: '3', text: 'Generating index.html', status: 'pending' as const, timestamp: Date.now() + 200 },
-      { id: '4', text: 'Generating styles.css', status: 'pending' as const, timestamp: Date.now() + 300 },
-      { id: '5', text: 'Generating app.js', status: 'pending' as const, timestamp: Date.now() + 400 },
-      { id: '6', text: 'Building React components', status: 'pending' as const, timestamp: Date.now() + 500 },
+    const steps: StatusItem[] = [
+      { id: '1', text: 'Analyzing prompt...', status: 'loading', timestamp: Date.now() },
+      { id: '2', text: 'Creating project structure', status: 'loading', timestamp: Date.now() + 100 },
+      { id: '3', text: 'Generating index.html', status: 'pending', timestamp: Date.now() + 200 },
+      { id: '4', text: 'Generating styles.css', status: 'pending', timestamp: Date.now() + 300 },
+      { id: '5', text: 'Generating app.js', status: 'pending', timestamp: Date.now() + 400 },
+      { id: '6', text: 'Building React components', status: 'pending', timestamp: Date.now() + 500 },
     ];
     
     // Add initial step
