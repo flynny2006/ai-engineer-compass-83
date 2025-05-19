@@ -21,9 +21,48 @@ const HomepageNav = () => {
     // Load saved model preference if available
     const savedModel = localStorage.getItem("selected_model");
     if (savedModel) {
-      setSelectedModel(savedModel);
+      switch(savedModel) {
+        case "gemini-1.5":
+          setSelectedModel("Gemini 1.5 Flash");
+          break;
+        case "gemini-2.0":
+          setSelectedModel("Gemini 2.0 Flash");
+          break;
+        case "gemini-2.0-pro":
+          setSelectedModel("Gemini 2.0 Pro");
+          break;
+        default:
+          setSelectedModel("Gemini 1.5 Flash");
+      }
     }
   }, []);
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    // Convert display name to storage ID
+    let modelId = "gemini-1.5";
+    switch(model) {
+      case "Gemini 1.5 Flash":
+        modelId = "gemini-1.5";
+        break;
+      case "Gemini 2.0 Flash":
+        modelId = "gemini-2.0";
+        break;
+      case "Gemini 2.0 Pro":
+        modelId = "gemini-2.0-pro";
+        break;
+    }
+    
+    // Check if Pro model is selected but user is on free plan
+    if (modelId === "gemini-2.0-pro" && plan === "FREE") {
+      alert("This model requires a paid plan. Please upgrade to access Gemini 2.0 Pro.");
+      // Reset selection to default
+      setSelectedModel("Gemini 1.5 Flash");
+      modelId = "gemini-1.5";
+    }
+    
+    localStorage.setItem("selected_model", modelId);
+  };
   
   // Determine plan details
   const getPlanDetails = () => {
@@ -38,13 +77,9 @@ const HomepageNav = () => {
         return { name: "FREE", maxProjects: 5, color: "text-gray-400" };
     }
   };
-
-  const handleModelChange = (model: string) => {
-    setSelectedModel(model);
-    localStorage.setItem("selected_model", model);
-  };
   
   const planDetails = getPlanDetails();
+  const isPaidUser = plan !== "FREE";
   
   return (
     <nav className="bg-black/50 backdrop-blur-md sticky top-0 z-50 w-full border-b border-white/10">
@@ -67,6 +102,17 @@ const HomepageNav = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleModelChange("Gemini 2.0 Flash")} className="cursor-pointer flex items-center justify-between">
                 Gemini 2.0 Flash {selectedModel === "Gemini 2.0 Flash" && <span className="ml-2 w-2 h-2 rounded-full bg-green-500"></span>}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleModelChange("Gemini 2.0 Pro")} 
+                className={`cursor-pointer flex items-center justify-between ${!isPaidUser ? 'opacity-50' : ''}`}
+                disabled={!isPaidUser}
+              >
+                Gemini 2.0 Pro {isPaidUser ? (
+                  selectedModel === "Gemini 2.0 Pro" && <span className="ml-2 w-2 h-2 rounded-full bg-green-500"></span>
+                ) : (
+                  <span className="ml-2 text-xs bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">PRO</span>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

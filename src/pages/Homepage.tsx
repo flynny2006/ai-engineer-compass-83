@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -41,6 +40,8 @@ const Homepage = () => {
   const [generationStatus, setGenerationStatus] = useState<StatusItem[]>([]);
   const [showStatus, setShowStatus] = useState<boolean>(false);
   const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
+  const [userPlan, setUserPlan] = useState<string>("FREE");
+  const fileUploadRef = useRef<HTMLInputElement>(null);
 
   // Sample partners data
   const partners = [
@@ -49,7 +50,7 @@ const Homepage = () => {
     { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
   ];
 
-  // Load projects and API key from localStorage
+  // Load projects, API key, and plan from localStorage
   useEffect(() => {
     try {
       const savedProjects = localStorage.getItem("saved_projects");
@@ -61,6 +62,18 @@ const Homepage = () => {
       const savedApiKey = localStorage.getItem("api_key");
       if (savedApiKey) {
         setApiKey(savedApiKey);
+      }
+      
+      // Get user plan from localStorage
+      const claimedPlan = localStorage.getItem("claimed_plan");
+      if (claimedPlan) {
+        setUserPlan(claimedPlan);
+      }
+      
+      // Get saved model preference
+      const savedModel = localStorage.getItem("selected_model");
+      if (savedModel) {
+        setSelectedModel(savedModel);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -100,27 +113,27 @@ const Homepage = () => {
         
         setTimeout(() => {
           setGenerationStatus(prev => prev.map(item => 
-            item.id === '2' ? { ...item, status: 'complete' } : item
+            item.id === '2' ? { ...item, status: 'complete' as const } : item
           ));
           
           setTimeout(() => {
             setGenerationStatus(prev => prev.map(item => 
-              item.id === '3' ? { ...item, status: 'complete' } : item
-            ).concat({ ...steps[3], status: 'loading' }));
+              item.id === '3' ? { ...item, status: 'complete' as const } : item
+            ).concat({ ...steps[3], status: 'loading' as const }));
             
             setTimeout(() => {
               setGenerationStatus(prev => prev.map(item => 
-                item.id === '4' ? { ...item, status: 'complete' } : item
-              ).concat({ ...steps[4], status: 'loading' }));
+                item.id === '4' ? { ...item, status: 'complete' as const } : item
+              ).concat({ ...steps[4], status: 'loading' as const }));
               
               setTimeout(() => {
                 setGenerationStatus(prev => prev.map(item => 
-                  item.id === '5' ? { ...item, status: 'complete' } : item
-                ).concat({ ...steps[5], status: 'loading' }));
+                  item.id === '5' ? { ...item, status: 'complete' as const } : item
+                ).concat({ ...steps[5], status: 'loading' as const }));
                 
                 setTimeout(() => {
                   setGenerationStatus(prev => prev.map(item => 
-                    item.id === '6' ? { ...item, status: 'complete' } : item
+                    item.id === '6' ? { ...item, status: 'complete' as const } : item
                   ));
                   
                   // Hide status and navigate after completion
@@ -138,7 +151,7 @@ const Homepage = () => {
   };
 
   const createNewProject = () => {
-    if (projects.length >= 5) {
+    if (projects.length >= 5 && userPlan === "FREE") {
       toast({
         title: "Project Limit Reached",
         description: "You have reached the maximum of 5 projects for the free plan. Please upgrade for more projects.",
@@ -192,6 +205,12 @@ const Homepage = () => {
         localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
       }
       
+      // Save attached image if present
+      if (attachedImage) {
+        localStorage.setItem(`${projectId}_attached_image`, attachedImage);
+        localStorage.setItem(`${projectId}_image_filename`, imageFileName || "attached_image.png");
+      }
+      
       // Start the simulated generation process
       simulateGeneration();
       
@@ -209,6 +228,45 @@ const Homepage = () => {
       });
       setIsLoading(false);
     }
+  };
+
+  // Handle model change
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    localStorage.setItem("selected_model", modelId);
+    toast({
+      title: "Model Changed",
+      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : modelId === "gemini-2.0" ? "Gemini 2.0 Flash" : "Gemini 2.0 Pro"}`,
+    });
+  };
+
+  // Handler for image upload
+  const handleImageUpload = (uploadedFile: { name: string, content: string, type: string }) => {
+    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
+    // The 'type' from FileExplorerUpload is the file extension.
+    if (
+      typeof uploadedFile.content === 'string' &&
+      (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
+    ) {
+      setAttachedImage(uploadedFile.content);
+      setImageFileName(uploadedFile.name);
+      toast({
+        title: "Image Attached",
+        description: `${uploadedFile.name} has been attached.`,
+      });
+    } else {
+      toast({
+        title: "Unsupported File Type",
+        description: "Please upload a valid image (PNG, JPG, GIF, SVG, WebP).",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle attachment button click
+  const handleAttachClick = () => {
+    // Trigger the file upload click
+    document.getElementById('fileUpload')?.click();
   };
 
   const loadProject = (projectId: string) => {
@@ -322,38 +380,6 @@ const Homepage = () => {
     }
   };
 
-  // Handler for image upload
-  const handleImageUpload = (uploadedFile: { name: string, content: string, type: string }) => {
-    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
-    // The 'type' from FileExplorerUpload is the file extension.
-    if (
-      typeof uploadedFile.content === 'string' &&
-      (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
-    ) {
-      setAttachedImage(uploadedFile.content);
-      setImageFileName(uploadedFile.name);
-      toast({
-        title: "Image Attached",
-        description: `${uploadedFile.name} has been attached.`,
-      });
-    } else {
-      toast({
-        title: "Unsupported File Type",
-        description: "Please upload a valid image (PNG, JPG, GIF, SVG, WebP).",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle model change
-  const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
-    toast({
-      title: "Model Changed",
-      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : "Gemini 2.0 Flash"}`,
-    });
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       <HomepageNav />
@@ -381,10 +407,11 @@ const Homepage = () => {
                     onSubmit={createNewProject}
                     placeholder="Ask Boongle AI to build anything..."
                     isLoading={isLoading}
-                    onAttach={() => document.getElementById('fileUpload')?.click()}
+                    onAttach={handleAttachClick}
                     className="min-h-[120px]"
                     onModelChange={handleModelChange}
                     selectedModel={selectedModel}
+                    userPlan={userPlan}
                   />
 
                   <div>

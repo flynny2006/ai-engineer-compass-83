@@ -8,6 +8,7 @@ interface ModelOption {
   id: string;
   name: string;
   description?: string;
+  requiresPlan?: boolean;
 }
 
 interface AnimatedAIInputProps {
@@ -22,12 +23,14 @@ interface AnimatedAIInputProps {
   className?: string;
   onModelChange?: (modelId: string) => void;
   selectedModel?: string;
+  userPlan?: string;
 }
 
 // Model options for the switcher
 const models: ModelOption[] = [
   { id: 'gemini-1.5', name: 'Gemini 1.5 Flash', description: 'Fast and efficient for most tasks' },
-  { id: 'gemini-2.0', name: 'Gemini 2.0 Flash', description: 'Advanced capabilities for complex tasks' }
+  { id: 'gemini-2.0', name: 'Gemini 2.0 Flash', description: 'Advanced capabilities for complex tasks' },
+  { id: 'gemini-2.0-pro', name: 'Gemini 2.0 Pro', description: 'Premium model with enhanced features', requiresPlan: true }
 ];
 
 export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
@@ -42,9 +45,11 @@ export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
   className = "",
   onModelChange,
   selectedModel = "gemini-1.5",
+  userPlan = "FREE"
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamic height adjustment for textarea
   useEffect(() => {
@@ -76,10 +81,27 @@ export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
 
   // Model selection
   const handleModelSelect = (modelId: string) => {
+    const selectedModelOption = models.find(m => m.id === modelId);
+    
+    // Check if model requires a plan
+    if (selectedModelOption?.requiresPlan && userPlan === "FREE") {
+      alert("This model requires a paid plan. Please upgrade to access Gemini 2.0 Pro.");
+      return;
+    }
+    
     if (onModelChange) {
       onModelChange(modelId);
     }
   };
+
+  // Handle file attachment click
+  const handleAttachClick = () => {
+    if (onAttach) {
+      onAttach();
+    }
+  };
+
+  const isPaidUser = userPlan !== "FREE";
 
   return (
     <div className={`relative ${className}`}>
@@ -106,10 +128,15 @@ export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
                       selectedModel === model.id 
                         ? 'bg-white/10 text-white' 
                         : 'hover:bg-white/5 text-white/80'
-                    }`}
+                    } ${model.requiresPlan && !isPaidUser ? 'opacity-50' : ''}`}
                     onClick={() => handleModelSelect(model.id)}
                   >
-                    <div className="font-medium">{model.name}</div>
+                    <div className="font-medium flex items-center justify-between">
+                      {model.name}
+                      {model.requiresPlan && (
+                        <span className="text-xs bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">PRO</span>
+                      )}
+                    </div>
                     {model.description && (
                       <div className="text-xs text-white/60 mt-1">{model.description}</div>
                     )}
@@ -119,10 +146,10 @@ export const AnimatedAIInput: React.FC<AnimatedAIInputProps> = ({
             </HoverCardContent>
           </HoverCard>
           
-          {showAttachButton && onAttach && (
+          {showAttachButton && (
             <button
               type="button"
-              onClick={onAttach}
+              onClick={handleAttachClick}
               className="flex-shrink-0 ml-2 p-2 text-white/60 hover:text-white transition-colors"
             >
               <Paperclip className="h-5 w-5" />
