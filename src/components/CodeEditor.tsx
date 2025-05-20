@@ -8,9 +8,18 @@ interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   language: string;
+  creditsInfo?: {
+    amount: number;
+    type: "daily" | "monthly";
+  };
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ 
+  value, 
+  onChange, 
+  language,
+  creditsInfo = { amount: 20, type: "daily" } 
+}) => {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const [lineCount, setLineCount] = useState<number>(1);
   const [showSearch, setShowSearch] = useState<boolean>(false);
@@ -160,8 +169,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
   
   return (
     <div className="flex flex-col h-full w-full bg-background/80 relative">
+      {/* Credits info */}
+      <div className="absolute top-0 left-0 right-0 p-2 text-xs text-muted-foreground text-center bg-background/50 backdrop-blur-sm border-b border-b-border/40 z-10">
+        {creditsInfo.amount} {creditsInfo.type} Credits left
+      </div>
+      
       {showSearch && (
-        <div className="bg-background/90 border-b p-2 flex items-center">
+        <div className="bg-background/90 border-b p-2 flex items-center mt-7">
           <form onSubmit={handleSearch} className="flex items-center w-full">
             <Search className="h-4 w-4 mr-2 text-muted-foreground" />
             <Input
@@ -186,7 +200,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
           </form>
         </div>
       )}
-      <div className="flex flex-1 overflow-hidden font-mono text-sm relative">
+      <div className="flex flex-1 overflow-hidden font-mono text-sm relative mt-7">
         <div className="bg-muted/80 py-4 flex flex-col overflow-hidden">
           {renderLineNumbers()}
         </div>
