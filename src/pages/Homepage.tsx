@@ -11,7 +11,6 @@ import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
 import AnimatedAIInput from "@/components/AnimatedAIInput";
 import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
-
 interface Project {
   id: string;
   name: string;
@@ -19,16 +18,16 @@ interface Project {
   files: any[];
   lastModified: string;
 }
-
 interface Partner {
   id: number;
   name: string;
   description: string;
-  logoUrl?: string; 
+  logoUrl?: string;
 }
-
 const Homepage = () => {
-  const { theme } = useTheme();
+  const {
+    theme
+  } = useTheme();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -44,11 +43,22 @@ const Homepage = () => {
   const fileUploadRef = useRef<HTMLInputElement>(null);
 
   // Sample partners data
-  const partners = [
-    { id: 1, name: "Acme Tech", description: "Leading AI infrastructure provider", logoUrl: "placeholder.svg" },
-    { id: 2, name: "DataFlow Inc.", description: "Enterprise data solutions", logoUrl: "placeholder.svg" },
-    { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
-  ];
+  const partners = [{
+    id: 1,
+    name: "Acme Tech",
+    description: "Leading AI infrastructure provider",
+    logoUrl: "placeholder.svg"
+  }, {
+    id: 2,
+    name: "DataFlow Inc.",
+    description: "Enterprise data solutions",
+    logoUrl: "placeholder.svg"
+  }, {
+    id: 3,
+    name: "CloudNine",
+    description: "Serverless architecture experts",
+    logoUrl: "placeholder.svg"
+  }];
 
   // Load projects, API key, and plan from localStorage
   useEffect(() => {
@@ -58,18 +68,17 @@ const Homepage = () => {
         const parsedProjects = JSON.parse(savedProjects);
         setProjects(parsedProjects);
       }
-      
       const savedApiKey = localStorage.getItem("api_key");
       if (savedApiKey) {
         setApiKey(savedApiKey);
       }
-      
+
       // Get user plan from localStorage
       const claimedPlan = localStorage.getItem("claimed_plan");
       if (claimedPlan) {
         setUserPlan(claimedPlan);
       }
-      
+
       // Get saved model preference
       const savedModel = localStorage.getItem("selected_model");
       if (savedModel) {
@@ -79,63 +88,95 @@ const Homepage = () => {
       console.error("Error loading data:", error);
     }
   }, []);
-
   const simulateGeneration = () => {
     // Clear any existing status
     setGenerationStatus([]);
     setShowStatus(true);
-    
+
     // Simulate the generation process with real-time updates
-    const steps: StatusItem[] = [
-      { id: '1', text: 'Analyzing prompt...', status: 'loading', timestamp: Date.now() },
-      { id: '2', text: 'Creating project structure', status: 'loading', timestamp: Date.now() + 100 },
-      { id: '3', text: 'Generating index.html', status: 'pending', timestamp: Date.now() + 200 },
-      { id: '4', text: 'Generating styles.css', status: 'pending', timestamp: Date.now() + 300 },
-      { id: '5', text: 'Generating app.js', status: 'pending', timestamp: Date.now() + 400 },
-      { id: '6', text: 'Building React components', status: 'pending', timestamp: Date.now() + 500 },
-    ];
-    
+    const steps: StatusItem[] = [{
+      id: '1',
+      text: 'Analyzing prompt...',
+      status: 'loading',
+      timestamp: Date.now()
+    }, {
+      id: '2',
+      text: 'Creating project structure',
+      status: 'loading',
+      timestamp: Date.now() + 100
+    }, {
+      id: '3',
+      text: 'Generating index.html',
+      status: 'pending',
+      timestamp: Date.now() + 200
+    }, {
+      id: '4',
+      text: 'Generating styles.css',
+      status: 'pending',
+      timestamp: Date.now() + 300
+    }, {
+      id: '5',
+      text: 'Generating app.js',
+      status: 'pending',
+      timestamp: Date.now() + 400
+    }, {
+      id: '6',
+      text: 'Building React components',
+      status: 'pending',
+      timestamp: Date.now() + 500
+    }];
+
     // Add initial step
     setGenerationStatus([steps[0]]);
-    
+
     // Update steps with simulated timing
     setTimeout(() => {
-      setGenerationStatus([
-        { ...steps[0], status: 'complete' },
-        { ...steps[1] }
-      ]);
-      
+      setGenerationStatus([{
+        ...steps[0],
+        status: 'complete'
+      }, {
+        ...steps[1]
+      }]);
       setTimeout(() => {
-        setGenerationStatus(prev => [
-          ...prev,
-          { ...steps[2], status: 'loading' }
-        ]);
-        
+        setGenerationStatus(prev => [...prev, {
+          ...steps[2],
+          status: 'loading'
+        }]);
         setTimeout(() => {
-          setGenerationStatus(prev => prev.map(item => 
-            item.id === '2' ? { ...item, status: 'complete' as const } : item
-          ));
-          
+          setGenerationStatus(prev => prev.map(item => item.id === '2' ? {
+            ...item,
+            status: 'complete' as const
+          } : item));
           setTimeout(() => {
-            setGenerationStatus(prev => prev.map(item => 
-              item.id === '3' ? { ...item, status: 'complete' as const } : item
-            ).concat({ ...steps[3], status: 'loading' as const }));
-            
+            setGenerationStatus(prev => prev.map(item => item.id === '3' ? {
+              ...item,
+              status: 'complete' as const
+            } : item).concat({
+              ...steps[3],
+              status: 'loading' as const
+            }));
             setTimeout(() => {
-              setGenerationStatus(prev => prev.map(item => 
-                item.id === '4' ? { ...item, status: 'complete' as const } : item
-              ).concat({ ...steps[4], status: 'loading' as const }));
-              
+              setGenerationStatus(prev => prev.map(item => item.id === '4' ? {
+                ...item,
+                status: 'complete' as const
+              } : item).concat({
+                ...steps[4],
+                status: 'loading' as const
+              }));
               setTimeout(() => {
-                setGenerationStatus(prev => prev.map(item => 
-                  item.id === '5' ? { ...item, status: 'complete' as const } : item
-                ).concat({ ...steps[5], status: 'loading' as const }));
-                
+                setGenerationStatus(prev => prev.map(item => item.id === '5' ? {
+                  ...item,
+                  status: 'complete' as const
+                } : item).concat({
+                  ...steps[5],
+                  status: 'loading' as const
+                }));
                 setTimeout(() => {
-                  setGenerationStatus(prev => prev.map(item => 
-                    item.id === '6' ? { ...item, status: 'complete' as const } : item
-                  ));
-                  
+                  setGenerationStatus(prev => prev.map(item => item.id === '6' ? {
+                    ...item,
+                    status: 'complete' as const
+                  } : item));
+
                   // Hide status and navigate after completion
                   setTimeout(() => {
                     setShowStatus(false);
@@ -149,17 +190,15 @@ const Homepage = () => {
       }, 600);
     }, 500);
   };
-
   const createNewProject = () => {
     if (projects.length >= 5 && userPlan === "FREE") {
       toast({
         title: "Project Limit Reached",
         description: "You have reached the maximum of 5 projects for the free plan. Please upgrade for more projects.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     if (!prompt.trim()) {
       toast({
         title: "Empty prompt",
@@ -168,52 +207,51 @@ const Homepage = () => {
       });
       return;
     }
-
     setIsLoading(true);
 
     // Generate a unique ID
     const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Create new project
     const newProject = {
       id: projectId,
       name: prompt.length > 30 ? `${prompt.substring(0, 30)}...` : prompt,
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
-      files: [], // Will be populated in the project editor
+      files: [] // Will be populated in the project editor
     };
 
     // Add to existing projects
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-    
+
     // Save to localStorage
     try {
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
+
       // Store current prompt as "last_prompt" for the project page
       localStorage.setItem("last_prompt", prompt);
       localStorage.setItem("selected_model", selectedModel);
-      
+
       // Set the current project ID BEFORE navigation
       // This is important for project-specific storage
       localStorage.setItem("current_project_id", projectId);
-      
+
       // Save the API key if entered
       if (apiKey) {
         localStorage.setItem("api_key", apiKey);
         localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
       }
-      
+
       // Save attached image if present
       if (attachedImage) {
         localStorage.setItem(`${projectId}_attached_image`, attachedImage);
         localStorage.setItem(`${projectId}_image_filename`, imageFileName || "attached_image.png");
       }
-      
+
       // Start the simulated generation process
       simulateGeneration();
-      
+
       // Navigate to project page after a delay
       setTimeout(() => {
         setIsLoading(false);
@@ -236,29 +274,30 @@ const Homepage = () => {
     localStorage.setItem("selected_model", modelId);
     toast({
       title: "Model Changed",
-      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : modelId === "gemini-2.0" ? "Gemini 2.0 Flash" : "Gemini 2.0 Pro"}`,
+      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : modelId === "gemini-2.0" ? "Gemini 2.0 Flash" : "Gemini 2.0 Pro"}`
     });
   };
 
   // Handler for image upload
-  const handleImageUpload = (uploadedFile: { name: string, content: string, type: string }) => {
+  const handleImageUpload = (uploadedFile: {
+    name: string;
+    content: string;
+    type: string;
+  }) => {
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     // The 'type' from FileExplorerUpload is the file extension.
-    if (
-      typeof uploadedFile.content === 'string' &&
-      (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
-    ) {
+    if (typeof uploadedFile.content === 'string' && (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))) {
       setAttachedImage(uploadedFile.content);
       setImageFileName(uploadedFile.name);
       toast({
         title: "Image Attached",
-        description: `${uploadedFile.name} has been attached.`,
+        description: `${uploadedFile.name} has been attached.`
       });
     } else {
       toast({
         title: "Unsupported File Type",
         description: "Please upload a valid image (PNG, JPG, GIF, SVG, WebP).",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -268,40 +307,36 @@ const Homepage = () => {
     // Trigger the file upload click
     document.getElementById('fileUpload')?.click();
   };
-
   const loadProject = (projectId: string) => {
     // Set the current project ID BEFORE navigation 
     // This is critical for project isolation
     localStorage.setItem("current_project_id", projectId);
-    
+
     // Save the API key if entered, to sync between homepage and editor
     if (apiKey) {
       localStorage.setItem("api_key", apiKey);
       localStorage.setItem("gemini_api_key", apiKey);
     }
-    
+
     // Navigate to the project with the ID in the URL
     navigate(`/project?id=${projectId}`);
   };
-
   const deleteProject = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    
     try {
       const updatedProjects = projects.filter(project => project.id !== projectId);
       setProjects(updatedProjects);
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
+
       // Also remove project-specific storage items
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith(`${projectId}_`)) {
           localStorage.removeItem(key);
         }
       });
-      
       toast({
         title: "Project deleted",
-        description: "The project has been successfully deleted.",
+        description: "The project has been successfully deleted."
       });
     } catch (error) {
       toast({
@@ -311,34 +346,28 @@ const Homepage = () => {
       });
     }
   };
-
   const duplicateProject = (e: React.MouseEvent, project: Project) => {
     e.stopPropagation();
-
     if (projects.length >= 5) {
       toast({
         title: "Project Limit Reached",
         description: "Cannot duplicate project. You have reached the maximum of 5 projects for the free plan.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
     try {
       const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
       const duplicatedProject = {
         ...project,
         id: projectId,
         name: `Copy of ${project.name}`,
         createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
+        lastModified: new Date().toISOString()
       };
-      
       const updatedProjects = [...projects, duplicatedProject];
       setProjects(updatedProjects);
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith(`${project.id}_`)) {
           const newKey = key.replace(project.id, projectId);
@@ -348,10 +377,9 @@ const Homepage = () => {
           }
         }
       });
-      
       toast({
         title: "Project duplicated",
-        description: "A copy of the project has been created.",
+        description: "A copy of the project has been created."
       });
     } catch (error) {
       toast({
@@ -361,14 +389,13 @@ const Homepage = () => {
       });
     }
   };
-
   const saveApiKey = () => {
     try {
       localStorage.setItem("api_key", apiKey);
       localStorage.setItem("gemini_api_key", apiKey); // Sync with editor
       toast({
         title: "API Key saved",
-        description: "Your API key has been saved successfully.",
+        description: "Your API key has been saved successfully."
       });
       setShowApiKeyInput(false);
     } catch (error) {
@@ -379,9 +406,7 @@ const Homepage = () => {
       });
     }
   };
-
-  return (
-    <div className="flex flex-col min-h-screen bg-black text-white">
+  return <div className="flex flex-col min-h-screen bg-black text-white">
       <HomepageNav />
       <main className="flex-1">
         <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
@@ -401,74 +426,41 @@ const Homepage = () => {
             <div className="w-full max-w-3xl mt-4 md:mt-8">
               <BorderTrail className="rounded-lg" variant="default" duration="slow">
                 <div className="bg-black rounded-lg p-4 space-y-4">
-                  <AnimatedAIInput
-                    value={prompt}
-                    onChange={setPrompt}
-                    onSubmit={createNewProject}
-                    placeholder="Ask Boongle AI to build anything..."
-                    isLoading={isLoading}
-                    onAttach={handleAttachClick}
-                    className="min-h-[120px]"
-                    onModelChange={handleModelChange}
-                    selectedModel={selectedModel}
-                    userPlan={userPlan}
-                  />
+                  <AnimatedAIInput value={prompt} onChange={setPrompt} onSubmit={createNewProject} placeholder="Ask Boongle AI to build anything..." isLoading={isLoading} onAttach={handleAttachClick} className="min-h-[120px]" onModelChange={handleModelChange} selectedModel={selectedModel} userPlan={userPlan} />
 
                   <div>
-                    {attachedImage ? (
-                      <div className="p-3 bg-white/5 rounded-md border border-white/10">
+                    {attachedImage ? <div className="p-3 bg-white/5 rounded-md border border-white/10">
                         <div className="flex justify-between items-center mb-2">
                           <p className="text-sm text-white/80 truncate pr-2">Attached: {imageFileName}</p>
-                          <Button 
-                            onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0"
-                          >
+                          <Button onClick={() => {
+                        setAttachedImage(null);
+                        setImageFileName(null);
+                      }} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        <img 
-                          src={attachedImage} 
-                          alt="Attached preview" 
-                          className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
-                        />
-                      </div>
-                    ) : (
-                      <div id="fileUpload">
+                        <img src={attachedImage} alt="Attached preview" className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" />
+                      </div> : <div id="fileUpload">
                         <FileExplorerUpload onFileUpload={handleImageUpload} />
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </div>
               </BorderTrail>
               
               <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
-                <Button
-                  onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                  variant="outline"
-                  className={`border-white/20 ${theme === 'light' ? 'text-black' : 'text-white/80'} hover:bg-white/10 w-full sm:w-auto`}
-                >
+                <Button onClick={() => setShowApiKeyInput(!showApiKeyInput)} variant="outline" className={`border-white/20 ${theme === 'light' ? 'text-black' : 'text-white/80'} hover:bg-white/10 w-full sm:w-auto`}>
                   <Key className="h-4 w-4 mr-2" />
                   {apiKey ? "Change API Key" : "Set API Key"}
                 </Button>
               </div>
 
-              {showApiKeyInput && (
-                <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
+              {showApiKeyInput && <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
                   <label className="block text-white text-sm mb-2">API Key</label>
                   <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="Enter your API key"
-                      className="bg-black text-white border-white/20"
-                    />
+                    <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter your API key" className="bg-black text-white border-white/20" />
                     <Button onClick={saveApiKey}>Save</Button>
                   </div>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
 
@@ -483,7 +475,7 @@ const Homepage = () => {
                   <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
                     <Compass className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Step 1: Describe Your Idea</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-950">Step 1: Describe Your Idea</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
                   </p>
@@ -495,7 +487,7 @@ const Homepage = () => {
                   <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
                     <Code className="h-10 w-10 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Step 2: AI Generates Code</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-950">Step 2: AI Generates Code</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
                   </p>
@@ -507,7 +499,7 @@ const Homepage = () => {
                   <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
                     <Rocket className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Step 3: Iterate & Launch</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-950">Step 3: Iterate & Launch</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Refine your app with further instructions, add features, and deploy your project to the world with a single click.
                   </p>
@@ -516,80 +508,46 @@ const Homepage = () => {
             </div>
           </div>
 
-          {projects.length > 0 && (
-            <div className="mt-12 w-full max-w-3xl mx-auto">
+          {projects.length > 0 && <div className="mt-12 w-full max-w-3xl mx-auto">
               <Separator className="bg-white/20 my-8" />
-              <h2 className="text-white text-2xl font-semibold mb-6">Your Projects</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-amber-300">Your Projects</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.map((project) => (
-                  <div 
-                    key={project.id}
-                    onClick={() => loadProject(project.id)}
-                    className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all hover:-translate-y-1"
-                  >
+                {projects.map(project => <div key={project.id} onClick={() => loadProject(project.id)} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all hover:-translate-y-1">
                     <h3 className="text-white font-medium text-lg">{project.name}</h3>
                     <p className="text-gray-400 text-sm mt-1">
                       Created: {new Date(project.createdAt).toLocaleDateString()}
                     </p>
                     <div className="flex justify-end mt-4 gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => duplicateProject(e, project)} 
-                        className="text-blue-400 hover:text-blue-300 p-1"
-                      >
+                      <Button variant="ghost" size="sm" onClick={e => duplicateProject(e, project)} className="text-blue-400 hover:text-blue-300 p-1">
                         <Copy className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => deleteProject(e, project.id)} 
-                        className="text-red-400 hover:text-red-300 p-1"
-                      >
+                      <Button variant="ghost" size="sm" onClick={e => deleteProject(e, project.id)} className="text-red-400 hover:text-red-300 p-1">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300 p-1">
                         <ArrowRight className="h-4 w-4" /> Open
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
-            </div>
-          )}
+            </div>}
           
           {/* Partners Section */}
           <div className="mt-12 w-full max-w-3xl mx-auto">
             <Separator className="bg-white/20 my-8" />
             <h2 className="text-white text-2xl font-semibold mb-6">Our Partners</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {partners.map((partner) => (
-                <BorderTrail 
-                  key={partner.id} 
-                  className="rounded-lg" 
-                  variant="primary" 
-                  duration="default" 
-                  spacing="sm"
-                >
+              {partners.map(partner => <BorderTrail key={partner.id} className="rounded-lg" variant="primary" duration="default" spacing="sm">
                   <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 flex flex-col items-center text-center border-none">
                     <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
-                      {partner.logoUrl ? (
-                        <img 
-                          src={partner.logoUrl} 
-                          alt={`${partner.name} logo`}
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <Building className="h-8 w-8 text-white/60" />
-                      )}
+                      {partner.logoUrl ? <img src={partner.logoUrl} alt={`${partner.name} logo`} className="w-full h-full object-cover" /> : <Building className="h-8 w-8 text-white/60" />}
                     </div>
                     <h3 className="text-white font-medium">{partner.name}</h3>
                     <p className="text-gray-400 text-sm mt-1">
                       {partner.description}
                     </p>
                   </div>
-                </BorderTrail>
-              ))}
+                </BorderTrail>)}
               
               <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
                 <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center border-none">
@@ -652,8 +610,6 @@ const Homepage = () => {
           </div>
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default Homepage;
