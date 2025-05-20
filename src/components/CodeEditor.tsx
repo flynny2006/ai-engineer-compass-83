@@ -3,8 +3,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import AiResponseStages from "./AiResponseStages";
-import CreditsDisplay from "./CreditsDisplay";
 
 interface CodeEditorProps {
   value: string;
@@ -14,15 +12,13 @@ interface CodeEditorProps {
     amount: number;
     type: "daily" | "monthly";
   };
-  aiResponseStage?: 'idle' | 'thinking' | 'building' | 'complete';
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({ 
   value, 
   onChange, 
   language,
-  creditsInfo,
-  aiResponseStage = 'idle'
+  creditsInfo = { amount: 20, type: "daily" } 
 }) => {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const [lineCount, setLineCount] = useState<number>(1);
@@ -173,22 +169,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   
   return (
     <div className="flex flex-col h-full w-full bg-background/80 relative">
-      {/* Credits Display */}
-      {creditsInfo && (
-        <div className="absolute top-0 right-0 z-10 m-2">
-          <CreditsDisplay amount={creditsInfo.amount} type={creditsInfo.type} />
-        </div>
-      )}
+      {/* Credits info */}
+      <div className="absolute top-0 left-0 right-0 p-2 text-xs text-muted-foreground text-center bg-background/50 backdrop-blur-sm border-b border-b-border/40 z-10">
+        {creditsInfo.amount} {creditsInfo.type} Credits left
+      </div>
       
-      {/* AI Response Stages */}
-      {aiResponseStage !== 'idle' && (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
-          <AiResponseStages stage={aiResponseStage} />
-        </div>
-      )}
-
       {showSearch && (
-        <div className="bg-background/90 border-b p-2 flex items-center">
+        <div className="bg-background/90 border-b p-2 flex items-center mt-7">
           <form onSubmit={handleSearch} className="flex items-center w-full">
             <Search className="h-4 w-4 mr-2 text-muted-foreground" />
             <Input
@@ -213,7 +200,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           </form>
         </div>
       )}
-      <div className="flex flex-1 overflow-hidden font-mono text-sm relative">
+      <div className="flex flex-1 overflow-hidden font-mono text-sm relative mt-7">
         <div className="bg-muted/80 py-4 flex flex-col overflow-hidden">
           {renderLineNumbers()}
         </div>

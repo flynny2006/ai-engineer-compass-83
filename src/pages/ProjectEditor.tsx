@@ -1,50 +1,52 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Index from './Index';
 import { toast } from '@/hooks/use-toast';
-import { CircleLoading } from '@/components/ui/circle-loading';
-
-// Define interfaces for credit information
-interface CreditsInfo {
-  amount: number;
-  type: "daily" | "monthly";
-}
+import AiResponseStatus from '@/components/AiResponseStatus';
+import { UserData } from '@/components/AuthModal';
 
 const ProjectEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [initializing, setInitializing] = useState(true);
-  const [creditsInfo, setCreditsInfo] = useState<CreditsInfo>({ 
-    amount: 10, // Default value
-    type: "daily" 
-  });
-  
-  // AI response simulation state
-  const handleAiRequest = () => {
-    // This function will be passed to Index component
-    // The Index component will handle the AI response stages
-    // (thinking, building, etc.)
-    console.log("AI request initiated");
+  const [showAiStatus, setShowAiStatus] = useState(false);
+  const [aiStatusType, setAiStatusType] = useState<'thinking' | 'building' | 'complete'>('thinking');
+  const [user, setUser] = useState<UserData | null>(null);
+  const [creditsInfo, setCreditsInfo] = useState({ amount: 0, type: 'daily' as const });
+
+  // Handle AI response simulation
+  const simulateAiResponse = () => {
+    // Simulate AI thinking and building process
+    setShowAiStatus(true);
+    setAiStatusType('thinking');
     
-    // Update credits when AI is used
-    setCreditsInfo(prev => ({
-      ...prev,
-      amount: Math.max(0, prev.amount - 1)  // Decrease credits by 1, minimum 0
-    }));
+    // After 3-4 seconds, change to building
+    setTimeout(() => {
+      setAiStatusType('building');
+      
+      // After 2 more seconds, complete
+      setTimeout(() => {
+        setAiStatusType('complete');
+        setShowAiStatus(false);
+      }, 2000);
+    }, 3000 + Math.random() * 1000); // Random between 3-4 seconds
   };
   
+  // Load user data
   useEffect(() => {
-    // Load credits info from localStorage
-    const storedCredits = localStorage.getItem("user_credits");
-    if (storedCredits) {
-      try {
-        setCreditsInfo(JSON.parse(storedCredits));
-      } catch (error) {
-        console.error("Failed to parse credits info", error);
-      }
+    const currentUser = localStorage.getItem("currentUser");
+    if (currentUser) {
+      const userData = JSON.parse(currentUser);
+      setUser(userData);
+      setCreditsInfo({
+        amount: userData.credits?.daily || 20,
+        type: 'daily'
+      });
     }
-    
+  }, []);
+  
+  useEffect(() => {
     // Get project ID from URL parameters
     const queryParams = new URLSearchParams(location.search);
     const projectId = queryParams.get('id');
@@ -73,6 +75,9 @@ const ProjectEditor = () => {
           // will handle loading the correct files for the current project
           
           setInitializing(false);
+          
+          // Simulate AI response when we enter a project
+          simulateAiResponse();
         } else {
           toast({
             title: "Project not found",
@@ -93,6 +98,12 @@ const ProjectEditor = () => {
       // Update the URL to include the project ID
       navigate(`/project?id=${currentProjectId}`, { replace: true });
       setInitializing(false);
+    }
+
+    // Simulate AI response for testing
+    const enableSimulation = false; // Set to true to test AI response simulation
+    if (enableSimulation) {
+      setTimeout(simulateAiResponse, 2000);
     }
   }, [navigate, location.search]);
 
@@ -119,10 +130,19 @@ const ProjectEditor = () => {
     };
   }, []);
 
-  // Save credits info to localStorage when it changes
+  // Add event listener for AI response simulation
   useEffect(() => {
-    localStorage.setItem("user_credits", JSON.stringify(creditsInfo));
-  }, [creditsInfo]);
+    const handleMessage = (event: MessageEvent) => {
+      // Check if the message is from the child iframe
+      if (event.data && event.data.type === "ai_request") {
+        // Start AI response simulation
+        simulateAiResponse();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   if (initializing) {
     return (
@@ -132,7 +152,16 @@ const ProjectEditor = () => {
     );
   }
 
-  return <Index creditsInfo={creditsInfo} onAiRequest={handleAiRequest} />;
+  return (
+    <>
+      {showAiStatus && (
+        <div className="fixed bottom-4 left-4 bg-black/80 border border-white/20 rounded-lg z-50 text-white shadow-lg">
+          <AiResponseStatus isVisible={showAiStatus} status={aiStatusType} />
+        </div>
+      )}
+      <Index creditsInfo={creditsInfo} onAiRequest={simulateAiResponse} />
+    </>
+  );
 };
 
 export default ProjectEditor;

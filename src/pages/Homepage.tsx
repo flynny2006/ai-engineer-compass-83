@@ -11,6 +11,9 @@ import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
 import AnimatedAIInput from "@/components/AnimatedAIInput";
 import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
+import AuthModal, { UserData } from "@/components/AuthModal";
+import AuthButtons from "@/components/AuthButtons";
+
 interface Project {
   id: string;
   name: string;
@@ -18,16 +21,16 @@ interface Project {
   files: any[];
   lastModified: string;
 }
+
 interface Partner {
   id: number;
   name: string;
   description: string;
   logoUrl?: string;
 }
+
 const Homepage = () => {
-  const {
-    theme
-  } = useTheme();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -40,43 +43,54 @@ const Homepage = () => {
   const [showStatus, setShowStatus] = useState<boolean>(false);
   const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
   const [userPlan, setUserPlan] = useState<string>("FREE");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
   const fileUploadRef = useRef<HTMLInputElement>(null);
 
   // Sample partners data
-  const partners = [{
-    id: 1,
-    name: "Acme Tech",
-    description: "Leading AI infrastructure provider",
-    logoUrl: "placeholder.svg"
-  }, {
-    id: 2,
-    name: "DataFlow Inc.",
-    description: "Enterprise data solutions",
-    logoUrl: "placeholder.svg"
-  }, {
-    id: 3,
-    name: "CloudNine",
-    description: "Serverless architecture experts",
-    logoUrl: "placeholder.svg"
-  }];
+  const partners = [
+    {
+      id: 1,
+      name: "Acme Tech",
+      description: "Leading AI infrastructure provider",
+      logoUrl: "placeholder.svg"
+    },
+    {
+      id: 2,
+      name: "DataFlow Inc.",
+      description: "Enterprise data solutions",
+      logoUrl: "placeholder.svg"
+    },
+    {
+      id: 3,
+      name: "CloudNine",
+      description: "Serverless architecture experts",
+      logoUrl: "placeholder.svg"
+    }
+  ];
 
-  // Load projects, API key, and plan from localStorage
+  // Load user data, projects, API key, and plan from localStorage
   useEffect(() => {
     try {
+      // Check if user is logged in
+      const currentUser = localStorage.getItem("currentUser");
+      if (currentUser) {
+        const userData = JSON.parse(currentUser);
+        setUser(userData);
+        setIsLoggedIn(true);
+        setUserPlan(userData.plan);
+      }
+      
       const savedProjects = localStorage.getItem("saved_projects");
       if (savedProjects) {
         const parsedProjects = JSON.parse(savedProjects);
         setProjects(parsedProjects);
       }
+      
       const savedApiKey = localStorage.getItem("api_key");
       if (savedApiKey) {
         setApiKey(savedApiKey);
-      }
-
-      // Get user plan from localStorage
-      const claimedPlan = localStorage.getItem("claimed_plan");
-      if (claimedPlan) {
-        setUserPlan(claimedPlan);
       }
 
       // Get saved model preference
@@ -88,59 +102,66 @@ const Homepage = () => {
       console.error("Error loading data:", error);
     }
   }, []);
+
   const simulateGeneration = () => {
     // Clear any existing status
     setGenerationStatus([]);
     setShowStatus(true);
 
     // Simulate the generation process with real-time updates
-    const steps: StatusItem[] = [{
-      id: '1',
-      text: 'Analyzing prompt...',
-      status: 'loading',
-      timestamp: Date.now()
-    }, {
-      id: '2',
-      text: 'Creating project structure',
-      status: 'loading',
-      timestamp: Date.now() + 100
-    }, {
-      id: '3',
-      text: 'Generating index.html',
-      status: 'pending',
-      timestamp: Date.now() + 200
-    }, {
-      id: '4',
-      text: 'Generating styles.css',
-      status: 'pending',
-      timestamp: Date.now() + 300
-    }, {
-      id: '5',
-      text: 'Generating app.js',
-      status: 'pending',
-      timestamp: Date.now() + 400
-    }, {
-      id: '6',
-      text: 'Building React components',
-      status: 'pending',
-      timestamp: Date.now() + 500
-    }];
+    const steps: StatusItem[] = [
+      {
+        id: '1',
+        text: 'Analyzing prompt...',
+        status: 'loading' as const,
+        timestamp: Date.now()
+      },
+      {
+        id: '2',
+        text: 'Creating project structure',
+        status: 'loading' as const,
+        timestamp: Date.now() + 100
+      },
+      {
+        id: '3',
+        text: 'Generating index.html',
+        status: 'pending' as const,
+        timestamp: Date.now() + 200
+      },
+      {
+        id: '4',
+        text: 'Generating styles.css',
+        status: 'pending' as const,
+        timestamp: Date.now() + 300
+      },
+      {
+        id: '5',
+        text: 'Generating app.js',
+        status: 'pending' as const,
+        timestamp: Date.now() + 400
+      },
+      {
+        id: '6',
+        text: 'Building React components',
+        status: 'pending' as const,
+        timestamp: Date.now() + 500
+      }
+    ];
 
     // Add initial step
     setGenerationStatus([steps[0]]);
 
     // Update steps with simulated timing
     setTimeout(() => {
-      setGenerationStatus([{
-        ...steps[0],
-        status: 'complete'
-      }, {
-        ...steps[1]
-      }]);
+      setGenerationStatus([
+        { ...steps[0], status: 'complete' as const },
+        { ...steps[1] }
+      ]);
+      
       setTimeout(() => {
         setGenerationStatus(prev => [...prev, {
           ...steps[2],
-          status: 'loading'
+          status: 'loading' as const
         }]);
         setTimeout(() => {
           setGenerationStatus(prev => prev.map(item => item.id === '2' ? {
@@ -190,7 +211,13 @@ const Homepage = () => {
       }, 600);
     }, 500);
   };
+
   const createNewProject = () => {
+    if (!isLoggedIn) {
+      setShowAuthModal(true);
+      return;
+    }
+    
     if (projects.length >= 5 && userPlan === "FREE") {
       toast({
         title: "Project Limit Reached",
@@ -199,6 +226,7 @@ const Homepage = () => {
       });
       return;
     }
+    
     if (!prompt.trim()) {
       toast({
         title: "Empty prompt",
@@ -207,6 +235,7 @@ const Homepage = () => {
       });
       return;
     }
+    
     setIsLoading(true);
 
     // Generate a unique ID
@@ -304,9 +333,21 @@ const Homepage = () => {
 
   // Handle attachment button click
   const handleAttachClick = () => {
+    if (!isLoggedIn) {
+      setShowAuthModal(true);
+      return;
+    }
     // Trigger the file upload click
-    document.getElementById('fileUpload')?.click();
+    if (fileUploadRef.current) {
+      fileUploadRef.current.click();
+    } else {
+      const fileInput = document.getElementById('fileUpload');
+      if (fileInput) {
+        fileInput.click();
+      }
+    }
   };
+  
   const loadProject = (projectId: string) => {
     // Set the current project ID BEFORE navigation 
     // This is critical for project isolation
@@ -321,6 +362,7 @@ const Homepage = () => {
     // Navigate to the project with the ID in the URL
     navigate(`/project?id=${projectId}`);
   };
+  
   const deleteProject = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     try {
@@ -346,6 +388,7 @@ const Homepage = () => {
       });
     }
   };
+  
   const duplicateProject = (e: React.MouseEvent, project: Project) => {
     e.stopPropagation();
     if (projects.length >= 5) {
@@ -389,6 +432,7 @@ const Homepage = () => {
       });
     }
   };
+  
   const saveApiKey = () => {
     try {
       localStorage.setItem("api_key", apiKey);
@@ -406,8 +450,35 @@ const Homepage = () => {
       });
     }
   };
-  return <div className="flex flex-col min-h-screen bg-black text-white">
-      <HomepageNav />
+
+  // Handle login success
+  const handleLoginSuccess = (userData: UserData) => {
+    setUser(userData);
+    setIsLoggedIn(true);
+    setUserPlan(userData.plan);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    setUser(null);
+    setIsLoggedIn(false);
+    setUserPlan('FREE');
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out."
+    });
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-black text-white">
+      <HomepageNav 
+        isLoggedIn={isLoggedIn}
+        user={user}
+        onLoginClick={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+      />
+      
       <main className="flex-1">
         <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
           {/* Real-time generation status */}
@@ -426,41 +497,88 @@ const Homepage = () => {
             <div className="w-full max-w-3xl mt-4 md:mt-8">
               <BorderTrail className="rounded-lg" variant="default" duration="slow">
                 <div className="bg-black rounded-lg p-4 space-y-4">
-                  <AnimatedAIInput value={prompt} onChange={setPrompt} onSubmit={createNewProject} placeholder="Ask Boongle AI to build anything..." isLoading={isLoading} onAttach={handleAttachClick} className="min-h-[120px]" onModelChange={handleModelChange} selectedModel={selectedModel} userPlan={userPlan} />
+                  {!isLoggedIn && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-md p-4 mb-4 text-center">
+                      <p className="text-yellow-400 mb-2">Please login to use the AI</p>
+                      <Button onClick={() => setShowAuthModal(true)}>Login or Register</Button>
+                    </div>
+                  )}
+                  
+                  <AnimatedAIInput 
+                    value={prompt} 
+                    onChange={setPrompt} 
+                    onSubmit={createNewProject} 
+                    placeholder={isLoggedIn ? "Ask Boongle AI to build anything..." : "Login to use AI"} 
+                    isLoading={isLoading} 
+                    onAttach={handleAttachClick} 
+                    className="min-h-[120px]" 
+                    onModelChange={handleModelChange} 
+                    selectedModel={selectedModel} 
+                    userPlan={userPlan}
+                    isLoggedIn={isLoggedIn}
+                  />
 
                   <div>
-                    {attachedImage ? <div className="p-3 bg-white/5 rounded-md border border-white/10">
+                    {attachedImage ? (
+                      <div className="p-3 bg-white/5 rounded-md border border-white/10">
                         <div className="flex justify-between items-center mb-2">
                           <p className="text-sm text-white/80 truncate pr-2">Attached: {imageFileName}</p>
-                          <Button onClick={() => {
-                        setAttachedImage(null);
-                        setImageFileName(null);
-                      }} variant="ghost" size="icon" className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0">
+                          <Button 
+                            onClick={() => {
+                              setAttachedImage(null);
+                              setImageFileName(null);
+                            }} 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        <img src={attachedImage} alt="Attached preview" className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" />
-                      </div> : <div id="fileUpload">
-                        <FileExplorerUpload onFileUpload={handleImageUpload} />
-                      </div>}
+                        <img 
+                          src={attachedImage} 
+                          alt="Attached preview" 
+                          className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
+                        />
+                      </div>
+                    ) : (
+                      <div id="fileUpload">
+                        <FileExplorerUpload 
+                          onFileUpload={handleImageUpload} 
+                          ref={fileUploadRef}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </BorderTrail>
               
               <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
-                <Button onClick={() => setShowApiKeyInput(!showApiKeyInput)} variant="outline" className={`border-white/20 ${theme === 'light' ? 'text-black' : 'text-white/80'} hover:bg-white/10 w-full sm:w-auto`}>
+                <Button 
+                  onClick={() => setShowApiKeyInput(!showApiKeyInput)} 
+                  variant="outline" 
+                  className={`border-white/20 text-black dark:text-white/80 hover:bg-white/10 w-full sm:w-auto`}
+                >
                   <Key className="h-4 w-4 mr-2" />
                   {apiKey ? "Change API Key" : "Set API Key"}
                 </Button>
               </div>
 
-              {showApiKeyInput && <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
+              {showApiKeyInput && (
+                <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
                   <label className="block text-white text-sm mb-2">API Key</label>
                   <div className="flex gap-2">
-                    <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter your API key" className="bg-black text-white border-white/20" />
+                    <Input 
+                      type="password" 
+                      value={apiKey} 
+                      onChange={e => setApiKey(e.target.value)} 
+                      placeholder="Enter your API key" 
+                      className="bg-black text-white border-white/20" 
+                    />
                     <Button onClick={saveApiKey}>Save</Button>
                   </div>
-                </div>}
+                </div>
+              )}
             </div>
           </div>
 
@@ -475,7 +593,7 @@ const Homepage = () => {
                   <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
                     <Compass className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-red-500">Step 1: Describe Your Idea</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 1: Describe Your Idea</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
                   </p>
@@ -487,7 +605,7 @@ const Homepage = () => {
                   <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
                     <Code className="h-10 w-10 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-red-500">Step 2: AI Generates Code</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 2: AI Generates Code</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
                   </p>
@@ -499,7 +617,7 @@ const Homepage = () => {
                   <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
                     <Rocket className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-red-500">Step 3: Iterate & Launch</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 3: Iterate & Launch</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Refine your app with further instructions, add features, and deploy your project to the world with a single click.
                   </p>
@@ -508,7 +626,8 @@ const Homepage = () => {
             </div>
           </div>
 
-          {projects.length > 0 && <div className="mt-12 w-full max-w-3xl mx-auto">
+          {projects.length > 0 && (
+            <div className="mt-12 w-full max-w-3xl mx-auto">
               <Separator className="bg-white/20 my-8" />
               <h2 className="text-2xl font-semibold mb-6 text-slate-50">Your Projects</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -530,7 +649,8 @@ const Homepage = () => {
                     </div>
                   </div>)}
               </div>
-            </div>}
+            </div>
+          )}
           
           {/* Partners Section */}
           <div className="mt-12 w-full max-w-3xl mx-auto">
@@ -542,7 +662,7 @@ const Homepage = () => {
                     <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
                       {partner.logoUrl ? <img src={partner.logoUrl} alt={`${partner.name} logo`} className="w-full h-full object-cover" /> : <Building className="h-8 w-8 text-white/60" />}
                     </div>
-                    <h3 className="font-medium text-red-400">{partner.name}</h3>
+                    <h3 className="text-white font-medium">{partner.name}</h3>
                     <p className="text-gray-400 text-sm mt-1">
                       {partner.description}
                     </p>
@@ -552,7 +672,7 @@ const Homepage = () => {
               <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
                 <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center border-none">
                   <Users className="h-10 w-10 text-green-400 mb-3" />
-                  <h3 className="font-medium text-orange-500">Become a Partner</h3>
+                  <h3 className="text-white font-medium">Become a Partner</h3>
                   <p className="text-gray-400 text-sm mt-2">
                     Contact us to get featured as a partner here!
                   </p>
@@ -576,7 +696,7 @@ const Homepage = () => {
                   <div className="bg-blue-500/10 p-4 rounded-full mb-6 ring-2 ring-blue-500/20">
                     <Zap className="h-10 w-10 text-yellow-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-red-500">Lightning Fast</h3>
+                  <h3 className="text-xl font-semibold text-white mb-3">Lightning Fast</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
                   </p>
@@ -588,7 +708,7 @@ const Homepage = () => {
                   <div className="bg-purple-500/10 p-4 rounded-full mb-6 ring-2 ring-purple-500/20">
                     <Timer className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-red-500">Completely Free</h3>
+                  <h3 className="text-xl font-semibold text-white mb-3">Completely Free</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
                   </p>
@@ -600,7 +720,7 @@ const Homepage = () => {
                   <div className="bg-green-500/10 p-4 rounded-full mb-6 ring-2 ring-green-500/20">
                     <Eye className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-red-500">See Live Preview Here</h3>
+                  <h3 className="text-xl font-semibold text-white mb-3">See Live Preview Here</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
                   </p>
@@ -610,6 +730,15 @@ const Homepage = () => {
           </div>
         </div>
       </main>
-    </div>;
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onSuccess={handleLoginSuccess} 
+      />
+    </div>
+  );
 };
+
 export default Homepage;
