@@ -475,7 +475,7 @@ const Homepage = () => {
                   <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
                     <Compass className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-slate-950">Step 1: Describe Your Idea</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 1: Describe Your Idea</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
                   </p>
@@ -487,7 +487,7 @@ const Homepage = () => {
                   <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
                     <Code className="h-10 w-10 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-slate-950">Step 2: AI Generates Code</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 2: AI Generates Code</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
                   </p>
@@ -499,7 +499,7 @@ const Homepage = () => {
                   <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
                     <Rocket className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-slate-950">Step 3: Iterate & Launch</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 3: Iterate & Launch</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Refine your app with further instructions, add features, and deploy your project to the world with a single click.
                   </p>
@@ -510,7 +510,7 @@ const Homepage = () => {
 
           {projects.length > 0 && <div className="mt-12 w-full max-w-3xl mx-auto">
               <Separator className="bg-white/20 my-8" />
-              <h2 className="text-2xl font-semibold mb-6 text-amber-300">Your Projects</h2>
+              <h2 className="text-2xl font-semibold mb-6 text-slate-50">Your Projects</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {projects.map(project => <div key={project.id} onClick={() => loadProject(project.id)} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all hover:-translate-y-1">
                     <h3 className="text-white font-medium text-lg">{project.name}</h3>
