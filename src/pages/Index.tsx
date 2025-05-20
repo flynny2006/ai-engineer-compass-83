@@ -985,6 +985,14 @@ Full file content here
     updateFileContent(currentFile, newContent);
   };
   
+  const cancelImageUpload = () => {
+    setImageUpload(null);
+    setShowImageUpload(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const creditPercentage = dailyCredits / DAILY_CREDIT_LIMIT * 100;
   
   return (
