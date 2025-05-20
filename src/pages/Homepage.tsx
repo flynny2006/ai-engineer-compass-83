@@ -475,7 +475,7 @@ const Homepage = () => {
                   <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
                     <Compass className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 1: Describe Your Idea</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-red-500">Step 1: Describe Your Idea</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
                   </p>
@@ -487,7 +487,7 @@ const Homepage = () => {
                   <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
                     <Code className="h-10 w-10 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 2: AI Generates Code</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-red-500">Step 2: AI Generates Code</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
                   </p>
@@ -499,7 +499,7 @@ const Homepage = () => {
                   <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
                     <Rocket className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 text-slate-50">Step 3: Iterate & Launch</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-red-500">Step 3: Iterate & Launch</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Refine your app with further instructions, add features, and deploy your project to the world with a single click.
                   </p>
@@ -542,7 +542,7 @@ const Homepage = () => {
                     <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
                       {partner.logoUrl ? <img src={partner.logoUrl} alt={`${partner.name} logo`} className="w-full h-full object-cover" /> : <Building className="h-8 w-8 text-white/60" />}
                     </div>
-                    <h3 className="text-white font-medium">{partner.name}</h3>
+                    <h3 className="font-medium text-red-400">{partner.name}</h3>
                     <p className="text-gray-400 text-sm mt-1">
                       {partner.description}
                     </p>
@@ -552,7 +552,7 @@ const Homepage = () => {
               <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
                 <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center border-none">
                   <Users className="h-10 w-10 text-green-400 mb-3" />
-                  <h3 className="text-white font-medium">Become a Partner</h3>
+                  <h3 className="font-medium text-orange-500">Become a Partner</h3>
                   <p className="text-gray-400 text-sm mt-2">
                     Contact us to get featured as a partner here!
                   </p>
@@ -576,7 +576,7 @@ const Homepage = () => {
                   <div className="bg-blue-500/10 p-4 rounded-full mb-6 ring-2 ring-blue-500/20">
                     <Zap className="h-10 w-10 text-yellow-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Lightning Fast</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-red-500">Lightning Fast</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
                   </p>
@@ -588,7 +588,7 @@ const Homepage = () => {
                   <div className="bg-purple-500/10 p-4 rounded-full mb-6 ring-2 ring-purple-500/20">
                     <Timer className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Completely Free</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-red-500">Completely Free</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
                   </p>
@@ -600,7 +600,7 @@ const Homepage = () => {
                   <div className="bg-green-500/10 p-4 rounded-full mb-6 ring-2 ring-green-500/20">
                     <Eye className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">See Live Preview Here</h3>
+                  <h3 className="text-xl font-semibold mb-3 text-red-500">See Live Preview Here</h3>
                   <p className="text-gray-400 leading-relaxed">
                     Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
                   </p>
