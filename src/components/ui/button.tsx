@@ -21,8 +21,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-green-500 text-white hover:bg-green-600",
         warning: "bg-amber-500 text-white hover:bg-amber-600",
-        circle: "bg-white text-black hover:bg-gray-100 rounded-full p-0 h-10 w-10 shadow-md",
-        modern: "bg-white text-black hover:bg-gray-100 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200",
+        circle: "bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full p-0 h-10 w-10 shadow-md",
+        modern: "bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 shadow-md border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-all duration-200",
       },
       size: {
         default: "h-10 px-4 py-2",

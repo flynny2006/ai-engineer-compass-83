@@ -94,6 +94,10 @@ const CREDIT_CODES = {
   "776561": 1600
 };
 
+// Number of retries for API calls
+const MAX_API_RETRIES = 3;
+const RETRY_DELAY = 1000; // ms
+
 const Index = () => {
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
@@ -194,6 +198,9 @@ const Index = () => {
   });
   const [claimCode, setClaimCode] = useState<string>("");
   const [showClaimDialog, setShowClaimDialog] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [apiErrorOccurred, setApiErrorOccurred] = useState<boolean>(false);
+  const [thinkingState, setThinkingState] = useState<string>("");
 
   // Combined credits
   const totalAvailableCredits = dailyCredits + lifetimeCredits;
@@ -213,15 +220,19 @@ const Index = () => {
     return 'text';
   };
 
-  // Check for code errors like triple backticks
+  // Function to sanitize code blocks by removing backticks
+  const sanitizeCodeBlocks = (text: string): string => {
+    // Remove code block markers
+    return text.replace(/```[\w]*\n?/g, '').replace(/```$/g, '');
+  };
+
+  // Check for code errors like triple backticks and remove them
   const checkForCodeErrors = (content: string) => {
-    const endsWithBackticks = content.trim().endsWith('```');
-    const containsDoubleBackticks = content.includes('``````');
-    if (endsWithBackticks || containsDoubleBackticks) {
-      setBuildError(true);
-    } else {
-      setBuildError(false);
+    if (content.includes('```')) {
+      const sanitizedContent = sanitizeCodeBlocks(content);
+      return sanitizedContent;
     }
+    return content;
   };
 
   // Fix code errors
@@ -519,202 +530,50 @@ const Index = () => {
     });
   };
 
-  // Confirm image upload
-  const confirmImageUpload = async () => {
-    if (imageUpload) {
-      try {
-        const base64Image = await convertToBase64(imageUpload);
-
-        const userMessage = {
-          role: "user",
-          content: userPrompt || "Please build a website based on this image",
-          image: base64Image
-        };
-        setMessages(prev => [...prev, userMessage]);
-        setUserPrompt("");
-        setIsLoading(true);
-        setShowImageUpload(false);
-        setImageUpload(null);
-
-        // Set AI status as active for the chat
-        setAiStatus({
-          active: true,
-          currentFile: '',
-          progress: 0,
-          files: [
-            { name: 'index.html', status: 'pending' },
-            { name: 'styles.css', status: 'pending' },
-            { name: 'script.js', status: 'pending' }
-          ]
-        });
-
-        if (!hasUnlimitedCredits) {
-          if (lifetimeCredits > 0) {
-            setLifetimeCredits(prev => prev - 1);
-          } else {
-            setDailyCredits(prev => prev - 1);
-          }
-        }
-        try {
-          const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
-Current project files:
-${files.map(file => `
---- ${file.name} ---
-${file.content}
-`).join('\n')}
-
-User request: "${userPrompt || "Please build a website based on this image"}"
-User has uploaded an image, which you'll see in your input. Please analyze it and build a website based on it.
-
-Previous conversation:
-${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-Analyze the image and the user's request. Then, respond with the full updated files that incorporates the requested changes.
-
-Follow these rules:
-1. Return all files that need to be modified in this format:
---- filename.ext ---
-Full file content here
-
-2. Always return the complete content for each file
-3. Don't include explanations, just the code files
-4. Make sure to include proper links between HTML, CSS, and JS files
-5. Don't include markdown formatting or code blocks, just the raw code
-6. Be creative and implement visual enhancements when appropriate
-7. Follow best practices for HTML, CSS, and JavaScript
-8. Make sure your code is clean, organized, and well-documented
-9. Implement responsive design elements when possible
-10. Consider accessibility in your implementations
-11. Create visually appealing color schemes and typography to match the uploaded image
-12. Recreate the design from the uploaded image as closely as possible
-13. Use the same colors, layout, and style as shown in the image
-14. Consider the context and purpose of the image when designing the site
-15. If the image contains text, try to incorporate that text into your design
-16. If the image shows a UI, recreate that UI in your code
-17. Use modern design principles for beautiful interfaces
-18. Utilize smooth animations and transitions when appropriate
-19. Ensure proper spacing and layout for optimal user experience
-20. Implement intuitive navigation and user interaction patterns
-21. Apply dynamic hover animations for buttons, links, and interactive elements
-22. Use grid or flexbox layouts to ensure structure remains clean and adaptable`;
-          const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-goog-api-key": apiKey
-            },
-            body: JSON.stringify({
-              contents: [{
-                role: "user",
-                parts: [{
-                  text: systemPrompt
-                }, {
-                  inline_data: {
-                    mime_type: imageUpload.type,
-                    data: base64Image.split(',')[1]
-                  }
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.2,
-                topP: 0.8,
-                topK: 40
-              }
-            })
-          });
-          if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-          }
-          const data = await response.json();
-
-          if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-            const generatedText = data.candidates[0].content.parts[0].text;
-
-            const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
-            if (fileMatches && fileMatches.length > 0) {
-              const updatedFiles = [...files];
-              const newFiles: FileType[] = [];
-              fileMatches.forEach(match => {
-                const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
-                if (fileNameMatch && fileNameMatch[1]) {
-                  const fileName = fileNameMatch[1].trim();
-                  let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
-
-                  const fileExt = fileName.split('.').pop() || "";
-
-                  const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
-                  if (existingFileIndex >= 0) {
-                    updatedFiles[existingFileIndex].content = fileContent;
-                  } else {
-                    newFiles.push({
-                      name: fileName,
-                      content: fileContent,
-                      type: fileExt
-                    });
-                  }
-                }
-              });
-
-              const combinedFiles = [...updatedFiles, ...newFiles];
-              setFiles(combinedFiles);
-
-              if (newFiles.length > 0) {
-                toast({
-                  title: `Created ${newFiles.length} new file(s)`,
-                  description: `Added: ${newFiles.map(f => f.name).join(', ')}`
-                });
-              }
-            } else {
-              updateFileContent(currentFile, generatedText);
-            }
-
-            // Complete AI status
-            setAiStatus(prev => ({
-              ...prev,
-              active: false,
-              progress: 100,
-              files: prev.files.map(file => ({ ...file, status: 'complete' }))
-            }));
-            
-            setMessages(prev => [...prev, {
-              role: "assistant",
-              content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results."
-            }]);
-            if (showApiKeyInput) {
-              saveApiKey();
-            }
-
-            setLastRefreshTime(Date.now());
-          } else {
-            throw new Error("Invalid response format from API");
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          setMessages(prev => [...prev, {
-            role: "assistant",
-            content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
-          }]);
-        } finally {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Image conversion error:", error);
-        toast({
-          title: "Error",
-          description: "Failed to process the image. Please try again.",
-          variant: "destructive"
-        });
-      }
+  // Add delay for AI response based on subscription status
+  const simulateAIThinking = async () => {
+    if (!hasUnlimitedCredits) {
+      setThinkingState("Thinking...");
+      await new Promise(resolve => setTimeout(resolve, 3500));
+      setThinkingState("Building...");
+      return true;
     }
+    return false;
   };
 
-  // Cancel image upload
-  const cancelImageUpload = () => {
-    setShowImageUpload(false);
-    setImageUpload(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  // Retry mechanism for API calls
+  const callAPIWithRetry = async (url: string, options: RequestInit, maxRetries: number): Promise<Response> => {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, options);
+        
+        if (response.ok) {
+          setApiErrorOccurred(false);
+          return response;
+        }
+        
+        // If we get a 503, we'll retry
+        if (response.status === 503) {
+          lastError = new Error(`API error: ${response.status}`);
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (attempt + 1)));
+          continue;
+        }
+        
+        // For other errors, we'll just return the response
+        return response;
+      } catch (error) {
+        lastError = error;
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (attempt + 1)));
+      }
     }
+    
+    // If we've exhausted all retries, we'll throw the last error
+    setApiErrorOccurred(true);
+    throw lastError;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -736,13 +595,18 @@ Full file content here
       });
       return;
     }
+    
     const userMessage = {
       role: "user",
       content: userPrompt
     };
+    
     setMessages(prev => [...prev, userMessage]);
     setUserPrompt("");
     setIsLoading(true);
+    
+    // Simulate AI thinking for non-subscribers
+    await simulateAIThinking();
 
     // Set AI status as active for the chat
     setAiStatus({
@@ -763,6 +627,10 @@ Full file content here
         setDailyCredits(prev => prev - 1);
       }
     }
+    
+    setRetryCount(0);
+    setThinkingState("");
+    
     try {
       const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
 Current project files:
@@ -791,84 +659,9 @@ Full file content here
 7. Follow best practices for HTML, CSS, and JavaScript
 8. Make sure your code is clean, organized, and well-documented
 9. Implement responsive design elements when possible
-10. Consider accessibility in your implementations
-11. Use modern design principles for beautiful interfaces
-12. Create visually appealing color schemes and typography
-13. Utilize smooth animations and transitions when appropriate
-14. Ensure proper spacing and layout for optimal user experience
-15. Implement intuitive navigation and user interaction patterns
-16. Use consistent design language throughout the interface
-17. Add appropriate hover states and interactive elements
-18. Design with a focus on user experience and usability
-19. Consider performance optimizations in your implementations
-20. Maintain semantic HTML structure
-21. When implementing navigation between pages, create the necessary files and update links accordingly
-22. Ensure JavaScript code is properly added and functional
-23. Use modern CSS features like flexbox, grid, and custom properties
-24. Implement proper error handling in JavaScript code
-25. Create stunning visual designs with gradients, shadows, and modern UI elements
+10. Consider accessibility in your implementations`;
 
-# MASSIVE DESIGN CAPABILITIES
-
-## Advanced Visual Systems
-- Implement intricate visual hierarchy with 3+ levels of information architecture
-- Create complex gradient systems with multiple color stops and directional flows
-- Use depth layering with 5+ distinct z-index levels for dimensional richness
-- Design with optical illusions and visual tricks for engaging experiences
-- Apply advanced color harmony rules including split-complementary and tetradic schemes
-- Craft custom shape systems with geometric and organic forms
-- Design immersive full-page backgrounds with parallax and movement
-- Implement background noise textures and subtle patterns for tactile feel
-
-## Cutting-Edge UI Components
-- Create advanced morphing UI elements that transform based on context
-- Design data-driven components with dynamic visual representations
-- Implement 3D-inspired UI elements with realistic lighting and shadows
-- Create image-rich carousels with multi-directional navigation and zoom
-- Design interactive timeline components with storytelling capabilities
-- Create nested navigation systems with intelligent hierarchies
-- Design state-preserving form components with elegant validation
-- Implement context-aware tooltips with rich content and interactions
-- Create customizable dashboard components with drag-and-drop capabilities
-- Design data tables with advanced filtering, sorting, and visualization options
-
-## Layout Mastery
-- Create adaptive layouts that morph based on content and context
-- Design with asymmetrical balance for visual tension and interest
-- Implement content-aware spacing that adjusts to varying content density
-- Create interlocking grid systems with overlapping elements
-- Design with golden spiral principles for organic composition
-- Implement visual rhythm with repeating elements and patterns
-- Create modular component systems that fit together like puzzles
-- Design with intentional visual breaks to guide attention
-- Implement mixed-hierarchy layouts for complex information architecture
-- Create magazine-style layouts with irregular grids and dynamic typography
-
-## Motion Excellence
-- Design physics-based animations that respond to user input
-- Create seamless scene transitions with coordinated element movements
-- Implement path-based animations for natural, flowing motion
-- Design sequential animations with carefully timed sequences
-- Create attention-guiding motion that leads the eye through content
-- Implement scroll-driven animations tied to page position
-- Design micro-interactions with personality and character
-- Create mouse-following elements with smooth, natural movement
-- Implement state transitions with meaningful motion patterns
-- Design loading states with engaging, informative animations
-
-## Visual Code Techniques
-- Use creative clipping paths for unconventional layout shapes
-- Implement backdrop-filter effects for depth and glass morphism
-- Create custom animated cursors that respond to context
-- Design with advanced CSS gradient techniques like conic and repeating gradients
-- Implement dynamic dark mode with context-aware color adjustments
-- Create animated SVG illustrations with synchronized animations
-- Design with CSS custom properties for theme switching and variations
-- Implement advanced masking techniques for creative reveals
-- Create text effects with gradient fills, strokes, and animations
-- Design with variable font animations for dynamic typography`;
-
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+      const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -887,14 +680,19 @@ Full file content here
             topK: 40
           }
         })
-      });
+      }, MAX_API_RETRIES);
+      
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
+      
       const data = await response.json();
 
       if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-        const generatedText = data.candidates[0].content.parts[0].text;
+        let generatedText = data.candidates[0].content.parts[0].text;
+        
+        // Clean up any code block formatting
+        generatedText = sanitizeCodeBlocks(generatedText);
 
         const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
         if (fileMatches && fileMatches.length > 0) {
@@ -905,6 +703,9 @@ Full file content here
             if (fileNameMatch && fileNameMatch[1]) {
               const fileName = fileNameMatch[1].trim();
               let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
+              
+              // Clean any remaining backticks if present
+              fileContent = fileContent.replace(/```[\w]*\n?/g, '').replace(/```$/g, '');
 
               const fileExt = fileName.split('.').pop() || "";
 
@@ -931,7 +732,10 @@ Full file content here
             });
           }
         } else {
-          updateFileContent(currentFile, generatedText);
+          // If no file matches, treat the entire response as content for the current file
+          // Make sure to clean any code blocks first
+          const cleanedContent = sanitizeCodeBlocks(generatedText);
+          updateFileContent(currentFile, cleanedContent);
         }
 
         // Complete AI status
@@ -960,8 +764,219 @@ Full file content here
         role: "assistant",
         content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
       }]);
+      
+      // If API error occurs, show a helpful toast
+      if (apiErrorOccurred) {
+        toast({
+          title: "API Service Temporarily Unavailable",
+          description: "The AI service is experiencing high demand. Please try again in a few moments.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
+      setThinkingState("");
+    }
+  };
+
+  // Enhanced handleImageUpload function with retry mechanism
+  const confirmImageUpload = async () => {
+    if (imageUpload) {
+      try {
+        const base64Image = await convertToBase64(imageUpload);
+
+        const userMessage = {
+          role: "user",
+          content: userPrompt || "Please build a website based on this image",
+          image: base64Image
+        };
+        setMessages(prev => [...prev, userMessage]);
+        setUserPrompt("");
+        setIsLoading(true);
+        setShowImageUpload(false);
+        setImageUpload(null);
+        
+        // Simulate AI thinking for non-subscribers
+        await simulateAIThinking();
+
+        // Set AI status as active for the chat
+        setAiStatus({
+          active: true,
+          currentFile: '',
+          progress: 0,
+          files: [
+            { name: 'index.html', status: 'pending' },
+            { name: 'styles.css', status: 'pending' },
+            { name: 'script.js', status: 'pending' }
+          ]
+        });
+
+        if (!hasUnlimitedCredits) {
+          if (lifetimeCredits > 0) {
+            setLifetimeCredits(prev => prev - 1);
+          } else {
+            setDailyCredits(prev => prev - 1);
+          }
+        }
+        
+        setRetryCount(0);
+        setThinkingState("");
+        
+        try {
+          const systemPrompt = `You are an expert web developer AI assistant that helps modify HTML, CSS and JavaScript code.
+Current project files:
+${files.map(file => `
+--- ${file.name} ---
+${file.content}
+`).join('\n')}
+
+User request: "${userPrompt || "Please build a website based on this image"}"
+User has uploaded an image, which you'll see in your input. Please analyze it and build a website based on it.
+
+Previous conversation:
+${messages.slice(-5).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+
+Analyze the image and the user's request. Then, respond with the full updated files that incorporates the requested changes.
+
+Follow these rules:
+1. Return all files that need to be modified in this format:
+--- filename.ext ---
+Full file content here
+
+2. Always return the complete content for each file
+3. Don't include explanations, just the code files
+4. Make sure to include proper links between HTML, CSS, and JS files
+5. Don't include markdown formatting or code blocks, just the raw code`;
+
+          const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey
+            },
+            body: JSON.stringify({
+              contents: [{
+                role: "user",
+                parts: [{
+                  text: systemPrompt
+                }, {
+                  inline_data: {
+                    mime_type: imageUpload.type,
+                    data: base64Image.split(',')[1]
+                  }
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                topK: 40
+              }
+            })
+          }, MAX_API_RETRIES);
+          
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+          
+          const data = await response.json();
+
+          if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            let generatedText = data.candidates[0].content.parts[0].text;
+            
+            // Clean up any code block formatting
+            generatedText = sanitizeCodeBlocks(generatedText);
+
+            const fileMatches = generatedText.match(/---\s+([a-zA-Z0-9_.-]+)\s+---\s+([\s\S]*?)(?=(?:---\s+[a-zA-Z0-9_.-]+\s+---|$))/g);
+            if (fileMatches && fileMatches.length > 0) {
+              const updatedFiles = [...files];
+              const newFiles: FileType[] = [];
+              fileMatches.forEach(match => {
+                const fileNameMatch = match.match(/---\s+([a-zA-Z0-9_.-]+)\s+---/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                  const fileName = fileNameMatch[1].trim();
+                  let fileContent = match.replace(/---\s+[a-zA-Z0-9_.-]+\s+---/, '').trim();
+                  
+                  // Clean any remaining backticks if present
+                  fileContent = fileContent.replace(/```[\w]*\n?/g, '').replace(/```$/g, '');
+
+                  const fileExt = fileName.split('.').pop() || "";
+
+                  const existingFileIndex = updatedFiles.findIndex(f => f.name === fileName);
+                  if (existingFileIndex >= 0) {
+                    updatedFiles[existingFileIndex].content = fileContent;
+                  } else {
+                    newFiles.push({
+                      name: fileName,
+                      content: fileContent,
+                      type: fileExt
+                    });
+                  }
+                }
+              });
+
+              const combinedFiles = [...updatedFiles, ...newFiles];
+              setFiles(combinedFiles);
+
+              if (newFiles.length > 0) {
+                toast({
+                  title: `Created ${newFiles.length} new file(s)`,
+                  description: `Added: ${newFiles.map(f => f.name).join(', ')}`
+                });
+              }
+            } else {
+              // If no file matches, treat the entire response as content for the current file
+              // Make sure to clean any code blocks first
+              const cleanedContent = sanitizeCodeBlocks(generatedText);
+              updateFileContent(currentFile, cleanedContent);
+            }
+
+            // Complete AI status
+            setAiStatus(prev => ({
+              ...prev,
+              active: false,
+              progress: 100,
+              files: prev.files.map(file => ({ ...file, status: 'complete' }))
+            }));
+            
+            setMessages(prev => [...prev, {
+              role: "assistant",
+              content: "✅ I've analyzed your image and created a website based on it! Check the preview to see the results."
+            }]);
+            if (showApiKeyInput) {
+              saveApiKey();
+            }
+
+            setLastRefreshTime(Date.now());
+          } else {
+            throw new Error("Invalid response format from API");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          setMessages(prev => [...prev, {
+            role: "assistant",
+            content: `❌ Error: ${error instanceof Error ? error.message : "Failed to process request"}`
+          }]);
+          
+          // If API error occurs, show a helpful toast
+          if (apiErrorOccurred) {
+            toast({
+              title: "API Service Temporarily Unavailable",
+              description: "The AI service is experiencing high demand. Please try again in a few moments.",
+              variant: "destructive"
+            });
+          }
+        } finally {
+          setIsLoading(false);
+          setThinkingState("");
+        }
+      } catch (error) {
+        console.error("Image conversion error:", error);
+        toast({
+          title: "Error",
+          description: "Failed to process the image. Please try again.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -1253,6 +1268,13 @@ Full file content here
                     </p>
                   </div>}
 
+                {/* Credits display */}
+                {!isMobile && (
+                  <div className="border-b px-3 py-1.5 text-xs text-muted-foreground">
+                    <span>{lifetimeCredits > 0 ? `${lifetimeCredits} lifetime` : `${dailyCredits} daily`} Credits left</span>
+                  </div>
+                )}
+
                 {/* Messages */}
                 <div className="flex-1 overflow-auto p-4" ref={chatContainerRef}>
                   <div className="space-y-4">
@@ -1264,6 +1286,16 @@ Full file content here
                           <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                         </div>
                       </div>)}
+                    {thinkingState && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[80%] rounded-lg p-3 bg-muted">
+                          <p className="text-sm whitespace-pre-wrap flex items-center gap-2">
+                            <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
+                            {thinkingState}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
@@ -1272,7 +1304,20 @@ Full file content here
                 {buildError && <div className="border-t p-3 bg-destructive/10">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-destructive">Build Unsuccessful</span>
-                      <Button variant="destructive" size="sm" onClick={handleFixCodeErrors}>
+                      <Button variant="destructive" size="sm" onClick={() => {
+                        // Clean all file contents of backticks
+                        const cleanedFiles = files.map(file => ({
+                          ...file,
+                          content: sanitizeCodeBlocks(file.content)
+                        }));
+                        setFiles(cleanedFiles);
+                        setBuildError(false);
+                        toast({
+                          title: "Code Cleaned",
+                          description: "Removed problematic code markup from all files."
+                        });
+                        setLastRefreshTime(Date.now());
+                      }}>
                         Fix
                       </Button>
                     </div>
