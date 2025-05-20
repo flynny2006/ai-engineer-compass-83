@@ -3,14 +3,27 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AiResponseStages from "./AiResponseStages";
+import CreditsDisplay from "./CreditsDisplay";
 
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   language: string;
+  creditsInfo?: {
+    amount: number;
+    type: "daily" | "monthly";
+  };
+  aiResponseStage?: 'idle' | 'thinking' | 'building' | 'complete';
 }
 
-const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) => {
+const CodeEditor: React.FC<CodeEditorProps> = ({ 
+  value, 
+  onChange, 
+  language,
+  creditsInfo,
+  aiResponseStage = 'idle'
+}) => {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const [lineCount, setLineCount] = useState<number>(1);
   const [showSearch, setShowSearch] = useState<boolean>(false);
@@ -160,6 +173,20 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
   
   return (
     <div className="flex flex-col h-full w-full bg-background/80 relative">
+      {/* Credits Display */}
+      {creditsInfo && (
+        <div className="absolute top-0 right-0 z-10 m-2">
+          <CreditsDisplay amount={creditsInfo.amount} type={creditsInfo.type} />
+        </div>
+      )}
+      
+      {/* AI Response Stages */}
+      {aiResponseStage !== 'idle' && (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-10">
+          <AiResponseStages stage={aiResponseStage} />
+        </div>
+      )}
+
       {showSearch && (
         <div className="bg-background/90 border-b p-2 flex items-center">
           <form onSubmit={handleSearch} className="flex items-center w-full">

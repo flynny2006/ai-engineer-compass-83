@@ -1,7 +1,9 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+
 interface FileExplorerUploadProps {
   onFileUpload: (file: {
     name: string;
@@ -9,11 +11,13 @@ interface FileExplorerUploadProps {
     type: string;
   }) => void;
 }
+
 const FileExplorerUpload = ({
   onFileUpload
 }: FileExplorerUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -69,17 +73,36 @@ const FileExplorerUpload = ({
       setIsUploading(false);
     };
   };
-  return <div className="mb-2">
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-      <Button variant="outline" size="sm" className="w-full" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-        {isUploading ? <span className="flex items-center gap-1">
+  
+  return (
+    <div className="mb-2">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+      />
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="w-full" 
+        onClick={() => fileInputRef.current?.click()} 
+        disabled={isUploading}
+      >
+        {isUploading ? (
+          <span className="flex items-center gap-1">
             <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
             Uploading...
-          </span> : <span className="flex items-center gap-1 text-amber-400">
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-amber-400">
             <Upload className="h-3 w-3" />
             Upload File
-          </span>}
+          </span>
+        )}
       </Button>
-    </div>;
+    </div>
+  );
 };
+
 export default FileExplorerUpload;

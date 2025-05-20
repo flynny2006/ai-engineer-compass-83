@@ -1,15 +1,50 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Index from './Index';
 import { toast } from '@/hooks/use-toast';
+import { CircleLoading } from '@/components/ui/circle-loading';
+
+// Define interfaces for credit information
+interface CreditsInfo {
+  amount: number;
+  type: "daily" | "monthly";
+}
 
 const ProjectEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [initializing, setInitializing] = useState(true);
+  const [creditsInfo, setCreditsInfo] = useState<CreditsInfo>({ 
+    amount: 10, // Default value
+    type: "daily" 
+  });
+  
+  // AI response simulation state
+  const handleAiRequest = () => {
+    // This function will be passed to Index component
+    // The Index component will handle the AI response stages
+    // (thinking, building, etc.)
+    console.log("AI request initiated");
+    
+    // Update credits when AI is used
+    setCreditsInfo(prev => ({
+      ...prev,
+      amount: Math.max(0, prev.amount - 1)  // Decrease credits by 1, minimum 0
+    }));
+  };
   
   useEffect(() => {
+    // Load credits info from localStorage
+    const storedCredits = localStorage.getItem("user_credits");
+    if (storedCredits) {
+      try {
+        setCreditsInfo(JSON.parse(storedCredits));
+      } catch (error) {
+        console.error("Failed to parse credits info", error);
+      }
+    }
+    
     // Get project ID from URL parameters
     const queryParams = new URLSearchParams(location.search);
     const projectId = queryParams.get('id');
@@ -84,6 +119,11 @@ const ProjectEditor = () => {
     };
   }, []);
 
+  // Save credits info to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("user_credits", JSON.stringify(creditsInfo));
+  }, [creditsInfo]);
+
   if (initializing) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
@@ -92,7 +132,7 @@ const ProjectEditor = () => {
     );
   }
 
-  return <Index />;
+  return <Index creditsInfo={creditsInfo} onAiRequest={handleAiRequest} />;
 };
 
 export default ProjectEditor;
