@@ -75,7 +75,7 @@ const FileExplorerUpload = ({
         {isUploading ? <span className="flex items-center gap-1">
             <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
             Uploading...
-          </span> : <span className="flex items-center gap-1 text-gray-950">
+          </span> : <span className="flex items-center gap-1 text-amber-400">
             <Upload className="h-3 w-3" />
             Upload File
           </span>}
