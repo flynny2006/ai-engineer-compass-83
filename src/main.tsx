@@ -142,6 +142,34 @@ const renderApp = () => {
 - Design gradients and color treatments unique to the brand
 - Implement signature patterns or textures for brand recognition
 - Create brand-aligned empty and error states
+
+## Color Mastery
+- Design with purposeful color palettes that evoke specific emotions
+- Use strategic color accents to guide attention and create focal points
+- Create color systems with accessible contrast ratios at all levels
+- Implement context-aware color schemes that adapt to content
+- Design with color psychology principles for target audiences
+- Create advanced gradient systems with multiple color stops and angles
+- Use split complementary color schemes for sophisticated palettes
+- Implement dynamic darkening/lightening for interactive elements
+- Design with color temperature to create depth and atmosphere
+- Create color harmonies that support information hierarchies
+- Use vibrance and saturation strategically for emphasis
+- Design duotone and tritone effects for unique brand aesthetics
+
+## Elevated Imagery & Graphics
+- Create custom UI illustration systems with consistent style
+- Design abstract geometric patterns for backgrounds and accents
+- Use image treatments with creative cropping and framing
+- Implement advanced image hover effects and reveals
+- Create layered image compositions with depth and dimension
+- Design image galleries with thoughtful grid arrangements
+- Use image masks and cutouts for creative layouts
+- Implement subtle image animations on scroll or hover
+- Create hero images with foreground/background separation
+- Design with integrated text and image compositions
+- Use image color grading to match brand palette
+- Implement responsive image art direction for different viewports
 `;
 
       // Update the AI prompt with both original content and enhanced design instructions
