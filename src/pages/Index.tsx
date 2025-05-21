@@ -659,7 +659,11 @@ Full file content here
 7. Follow best practices for HTML, CSS, and JavaScript
 8. Make sure your code is clean, organized, and well-documented
 9. Implement responsive design elements when possible
-10. Consider accessibility in your implementations`;
+10. Consider accessibility in your implementations
+11. Implement responsive design elements when possible
+12. Make the best designs you ever created.
+13. Make the designs beautiful. Note: Your an AI Software Engineer.
+14. Build good designs always full functionality and good working.`;
 
       const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
