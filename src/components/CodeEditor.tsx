@@ -186,8 +186,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
           </form>
         </div>
       )}
-      <div className="flex flex-1 overflow-hidden font-mono text-sm relative">
-        <div className="bg-muted/80 py-4 flex flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-auto font-mono text-sm relative">
+        <div className="bg-muted/80 py-4 flex flex-col overflow-y-auto">
           {renderLineNumbers()}
         </div>
         <textarea
@@ -196,18 +196,19 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           spellCheck={false}
-          className="flex-1 p-4 bg-background resize-none overflow-auto w-full border-0 focus:outline-none code-editor"
+          className="flex-1 p-4 bg-background resize-none w-full border-0 focus:outline-none code-editor overflow-y-auto"
           style={{
             fontFamily: '"JetBrains Mono", "Fira Code", monospace',
             lineHeight: 1.5,
             tabSize: 2,
             paddingLeft: '0.5rem',
-            overflow: 'auto',
             whiteSpace: 'pre',
             caretColor: 'currentColor',
             position: 'relative',
             top: 0,
-            left: 0
+            left: 0,
+            height: '100%',
+            maxHeight: 'none'
           }}
         />
       </div>

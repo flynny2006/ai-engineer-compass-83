@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye } from "lucide-react";
+import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
@@ -42,6 +42,13 @@ const Homepage = () => {
   const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
   const [userPlan, setUserPlan] = useState<string>("FREE");
   const fileUploadRef = useRef<HTMLInputElement>(null);
+
+  // Scroll to top function with smooth animation
+  const topRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToTop = () => {
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Sample partners data
   const partners = [
@@ -382,6 +389,7 @@ const Homepage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
+      <div ref={topRef}></div>
       <HomepageNav />
       <main className="flex-1">
         <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
@@ -558,47 +566,23 @@ const Homepage = () => {
             </div>
           )}
           
-          {/* Partners Section */}
+          {/* Partners Section - Updated to remove example partners */}
           <div className="mt-12 w-full max-w-3xl mx-auto">
             <Separator className="bg-white/20 my-8" />
             <h2 className="text-white text-2xl font-semibold mb-6">Our Partners</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {partners.map((partner) => (
-                <BorderTrail 
-                  key={partner.id} 
-                  className="rounded-lg" 
-                  variant="primary" 
-                  duration="default" 
-                  spacing="sm"
-                >
-                  <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 flex flex-col items-center text-center border-none">
-                    <div className="mb-3 w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
-                      {partner.logoUrl ? (
-                        <img 
-                          src={partner.logoUrl} 
-                          alt={`${partner.name} logo`}
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <Building className="h-8 w-8 text-white/60" />
-                      )}
-                    </div>
-                    <h3 className="text-white font-medium">{partner.name}</h3>
-                    <p className="text-gray-400 text-sm mt-1">
-                      {partner.description}
-                    </p>
-                  </div>
-                </BorderTrail>
-              ))}
-              
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
               <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
                 <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center border-none">
                   <Users className="h-10 w-10 text-green-400 mb-3" />
                   <h3 className="text-white font-medium">Become a Partner</h3>
                   <p className="text-gray-400 text-sm mt-2">
-                    Contact us to get featured as a partner here!
+                    Contact us to become our first official partner and get featured here!
                   </p>
-                  <Button className="mt-4" variant={theme === 'light' ? 'modern' : 'default'}>
+                  <Button 
+                    className="mt-4" 
+                    variant={theme === 'light' ? 'modern' : 'default'}
+                    onClick={() => navigate('/important')}
+                  >
                     Contact Us
                   </Button>
                 </div>
@@ -648,6 +632,90 @@ const Homepage = () => {
                   </p>
                 </div>
               </BorderTrail>
+            </div>
+          </div>
+          
+          {/* NEW SECTION 1: Design Excellence */}
+          <div className="w-full max-w-5xl mx-auto py-16 px-4">
+            <Separator className="bg-white/20 mb-16" />
+            <h2 className="text-3xl font-bold text-center text-white mb-12">
+              <span className="bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent">Design Excellence</span>
+            </h2>
+            
+            <div className="grid md:grid-cols-2 gap-12">
+              <div className="bg-gradient-to-br from-pink-500/10 to-purple-500/10 p-8 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-purple-500/5 transform group-hover:scale-105 transition-all duration-700 opacity-50"></div>
+                <div className="relative z-10">
+                  <div className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 p-4 rounded-full inline-flex mb-6 ring-2 ring-pink-500/20">
+                    <Palette className="h-8 w-8 text-pink-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-4">Stunning Visuals</h3>
+                  <p className="text-gray-300 leading-relaxed mb-6">
+                    Our AI understands modern design principles and creates visually appealing interfaces with perfect color harmony, typography, and layout composition.
+                  </p>
+                  <ul className="space-y-2 text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-pink-400"></div>
+                      <span>Beautiful gradients and color schemes</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-purple-400"></div>
+                      <span>Harmonious typography combinations</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
+                      <span>Balanced visual layouts</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-indigo-500/10 to-blue-500/10 p-8 rounded-xl border border-white/10 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-blue-500/5 transform group-hover:scale-105 transition-all duration-700 opacity-50"></div>
+                <div className="relative z-10">
+                  <div className="bg-gradient-to-br from-indigo-500/20 to-blue-500/20 p-4 rounded-full inline-flex mb-6 ring-2 ring-indigo-500/20">
+                    <Sparkles className="h-8 w-8 text-blue-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-4">Interactive Elements</h3>
+                  <p className="text-gray-300 leading-relaxed mb-6">
+                    Create engaging user experiences with micro-animations, transitions, and interactive elements that delight your users.
+                  </p>
+                  <ul className="space-y-2 text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
+                      <span>Smooth animations and transitions</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-blue-400"></div>
+                      <span>Responsive hover and click effects</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-sky-400"></div>
+                      <span>Engaging scrolling experiences</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* NEW SECTION 2: "But, what are you building?" */}
+          <div className="w-full max-w-5xl mx-auto py-24 px-4">
+            <div className="bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl p-12 text-center border border-white/10 shadow-xl">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                But, what are you building?
+              </h2>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+                It's time to transform your ideas into reality. Let's create something amazing together.
+              </p>
+              <Button 
+                size="lg" 
+                onClick={scrollToTop} 
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-6 rounded-lg font-bold text-lg group"
+              >
+                Start Building
+                <ArrowUp className="ml-2 h-5 w-5 group-hover:-translate-y-1 transition-transform duration-300" />
+              </Button>
             </div>
           </div>
         </div>
