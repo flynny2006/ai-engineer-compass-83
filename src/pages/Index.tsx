@@ -663,6 +663,34 @@ Full file content here
 11. Implement responsive design elements when possible
 12. Make the best designs you ever created.
 13. Make the designs beautiful. Note: Your an AI Software Engineer.
+Interactive Morphing Effects - Transform UI elements smoothly between different states and shapes
+Adaptive Depth Systems - Create interface layers that adjust depth based on focus and importance
+Neo-Brutalist Elements - Bold, raw design elements with high contrast and intentional "imperfections"
+Magnetic Hover Zones - Elements that subtly attract the cursor as users approach them
+Kinetic Typography - Text that moves, transforms or responds to user interaction
+Organic Shape Compositions - Natural, flowing shapes that create visual interest in backgrounds
+Spatial Audio Integration - Sound cues that correspond to visual interface elements
+Dynamic Color Transitions - Smooth color shifts based on user actions or time-based triggers
+Conversational Form Patterns - Input fields that guide users through form completion with natural language
+Contextual Personalization - Interface elements that adapt to user preferences and behavior patterns
+Haptic Design Integration - Visual design that suggests physical feedback (even without actual haptics)
+Immersive Scrollytelling - Content reveals that create narrative experiences as users scroll
+Smart Color Accessibility - Dynamic color adjustments based on environmental lighting conditions
+Atmospheric Design Elements - Weather or time-influenced visual treatments
+Volumetric Light Effects - Creating the impression of light volume and atmosphere
+Realistic Material Textures - Subtle paper, fabric, or natural material inspirations in UI
+Liquid Interface Animations - Fluid animations that mimic water or liquid physics
+Cognitive Load Balancing - Visual design that intentionally manages information density
+Environmental Storytelling - Background elements that subtly convey context
+Gesture-Driven Revelations - Content that responds to specific gesture patterns
+Folded Paper Effects - Interface elements that appear to fold, unfold, or have dimension
+Invisible User Interface (UI) Patterns - Minimal interfaces that appear only when needed
+Retro-Futuristic Design - Combining nostalgic elements with cutting-edge techniques
+Biophilic Design Elements - Nature-inspired patterns, shapes and animations
+Chromatic Aberration Effects - Subtle color separation effects for depth and emphasis
+Dimensional Typography - Text with shadows and perspective that appears three-dimensional
+Responsive Sound Design - Visual elements that suggest accompanying sound effects
+Artificial Imperfection - Intentional "handmade" qualities that add warmth and humanity
 14. Build good designs always full functionality and good working.`;
 
       const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
