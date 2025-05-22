@@ -12,6 +12,7 @@ import Important from "./pages/Important";
 import Supabase from "./pages/Supabase";
 import Homepage from "./pages/Homepage";
 import ProjectEditor from "./pages/ProjectEditor";
+import NavigationControls from "./components/NavigationControls";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient({
@@ -30,6 +31,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <NavigationControls />
           <Routes>
             <Route path="/" element={<Homepage />} />
             <Route path="/project" element={<ProjectEditor />} />

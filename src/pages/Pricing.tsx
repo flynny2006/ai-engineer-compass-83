@@ -1,15 +1,13 @@
-
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, DollarSign, CheckCircle2, Sparkles, Shield, Zap, Globe } from "lucide-react";
+import { Check, ArrowLeft, DollarSign, CheckCircle2, Sparkles, Shield, Zap, Globe, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 import { BorderTrail } from "@/components/ui/border-trail";
 
 const PricingPage = () => {
   const { theme } = useTheme();
-  const [billingInterval, setBillingInterval] = useState<'onetime'|'monthly'>('onetime');
   
   const pricingPlans = [
     {
@@ -28,7 +26,7 @@ const PricingPage = () => {
     },
     {
       name: "Pro",
-      price: billingInterval === 'onetime' ? "$5" : "$2",
+      price: "$5",
       description: "Perfect for individuals and creators",
       features: [
         "800 Monthly Credits (+50 Bonus)",
@@ -43,7 +41,7 @@ const PricingPage = () => {
     },
     {
       name: "Teams",
-      price: billingInterval === 'onetime' ? "$10" : "$4",
+      price: "$10",
       description: "For teams and organizations",
       features: [
         "2700 Monthly Credits (+200 Bonus)",
@@ -59,7 +57,7 @@ const PricingPage = () => {
     },
     {
       name: "Big Teams",
-      price: billingInterval === 'onetime' ? "$15" : "$6",
+      price: "$15",
       description: "Ultimate features for large-scale collaboration",
       features: [
         "Unlimited Credits",
@@ -72,8 +70,7 @@ const PricingPage = () => {
       ],
       buttonText: "Choose Big Teams",
       popular: false,
-      color: "amber",
-      claimCode: "47772"
+      color: "amber"
     }
   ];
 
@@ -123,30 +120,6 @@ const PricingPage = () => {
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
             Get started with our powerful AI-driven development platform. Choose a plan that scales with your project needs.
           </p>
-
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <button 
-              onClick={() => setBillingInterval('onetime')} 
-              className={`px-4 py-2 rounded-lg transition-all ${
-                billingInterval === 'onetime' 
-                  ? 'bg-primary text-white' 
-                  : 'bg-background text-muted-foreground'
-              }`}
-            >
-              One-time payment
-            </button>
-            <button 
-              onClick={() => setBillingInterval('monthly')} 
-              className={`px-4 py-2 rounded-lg transition-all ${
-                billingInterval === 'monthly' 
-                  ? 'bg-primary text-white' 
-                  : 'bg-background text-muted-foreground'
-              }`}
-            >
-              Monthly
-            </button>
-          </div>
         </div>
 
         {/* Feature highlights */}
@@ -197,7 +170,7 @@ const PricingPage = () => {
                       <div className="flex items-baseline">
                         <span className="text-4xl font-bold">{plan.price}</span>
                         <span className="text-sm text-muted-foreground ml-2">
-                          {billingInterval === 'onetime' ? 'lifetime' : '/month'}
+                          lifetime
                         </span>
                       </div>
                     </div>
@@ -220,12 +193,6 @@ const PricingPage = () => {
                     >
                       <DollarSign className="h-4 w-4 mr-2" /> {plan.buttonText}
                     </Button>
-                    
-                    {plan.claimCode && (
-                      <p className="text-xs text-center text-muted-foreground mt-4">
-                        Use code: <span className="font-mono font-medium">{plan.claimCode}</span>
-                      </p>
-                    )}
                   </div>
                 </BorderTrail>
               </div>
@@ -260,14 +227,27 @@ const PricingPage = () => {
           <h2 className="text-2xl font-bold text-center mb-8">What Our Users Say</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+            {[
+              { name: "Jessica Miller", role: "UX Designer", stars: 5 },
+              { name: "David Chen", role: "Frontend Developer", stars: 4 },
+              { name: "Sophia Rodriguez", role: "Product Manager", stars: 5 }
+            ].map((user, i) => (
               <div key={i} className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-white'}`}>
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500"></div>
                   <div>
-                    <p className="font-medium">User {i}</p>
-                    <p className="text-sm text-muted-foreground">Software Developer</p>
+                    <p className="font-medium">{user.name}</p>
+                    <p className="text-sm text-muted-foreground">{user.role}</p>
                   </div>
+                </div>
+                <div className="flex items-center mb-2">
+                  {[...Array(5)].map((_, idx) => (
+                    <Star 
+                      key={idx} 
+                      className={`h-4 w-4 ${idx < user.stars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+                    />
+                  ))}
+                  <span className="ml-2 text-sm text-muted-foreground">({35 + i} ratings)</span>
                 </div>
                 <p className="text-muted-foreground">"This platform has completely transformed how I build applications. What used to take days now takes minutes."</p>
               </div>
