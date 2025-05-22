@@ -209,7 +209,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language }) =>
             left: 0,
             height: '100%',
             maxHeight: 'none',
-            overflowY: 'auto'
+            overflowY: 'auto',
+            // Fix scrolling issue by ensuring the scroll container has a defined height
+            display: 'block'
           }}
         />
       </div>
