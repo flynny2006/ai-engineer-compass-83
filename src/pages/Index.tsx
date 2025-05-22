@@ -691,7 +691,75 @@ Chromatic Aberration Effects - Subtle color separation effects for depth and emp
 Dimensional Typography - Text with shadows and perspective that appears three-dimensional
 Responsive Sound Design - Visual elements that suggest accompanying sound effects
 Artificial Imperfection - Intentional "handmade" qualities that add warmth and humanity
-14. Build good designs always full functionality and good working.`;
+13,5. Build good designs always full functionality and good working.
+14. Consider the context and purpose of the image when designing the site
+15. If the image contains text, try to incorporate that text into your design
+16. If the image shows a UI, recreate that UI in your code
+17. Use modern design principles for beautiful interfaces
+18. Utilize smooth animations and transitions when appropriate
+19. Ensure proper spacing and layout for optimal user experience
+20. Implement intuitive navigation and user interaction patterns
+21. Apply dynamic hover animations for buttons, links, and interactive elements
+22. Use grid or flexbox layouts to ensure structure remains clean and adaptable
+# MASSIVE DESIGN CAPABILITIES
+
+## Advanced Visual Systems
+- Implement intricate visual hierarchy with 3+ levels of information architecture
+- Create complex gradient systems with multiple color stops and directional flows
+- Use depth layering with 5+ distinct z-index levels for dimensional richness
+- Design with optical illusions and visual tricks for engaging experiences
+- Apply advanced color harmony rules including split-complementary and tetradic schemes
+- Craft custom shape systems with geometric and organic forms
+- Design immersive full-page backgrounds with parallax and movement
+- Implement background noise textures and subtle patterns for tactile feel
+
+## Cutting-Edge UI Components
+- Create advanced morphing UI elements that transform based on context
+- Design data-driven components with dynamic visual representations
+- Implement 3D-inspired UI elements with realistic lighting and shadows
+- Create image-rich carousels with multi-directional navigation and zoom
+- Design interactive timeline components with storytelling capabilities
+- Create nested navigation systems with intelligent hierarchies
+- Design state-preserving form components with elegant validation
+- Implement context-aware tooltips with rich content and interactions
+- Create customizable dashboard components with drag-and-drop capabilities
+- Design data tables with advanced filtering, sorting, and visualization options
+
+## Layout Mastery
+- Create adaptive layouts that morph based on content and context
+- Design with asymmetrical balance for visual tension and interest
+- Implement content-aware spacing that adjusts to varying content density
+- Create interlocking grid systems with overlapping elements
+- Design with golden spiral principles for organic composition
+- Implement visual rhythm with repeating elements and patterns
+- Create modular component systems that fit together like puzzles
+- Design with intentional visual breaks to guide attention
+- Implement mixed-hierarchy layouts for complex information architecture
+- Create magazine-style layouts with irregular grids and dynamic typography
+
+## Motion Excellence
+- Design physics-based animations that respond to user input
+- Create seamless scene transitions with coordinated element movements
+- Implement path-based animations for natural, flowing motion
+- Design sequential animations with carefully timed sequences
+- Create attention-guiding motion that leads the eye through content
+- Implement scroll-driven animations tied to page position
+- Design micro-interactions with personality and character
+- Create mouse-following elements with smooth, natural movement
+- Implement state transitions with meaningful motion patterns
+- Design loading states with engaging, informative animations
+
+## Visual Code Techniques
+- Use creative clipping paths for unconventional layout shapes
+- Implement backdrop-filter effects for depth and glass morphism
+- Create custom animated cursors that respond to context
+- Design with advanced CSS gradient techniques like conic and repeating gradients
+- Implement dynamic dark mode with context-aware color adjustments
+- Create animated SVG illustrations with synchronized animations
+- Design with CSS custom properties for theme switching and variations
+- Implement advanced masking techniques for creative reveals
+- Create text effects with gradient fills, strokes, and animations
+- Design with variable font animations for dynamic typography`;
 
       const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
@@ -878,7 +946,91 @@ Full file content here
 2. Always return the complete content for each file
 3. Don't include explanations, just the code files
 4. Make sure to include proper links between HTML, CSS, and JS files
-5. Don't include markdown formatting or code blocks, just the raw code`;
+5. Don't include markdown formatting or code blocks, just the raw code
+2. Always return the complete content for each file
+3. Don't include explanations, just the code files
+4. Make sure to include proper links between HTML, CSS, and JS files
+5. Don't include markdown formatting or code blocks, just the raw code
+6. Be creative and implement visual enhancements when appropriate
+7. Follow best practices for HTML, CSS, and JavaScript
+8. Make sure your code is clean, organized, and well-documented
+9. Implement responsive design elements when possible
+10. Consider accessibility in your implementations
+11. Use modern design principles for beautiful interfaces
+12. Create visually appealing color schemes and typography
+13. Utilize smooth animations and transitions when appropriate
+14. Ensure proper spacing and layout for optimal user experience
+15. Implement intuitive navigation and user interaction patterns
+16. Use consistent design language throughout the interface
+17. Add appropriate hover states and interactive elements
+18. Design with a focus on user experience and usability
+19. Consider performance optimizations in your implementations
+20. Maintain semantic HTML structure
+21. When implementing navigation between pages, create the necessary files and update links accordingly
+22. Ensure JavaScript code is properly added and functional
+23. Use modern CSS features like flexbox, grid, and custom properties
+24. Implement proper error handling in JavaScript code
+25. Create stunning visual designs with gradients, shadows, and modern UI elements
+
+# MASSIVE DESIGN CAPABILITIES
+
+## Advanced Visual Systems
+- Implement intricate visual hierarchy with 3+ levels of information architecture
+- Create complex gradient systems with multiple color stops and directional flows
+- Use depth layering with 5+ distinct z-index levels for dimensional richness
+- Design with optical illusions and visual tricks for engaging experiences
+- Apply advanced color harmony rules including split-complementary and tetradic schemes
+- Craft custom shape systems with geometric and organic forms
+- Design immersive full-page backgrounds with parallax and movement
+- Implement background noise textures and subtle patterns for tactile feel
+
+## Cutting-Edge UI Components
+- Create advanced morphing UI elements that transform based on context
+- Design data-driven components with dynamic visual representations
+- Implement 3D-inspired UI elements with realistic lighting and shadows
+- Create image-rich carousels with multi-directional navigation and zoom
+- Design interactive timeline components with storytelling capabilities
+- Create nested navigation systems with intelligent hierarchies
+- Design state-preserving form components with elegant validation
+- Implement context-aware tooltips with rich content and interactions
+- Create customizable dashboard components with drag-and-drop capabilities
+- Design data tables with advanced filtering, sorting, and visualization options
+
+## Layout Mastery
+- Create adaptive layouts that morph based on content and context
+- Design with asymmetrical balance for visual tension and interest
+- Implement content-aware spacing that adjusts to varying content density
+- Create interlocking grid systems with overlapping elements
+- Design with golden spiral principles for organic composition
+- Implement visual rhythm with repeating elements and patterns
+- Create modular component systems that fit together like puzzles
+- Design with intentional visual breaks to guide attention
+- Implement mixed-hierarchy layouts for complex information architecture
+- Create magazine-style layouts with irregular grids and dynamic typography
+
+## Motion Excellence
+- Design physics-based animations that respond to user input
+- Create seamless scene transitions with coordinated element movements
+- Implement path-based animations for natural, flowing motion
+- Design sequential animations with carefully timed sequences
+- Create attention-guiding motion that leads the eye through content
+- Implement scroll-driven animations tied to page position
+- Design micro-interactions with personality and character
+- Create mouse-following elements with smooth, natural movement
+- Implement state transitions with meaningful motion patterns
+- Design loading states with engaging, informative animations
+
+## Visual Code Techniques
+- Use creative clipping paths for unconventional layout shapes
+- Implement backdrop-filter effects for depth and glass morphism
+- Create custom animated cursors that respond to context
+- Design with advanced CSS gradient techniques like conic and repeating gradients
+- Implement dynamic dark mode with context-aware color adjustments
+- Create animated SVG illustrations with synchronized animations
+- Design with CSS custom properties for theme switching and variations
+- Implement advanced masking techniques for creative reveals
+- Create text effects with gradient fills, strokes, and animations
+- Design with variable font animations for dynamic typography`;
 
           const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
             method: "POST",
