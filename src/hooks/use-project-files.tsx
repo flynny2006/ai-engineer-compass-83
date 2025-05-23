@@ -11,6 +11,7 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [currentFile, setCurrentFile] = useState<string>("");
   const [mainPreviewFile, setMainPreviewFile] = useState<string>("");
+  const [lastProjectId, setLastProjectId] = useState<string>("");
   
   // Get current project ID
   const getCurrentProjectId = useCallback(() => {
@@ -26,6 +27,17 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
   // Load files from localStorage on initial mount or when project ID changes
   useEffect(() => {
     const projectId = getCurrentProjectId();
+    
+    // If project ID changed, reset state immediately
+    if (lastProjectId !== "" && lastProjectId !== projectId) {
+      console.log("Project switched from", lastProjectId, "to", projectId, "- resetting state");
+      setFiles([]);
+      setCurrentFile("");
+      setMainPreviewFile("");
+    }
+    
+    setLastProjectId(projectId);
+    
     if (!projectId) return;
     
     try {
@@ -35,7 +47,8 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
       
       if (savedFiles) {
         // Use the saved project files
-        setFiles(JSON.parse(savedFiles));
+        const parsedFiles = JSON.parse(savedFiles);
+        setFiles(parsedFiles);
       } else {
         // Check if there are files in the saved_projects array
         const savedProjects = localStorage.getItem("saved_projects");
@@ -76,7 +89,7 @@ export const useProjectFiles = (initialFiles: FileType[]) => {
       setCurrentFile("index.html");
       setMainPreviewFile("index.html");
     }
-  }, [initialFiles, getStorageKey, getCurrentProjectId]);
+  }, [initialFiles, getStorageKey, getCurrentProjectId, lastProjectId]);
   
   // Save files to localStorage when they change
   useEffect(() => {
