@@ -841,7 +841,7 @@ ADVANCED INTERACTION DESIGN:
 - Implement loading states and placeholders
 - Consider edge cases and error scenarios
 
-Focus on the design prompt, functionality is important too but focus on very modern websites.`;
+Focus on the design prompt, functionality is important too but focus on very modern websites. NOTE: It's 2025. Make websites that passes this year.`;
 
       const response = await callAPIWithRetry("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
         method: "POST",
