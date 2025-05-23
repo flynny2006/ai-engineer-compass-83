@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle2, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 
 export type StatusItem = {
   id: string;
@@ -30,14 +30,7 @@ const GenerationStatus: React.FC<GenerationStatusProps> = ({ items, visible }) =
               <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
             )}
             {item.status === 'loading' && (
-              <div className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
-                <div className="text-xs text-white/80 flex items-center gap-1">
-                  <span className="inline-block w-2 h-2 bg-white/80 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></span>
-                  <span className="inline-block w-2 h-2 bg-white/80 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></span>
-                  <span className="inline-block w-2 h-2 bg-white/80 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></span>
-                </div>
-              </div>
+              <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
             )}
             {item.status === 'error' && (
               <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
