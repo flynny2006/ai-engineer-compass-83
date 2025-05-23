@@ -701,6 +701,7 @@ Artificial Imperfection - Intentional "handmade" qualities that add warmth and h
 20. Implement intuitive navigation and user interaction patterns
 21. Apply dynamic hover animations for buttons, links, and interactive elements
 22. Use grid or flexbox layouts to ensure structure remains clean and adaptable
+23. Build ULTRA MODERN websites even if the user doesn't says that, always build just amazing designs / websites!
 # MASSIVE DESIGN CAPABILITIES
 
 ## Advanced Visual Systems
