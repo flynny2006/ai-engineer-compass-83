@@ -34,6 +34,7 @@ const buttonVariants = cva(
         "3d": "bg-blue-500 text-white border-b-4 border-blue-700 hover:bg-blue-400 active:border-b-0 active:border-t-4 active:border-t-transparent transition-all duration-100 transform active:translate-y-1",
         retro: "bg-yellow-400 text-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all duration-150 transform hover:translate-x-1 hover:translate-y-1 active:translate-x-2 active:translate-y-2",
         skeuomorphic: "bg-gradient-to-b from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-800 text-gray-800 dark:text-gray-200 border border-gray-400 dark:border-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] active:shadow-[inset_0_1px_8px_rgba(0,0,0,0.4)] transition-all duration-150",
+        'attach-gradient': "bg-gradient-to-br from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 transition-all duration-300",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -75,3 +76,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
+
