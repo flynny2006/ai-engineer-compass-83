@@ -1,28 +1,36 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, RefObject } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import CodeEditor from '@/components/CodeEditor';
-import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
-import ModernPromptInput from '@/components/ModernPromptInput';
-import PreviewSettings from '@/components/PreviewSettings';
-import { useProjectFiles, FileType } from '@/hooks/use-project-files';
+import CodeEditor, { CodeEditorProps } from '@/components/CodeEditor';
+import FileExplorerEnhanced, { FileExplorerProps } from '@/components/FileExplorerEnhanced';
+import ModernPromptInput, { ModernPromptInputProps } from '@/components/ModernPromptInput';
+import PreviewSettings, { PreviewSettingsProps } from '@/components/PreviewSettings';
 import { toast } from '@/hooks/use-toast';
-import { CornerDownLeft, MessageSquare, Terminal, PanelLeftOpen, PanelRightOpen, Play, Save, UploadCloud, Share2, Settings2, Moon, Sun, Expand, Minimize, CodeIcon, Eye, Wrench } from 'lucide-react';
+import { MessageSquare, Terminal, PanelLeftOpen, PanelRightOpen, Save, Moon, Sun, Expand, CodeIcon, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import ProjectConsole from '@/components/ProjectConsole';
-import GenerationStatus from '@/components/GenerationStatus';
-import { useTheme } from '@/hooks/use-theme';
+import GenerationStatus, { GenerationStatusProps } from '@/components/GenerationStatus';
+import { useTheme, Theme } from '@/hooks/use-theme';
 import { createClientComponentClient } from '@supabase/auth-helpers-react';
 import { Separator } from '@/components/ui/separator';
-import { v4 as uuidv4 } from 'uuid';
+
+// Define a local, more complete FileType
+interface LocalFileType {
+  name: string;
+  content: string;
+  type: string; // e.g., 'html', 'css', 'javascript', 'folder'
+  path: string; // Full path, e.g., "src/components/Button.tsx" or "src/utils"
+  isFolder: boolean;
+  children?: LocalFileType[]; // For folders
+}
 
 const getSupabase = () => {
   return createClientComponentClient();
 };
 
-const fetchFilesFromSupabase = async (projectId: string): Promise<FileType[]> => {
+const fetchFilesFromSupabase = async (projectId: string): Promise<LocalFileType[]> => {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -39,13 +47,12 @@ const fetchFilesFromSupabase = async (projectId: string): Promise<FileType[]> =>
       return data.map(file => ({
         name: file.name,
         content: file.content,
-        type: file.type || 'text', 
-        path: file.name, 
-        isFolder: file.type === 'folder', 
-        children: file.type === 'folder' ? [] : undefined, 
+        type: file.type || 'text',
+        path: file.name, // Assuming 'name' from DB is the full path for now
+        isFolder: file.type === 'folder',
+        children: file.type === 'folder' ? [] : undefined,
       }));
     }
-
     return [];
   } catch (error) {
     console.error("Unexpected error fetching files:", error);
@@ -53,14 +60,14 @@ const fetchFilesFromSupabase = async (projectId: string): Promise<FileType[]> =>
   }
 };
 
-const saveFileToSupabase = async (projectId: string, file: FileType) => {
+const saveFileToSupabase = async (projectId: string, file: LocalFileType) => {
   try {
     const supabase = getSupabase();
     const fileToSave = {
       project_id: projectId,
-      name: file.path, 
-      content: file.isFolder ? '' : file.content || '', 
-      type: file.type || (file.isFolder ? 'folder' : 'text'), 
+      name: file.path, // Use path for the 'name' column in Supabase
+      content: file.isFolder ? '' : file.content || '',
+      type: file.isFolder ? 'folder' : file.type || 'text',
     };
     console.log("Attempting to save to Supabase:", fileToSave);
     const { data, error } = await supabase
@@ -77,19 +84,19 @@ const saveFileToSupabase = async (projectId: string, file: FileType) => {
   }
 };
 
-const deleteFileFromSupabase = async (projectId: string, fileName: string) => {
+const deleteFileFromSupabase = async (projectId: string, filePath: string) => {
   try {
     const supabase = getSupabase();
     const { error } = await supabase
       .from('project_files')
       .delete()
       .eq('project_id', projectId)
-      .eq('name', fileName);
+      .eq('name', filePath); // Assuming 'name' column stores the full path
 
     if (error) {
       console.error("Error deleting file from Supabase:", error);
     } else {
-      console.log("File deleted from Supabase:", fileName);
+      console.log("File deleted from Supabase:", filePath);
     }
   } catch (error) {
     console.error("Unexpected error deleting file:", error);
@@ -101,8 +108,8 @@ const Index = () => {
   const navigate = useNavigate();
   const [projectId, setProjectId] = useState<string | null>(null);
 
-  const [files, setFiles] = useState<FileType[]>([]);
-  const [currentFile, setCurrentFile] = useState<FileType | null>(null);
+  const [files, setFiles] = useState<LocalFileType[]>([]);
+  const [currentFile, setCurrentFile] = useState<LocalFileType | null>(null);
   const [isLoadingFilesState, setIsLoadingFilesState] = useState(true);
   const [hasUnsavedChangesState, setHasUnsavedChangesState] = useState(false);
   const tempFinalCodeRef = useRef<string | null>(null);
@@ -117,39 +124,47 @@ const Index = () => {
     setHasUnsavedChangesState(true);
   };
 
-  const addFile = (name: string, content: string, type: string, parentPath?: string) => {
+  const addFile = (name: string, content: string, type: string, parentPath?: string): LocalFileType => {
     const path = parentPath ? `${parentPath}/${name}` : name;
-    const newFile: FileType = { name, content, type, path, isFolder: false };
+    const newFile: LocalFileType = { name, content, type, path, isFolder: false };
     setFiles(prevFiles => [...prevFiles, newFile]);
     setCurrentFile(newFile);
     setHasUnsavedChangesState(true);
+    if (projectId) saveFileToSupabase(projectId, newFile); // Save new file
     return newFile;
   };
   
-  const addDirectory = (name: string, parentPath?: string) => {
+  const addDirectory = (name: string, parentPath?: string): LocalFileType => {
     const path = parentPath ? `${parentPath}/${name}` : name;
-    const newDir: FileType = { name, content: '', type: 'folder', path, isFolder: true, children: [] };
+    const newDir: LocalFileType = { name, content: '', type: 'folder', path, isFolder: true, children: [] };
     setFiles(prevFiles => [...prevFiles, newDir]);
+    // Do not set current file to a directory for editing
     setHasUnsavedChangesState(true);
+    if (projectId) saveFileToSupabase(projectId, newDir); // Save new directory
     return newDir;
   };
 
   const deleteFile = (filePath: string) => {
     setFiles(prevFiles => prevFiles.filter(f => f.path !== filePath && !f.path?.startsWith(`${filePath}/`)));
-    if (currentFile?.path === filePath) {
+    if (currentFile?.path === filePath || currentFile?.path?.startsWith(`${filePath}/`)) {
       setCurrentFile(null);
     }
-    setHasUnsavedChangesState(true);
+    setHasUnsavedChangesState(true); // This implies a change, so it should be true.
     if (projectId) deleteFileFromSupabase(projectId, filePath);
   };
   
   const renameFile = (oldPath: string, newName: string) => {
+    // Basic rename, doesn't handle renaming in Supabase or children paths update yet.
+    // This would require more complex logic if files are stored with full paths in DB.
     setFiles(prevFiles =>
       prevFiles.map(f => {
         if (f.path === oldPath) {
           const newPath = oldPath.substring(0, oldPath.lastIndexOf('/') + 1) + newName;
+          // Here we'd also need to update Supabase: delete old, insert new, or update if PK allows.
+          // And update paths of children if it's a folder.
           return { ...f, name: newName, path: newPath };
         }
+        // TODO: If f.path starts with oldPath (it's a child), update its path too.
         return f;
       })
     );
@@ -158,15 +173,18 @@ const Index = () => {
        setCurrentFile(prev => prev ? { ...prev, name: newName, path: newPath } : null);
     }
     setHasUnsavedChangesState(true);
+    // TODO: Implement Supabase rename (delete old, save new or specialized update)
   };
 
   const saveAllFilesToStorage = async () => {
     if (!projectId) return;
     console.log("Saving all files to Supabase for project:", projectId);
+    setIsLoadingFilesState(true); // Indicate saving
     for (const file of files) {
       await saveFileToSupabase(projectId, file);
     }
     setHasUnsavedChangesState(false);
+    setIsLoadingFilesState(false); // Done saving
     toast({ title: "Project Saved", description: "All changes have been saved." });
   };
 
@@ -194,7 +212,16 @@ const Index = () => {
             const initialFile = dbFiles.find(f => f.name === 'index.html' && !f.isFolder) || dbFiles.find(f => !f.isFolder);
             setCurrentFile(initialFile || null);
           } else {
-            setCurrentFile(null);
+            // Create default files if project is empty
+            const defaultHtml: LocalFileType = { name: "index.html", content: "<!DOCTYPE html><html><body><h1>New Project</h1></body></html>", type: "html", path: "index.html", isFolder: false };
+            const defaultCss: LocalFileType = { name: "style.css", content: "body { font-family: sans-serif; }", type: "css", path: "style.css", isFolder: false };
+            const defaultJs: LocalFileType = { name: "script.js", content: "console.log('hello world')", type: "javascript", path: "script.js", isFolder: false };
+            const defaultProjectFiles = [defaultHtml, defaultCss, defaultJs];
+            setFiles(defaultProjectFiles);
+            setCurrentFile(defaultHtml);
+            // Save these default files to Supabase
+            defaultProjectFiles.forEach(file => saveFileToSupabase(id, file));
+            setHasUnsavedChangesState(false); // Initially no unsaved changes
           }
         })
         .catch(err => console.error("Failed to load files for project", id, err))
@@ -203,7 +230,6 @@ const Index = () => {
       const currentProjectId = localStorage.getItem("current_project_id");
       if (currentProjectId) {
         navigate(`/project?id=${currentProjectId}`, { replace: true });
-        // useEffect will re-run with new location.search
       } else {
         toast({ title: "Error", description: "No project ID found. Redirecting to home.", variant: "destructive" });
         navigate('/');
@@ -228,19 +254,24 @@ const Index = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChangesState]);
 
-  const handleCodeGeneration = async (prompt: string, currentCode?: string, currentFilePath?: string) => {
+  const handleCodeGeneration = async (prompt: string, currentCodeParam?: string, currentFilePathParam?: string) => {
     setIsGenerating(true);
+    // Use currentFile if params are not explicitly passed by ModernPromptInput
+    const codeToUpdate = currentCodeParam ?? currentFile?.content ?? "";
+    const filePathToUpdate = currentFilePathParam ?? currentFile?.path;
+
     setTimeout(() => {
-      const newCode = `// Generated code for: ${prompt}\n${currentCode || ''}\nconsole.log('AI generated update at ${new Date().toLocaleTimeString()}');`;
-      if (currentFilePath && files.find(f => f.path === currentFilePath)) {
-        updateFileContent(currentFilePath, newCode);
-         toast({ title: "Code Updated", description: `${currentFilePath} updated by AI.` });
-      } else if (currentFile) {
+      const newCode = `// Generated code for: ${prompt}\n${codeToUpdate}\nconsole.log('AI generated update at ${new Date().toLocaleTimeString()}');`;
+      if (filePathToUpdate && files.find(f => f.path === filePathToUpdate)) {
+        updateFileContent(filePathToUpdate, newCode);
+         toast({ title: "Code Updated", description: `${filePathToUpdate} updated by AI.` });
+      } else if (currentFile) { // Fallback to currentFile if filePathToUpdate was somehow invalid
         updateFileContent(currentFile.path, newCode);
         toast({ title: "Code Updated", description: `${currentFile.name} updated by AI.` });
       } else {
-         addFile("ai-generated.js", newCode, "javascript");
-         toast({ title: "New File Added", description: `ai-generated.js created by AI.` });
+         const newFile = addFile("ai-generated.js", newCode, "javascript");
+         // saveFileToSupabase already called in addFile
+         toast({ title: "New File Added", description: `${newFile.name} created by AI.` });
       }
       setIframeKey(Date.now()); 
       setIsGenerating(false);
@@ -249,9 +280,12 @@ const Index = () => {
   
   const handleRefreshPreview = () => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
-      saveAllFilesToStorage(); 
-      iframeRef.current.contentWindow.location.reload();
-      toast({ title: "Preview Reloaded", description: "The preview has been refreshed." });
+      saveAllFilesToStorage().then(() => { // Ensure save completes before reload
+        if (iframeRef.current && iframeRef.current.contentWindow) { // Re-check due to async
+            iframeRef.current.contentWindow.location.reload();
+            toast({ title: "Preview Reloaded", description: "The preview has been refreshed." });
+        }
+      });
     }
   };
 
@@ -260,21 +294,30 @@ const Index = () => {
   };
   
   const handleClearProjectFiles = () => { 
-    const defaultFiles: FileType[] = [
-        { name: "index.html", content: "<!DOCTYPE html><html><body><h1>Project Cleared</h1></body></html>", type: "html", path: "index.html", isFolder: false },
-    ];
-    setFiles(defaultFiles); 
-    if (projectId) localStorage.setItem(`project_files_${projectId}`, JSON.stringify(defaultFiles)); 
-    setCurrentFile(defaultFiles[0]);
+    const defaultFile: LocalFileType = { 
+        name: "index.html", 
+        content: "<!DOCTYPE html><html><body><h1>Project Cleared</h1></body></html>", 
+        type: "html", 
+        path: "index.html", 
+        isFolder: false 
+    };
+    setFiles([defaultFile]); 
+    if (projectId) {
+        // Clear existing files in Supabase for this project first (optional, depends on desired behavior)
+        // For now, just save the new default file, potentially overwriting.
+        saveFileToSupabase(projectId, defaultFile);
+    }
+    setCurrentFile(defaultFile);
     setIframeKey(Date.now());
-    toast({ title: "Project Files Cleared (Simulation)", description: "The project has been reset to a blank state." });
+    setHasUnsavedChangesState(false); // Project is now "saved" in its cleared state
+    toast({ title: "Project Files Cleared", description: "The project has been reset to a blank state." });
   };
 
-  if (isLoadingFilesState && !projectId) { 
+  if (isLoadingFilesState && projectId) { // Show loading only if projectId is set and loading
     return <div className="flex items-center justify-center h-screen bg-background text-foreground"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mr-2"></div>Loading project...</div>;
   }
-  if (!projectId) { 
-     return <div className="flex items-center justify-center h-screen bg-background text-foreground">Error: Project ID is missing. Cannot load editor.</div>;
+  if (!projectId && !isLoadingFilesState) { // If no project ID and not loading (e.g., initial state or error)
+     return <div className="flex items-center justify-center h-screen bg-background text-foreground">Error: Project ID is missing. Cannot load editor. Try returning to homepage.</div>;
   }
 
   const editorPane = (
@@ -283,8 +326,8 @@ const Index = () => {
         <>
           <FileExplorerEnhanced
             files={files}
-            activeFile={currentFile}
-            onSelectFile={(file) => setCurrentFile(file)}
+            currentFile={currentFile} // Pass currentFile for highlighting selected
+            onSelectFile={(file) => setCurrentFile(file as LocalFileType)} // Ensure type cast if needed
             onAddFile={(name, type, parentPath) => addFile(name, `// New ${type} file: ${name}`, type, parentPath)}
             onAddDirectory={(name, parentPath) => addDirectory(name, parentPath)}
             onDelete={deleteFile}
@@ -305,7 +348,7 @@ const Index = () => {
             </Tooltip>
           </TooltipProvider>
           <span className="text-xs font-medium text-muted-foreground truncate max-w-[150px]">{currentFile?.name || "No file selected"}</span>
-           <Button variant="ghost" size="icon" onClick={saveAllFilesToStorage} disabled={!hasUnsavedChangesState} className={hasUnsavedChangesState ? "text-primary" : ""}>
+           <Button variant="ghost" size="icon" onClick={saveAllFilesToStorage} disabled={!hasUnsavedChangesState || isLoadingFilesState} className={hasUnsavedChangesState ? "text-primary" : ""}>
               <Save className="h-4 w-4" />
               {hasUnsavedChangesState && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
             </Button>
@@ -313,8 +356,8 @@ const Index = () => {
       <div className="flex-grow overflow-auto relative">
         {currentFile && !currentFile.isFolder ? (
           <CodeEditor
-            key={currentFile.path}
-            initialValue={currentFile.content}
+            key={currentFile.path} // Use path for key as it's unique
+            value={currentFile.content} // Changed from initialValue
             filePath={currentFile.path}
             onCodeChange={(newCode) => updateFileContent(currentFile.path, newCode)}
             editorRef={editorRef}
@@ -352,14 +395,14 @@ const Index = () => {
           <ModernPromptInput
             onGenerate={handleCodeGeneration}
             isGenerating={isGenerating}
-            currentCode={currentFile?.content}
-            currentFilePath={currentFile?.path}
+            currentCode={currentFile?.content || ""}
+            currentFilePath={currentFile?.path || ""}
           />
         </div>
       ) : (
         <div className="flex-grow overflow-hidden h-full">
           <ProjectConsole 
-            projectId={projectId} 
+            projectId={projectId!} // Assert projectId is non-null here as it's checked above
             isAiThinking={isGenerating} 
             onClearProjectFiles={handleClearProjectFiles} 
           />
@@ -371,7 +414,11 @@ const Index = () => {
   const previewPane = (
     <ResizablePanel defaultSize={35} minSize={20} className="h-full flex flex-col">
       <div className="p-2 border-b border-border flex items-center justify-between bg-muted/30 dark:bg-black/30">
-        <PreviewSettings onRefresh={handleRefreshPreview} onTogglePreview={() => setShowPreview(!showPreview)} isPreviewVisible={showPreview} />
+        <PreviewSettings 
+            onRefresh={handleRefreshPreview} 
+            onTogglePreview={() => setShowPreview(!showPreview)} 
+            isPreviewVisible={showPreview} 
+        />
         <div className="flex items-center gap-1">
           <TooltipProvider>
             <Tooltip>
@@ -393,7 +440,7 @@ const Index = () => {
              <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                        <PanelRightOpen className="h-4 w-4" />
+                        <PanelRightOpen className="h-4 w-4" /> {/* Icon was PanelRightOpen */}
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent><p>Back to Projects</p></TooltipContent>
