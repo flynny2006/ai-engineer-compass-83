@@ -1,727 +1,299 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
+import { PlusCircle, UploadCloud, LogIn, UserPlus, Info, Sun, Moon, Settings, LayoutGrid, Package, FileText, Trash2, Star, Copy, AlertTriangle, Search, Filter, CheckCircle, XCircle, ChevronDown, ExternalLink, BookOpen, Briefcase, Users2, Zap, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast'; // Corrected import path
+import ModernPromptInput from '@/components/ModernPromptInput'; // Corrected import path
+import HomepageNav from '@/components/HomepageNav'; // Corrected import path
+import ProjectsSection from '@/components/ProjectsSection';
+import { useTheme } from '@/hooks/use-theme';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
-import { useTheme } from "@/hooks/use-theme";
-import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp, Star, LayoutDashboard, FolderKanban, PackageSearch, Paperclip } from "lucide-react";
-import { BorderTrail } from "@/components/ui/border-trail";
-import FileExplorerUpload from "@/components/FileExplorerUpload";
-import HomepageNav from "@/components/HomepageNav";
-import ModernPromptInput from "@/components/ModernPromptInput";
-import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
-import ProjectsSection from "@/components/ProjectsSection";
-import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import FileExplorerUpload from '@/components/FileExplorerUpload'; // Assuming default export
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+
+interface ProjectFile {
+  name: string;
+  content: string;
+  type: string;
+}
 
 interface Project {
   id: string;
-  name: string;
+  name:string;
+  files: ProjectFile[];
   createdAt: string;
-  files: any[];
   lastModified: string;
-  isFeatured?: boolean; 
+  isFeatured?: boolean;
 }
 
-interface Partner {
-  id: number;
-  name: string;
-  description: string;
-  logoUrl?: string; 
-}
-
-const Homepage = () => {
-  const { theme } = useTheme();
-  const navigate = useNavigate();
-  const [prompt, setPrompt] = useState<string>("");
+const Homepage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
-  const [apiKey, setApiKey] = useState<string>("");
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
-  const [imageFileName, setImageFileName] = useState<string | null>(null);
-  const [generationStatus, setGenerationStatus] = useState<StatusItem[]>([]);
-  const [showStatus, setShowStatus] = useState<boolean>(false);
-  const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
-  const [userPlan, setUserPlan] = useState<string>("FREE");
-  const fileUploadRef = useRef<HTMLInputElement>(null);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState<'all' | 'featured'>('all');
+  const [userPlan, setUserPlan] = useState('Free Tier'); // Example, replace with actual logic
+  const [apiKey, setApiKey] = useState(''); // Example, replace with actual logic
+  const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const newProjectInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll to top function with smooth animation
-  const topRef = useRef<HTMLDivElement>(null);
-  
-  const scrollToTop = () => {
-    topRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // Sample partners data
-  const partners = [
-    { id: 1, name: "Acme Tech", description: "Leading AI infrastructure provider", logoUrl: "placeholder.svg" },
-    { id: 2, name: "DataFlow Inc.", description: "Enterprise data solutions", logoUrl: "placeholder.svg" },
-    { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
-  ];
-
-  // Load projects, API key, and plan from localStorage
   useEffect(() => {
-    try {
-      const savedProjects = localStorage.getItem("saved_projects");
-      if (savedProjects) {
-        const parsedProjects: Project[] = JSON.parse(savedProjects);
-        // Ensure isFeatured is boolean or undefined
-        const validatedProjects = parsedProjects.map(p => ({
-          ...p,
-          isFeatured: typeof p.isFeatured === 'boolean' ? p.isFeatured : false,
-        }));
-        setProjects(validatedProjects);
-      }
-      
-      const savedApiKey = localStorage.getItem("api_key");
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-      }
-      
-      // Get user plan from localStorage
-      const claimedPlan = localStorage.getItem("claimed_plan");
-      if (claimedPlan) {
-        setUserPlan(claimedPlan);
-      }
-      
-      // Get saved model preference
-      const savedModel = localStorage.getItem("selected_model");
-      if (savedModel) {
-        setSelectedModel(savedModel);
-      }
-    } catch (error) {
-      console.error("Error loading data from localStorage:", error);
-      // If parsing fails, it might be due to old format, try to clear or handle gracefully
-      localStorage.removeItem("saved_projects"); 
-      setProjects([]);
+    const savedProjects = localStorage.getItem("saved_projects");
+    const loadedProjects = savedProjects
+      ? JSON.parse(savedProjects).map((p: any) => ({
+          id: p.id || uuidv4(),
+          name: p.name || "Untitled Project",
+          files: Array.isArray(p.files) ? p.files : [], // Ensure files is an array
+          createdAt: p.createdAt || new Date(0).toISOString(), // Add default if missing for older projects
+          lastModified: p.lastModified || new Date().toISOString(),
+          isFeatured: p.isFeatured || false,
+        }))
+      : [];
+    setProjects(loadedProjects);
+
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
     }
+    // TODO: Fetch user plan status
   }, []);
 
-  const simulateGeneration = () => {
-    // Clear any existing status
-    setGenerationStatus([]);
-    setShowStatus(true);
-    
-    // Simulate the generation process with real-time updates
-    const steps: StatusItem[] = [
-      { id: '1', text: 'Analyzing prompt...', status: 'loading', timestamp: Date.now() },
-      { id: '2', text: 'Creating project structure', status: 'loading', timestamp: Date.now() + 100 },
-      { id: '3', text: 'Generating index.html', status: 'pending', timestamp: Date.now() + 200 },
-      { id: '4', text: 'Generating styles.css', status: 'pending', timestamp: Date.now() + 300 },
-      { id: '5', text: 'Generating app.js', status: 'pending', timestamp: Date.now() + 400 },
-      { id: '6', text: 'Building React components', status: 'pending', timestamp: Date.now() + 500 },
-    ];
-    
-    // Add initial step
-    setGenerationStatus([steps[0]]);
-    
-    // Update steps with simulated timing
-    setTimeout(() => {
-      setGenerationStatus([
-        { ...steps[0], status: 'complete' },
-        { ...steps[1] }
-      ]);
-      
-      setTimeout(() => {
-        setGenerationStatus(prev => [
-          ...prev,
-          { ...steps[2], status: 'loading' }
-        ]);
-        
-        setTimeout(() => {
-          setGenerationStatus(prev => prev.map(item => 
-            item.id === '2' ? { ...item, status: 'complete' as const } : item
-          ));
-          
-          setTimeout(() => {
-            setGenerationStatus(prev => prev.map(item => 
-              item.id === '3' ? { ...item, status: 'complete' as const } : item
-            ).concat({ ...steps[3], status: 'loading' as const }));
-            
-            setTimeout(() => {
-              setGenerationStatus(prev => prev.map(item => 
-                item.id === '4' ? { ...item, status: 'complete' as const } : item
-              ).concat({ ...steps[4], status: 'loading' as const }));
-              
-              setTimeout(() => {
-                setGenerationStatus(prev => prev.map(item => 
-                  item.id === '5' ? { ...item, status: 'complete' as const } : item
-                ).concat({ ...steps[5], status: 'loading' as const }));
-                
-                setTimeout(() => {
-                  setGenerationStatus(prev => prev.map(item => 
-                    item.id === '6' ? { ...item, status: 'complete' as const } : item
-                  ));
-                  
-                  // Hide status and navigate after completion
-                  setTimeout(() => {
-                    setShowStatus(false);
-                    // Continue with actual navigation
-                  }, 1000);
-                }, 800);
-              }, 700);
-            }, 600);
-          }, 500);
-        }, 400);
-      }, 600);
-    }, 500);
-  };
-
-  const createNewProject = () => {
-    if (projects.length >= 5 && userPlan === "FREE") {
-      toast({
-        title: "Project Limit Reached",
-        description: "You have reached the maximum of 5 projects for the free plan. Please upgrade for more projects.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!prompt.trim()) {
-      toast({
-        title: "Empty prompt",
-        description: "Please enter what you want to build.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Generate a unique ID
-    const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create new project
+  const handleCreateNewProject = (projectName?: string) => {
+    const name = projectName || newProjectName.trim() || "Untitled Project";
+    const newProjectId = uuidv4();
     const newProject: Project = {
-      id: projectId,
-      name: prompt.length > 30 ? `${prompt.substring(0, 30)}...` : prompt,
+      id: newProjectId,
+      name: name,
+      files: [
+        { name: "index.html", content: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>" + name + "</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Hello, " + name + "!</h1>\n  <script src=\"script.js\"></script>\n</body>\n</html>", type: "html" },
+        { name: "style.css", content: "body {\n  font-family: sans-serif;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  min-height: 100vh;\n  margin: 0;\n  background-color: #f0f0f0;\n}\nh1 {\n  color: #333;\n}", type: "css" },
+        { name: "script.js", content: "console.log('Welcome to " + name + "');", type: "javascript" }
+      ],
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
-      files: [], // Will be populated in the project editor
-      isFeatured: false, // Default for new projects
+      isFeatured: false,
     };
-
-    // Add to existing projects
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-    
-    // Save to localStorage
-    try {
-      localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
-      // Store current prompt as "last_prompt" for the project page
-      localStorage.setItem("last_prompt", prompt);
-      localStorage.setItem("selected_model", selectedModel);
-      
-      // Set the current project ID BEFORE navigation
-      // This is important for project-specific storage
-      localStorage.setItem("current_project_id", projectId);
-      
-      // Save the API key if entered
-      if (apiKey) {
-        localStorage.setItem("api_key", apiKey);
-        localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
-      }
-      
-      // Save attached image if present
-      if (attachedImage) {
-        localStorage.setItem(`${projectId}_attached_image`, attachedImage);
-        localStorage.setItem(`${projectId}_image_filename`, imageFileName || "attached_image.png");
-      }
-      
-      // Start the simulated generation process
-      simulateGeneration();
-      
-      // Navigate to project page after a delay
-      setTimeout(() => {
-        setIsLoading(false);
-        navigate(`/project?id=${projectId}`);
-      }, 5000);
-    } catch (error) {
-      console.error("Error saving project:", error);
-      toast({
-        title: "Failed to create project",
-        description: "There was an error creating your project.",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-    }
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    localStorage.setItem("current_project_id", newProjectId);
+    setNewProjectName('');
+    setIsNameModalOpen(false);
+    navigate(`/project?id=${newProjectId}`);
+    toast({ title: "Project Created", description: `Successfully created "${name}".` });
   };
 
-  // Handle model change
-  const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
-    localStorage.setItem("selected_model", modelId);
-    toast({
-      title: "Model Changed",
-      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : modelId === "gemini-2.0" ? "Gemini 2.0 Flash" : "Gemini 2.0 Pro"}`,
-    });
+  const handleFileUpload = (uploadedFile: { name: string; content: string; type: string }) => {
+    const newProjectId = uuidv4();
+    const newProject: Project = {
+      id: newProjectId,
+      name: uploadedFile.name.split('.')[0] || "Uploaded Project",
+      files: [uploadedFile],
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      isFeatured: false,
+    };
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    localStorage.setItem("current_project_id", newProjectId);
+    navigate(`/project?id=${newProjectId}`);
+    toast({ title: "Project Uploaded", description: `Successfully uploaded and created project from "${uploadedFile.name}".` });
   };
 
-  // Handler for image upload
-  const handleImageUpload = (uploadedFile: { name: string, content: string, type: string }) => {
-    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
-    // The 'type' from FileExplorerUpload is the file extension.
-    if (
-      typeof uploadedFile.content === 'string' &&
-      (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
-    ) {
-      setAttachedImage(uploadedFile.content);
-      setImageFileName(uploadedFile.name);
-      toast({
-        title: "Image Attached",
-        description: `${uploadedFile.name} has been attached.`,
-      });
-    } else {
-      toast({
-        title: "Unsupported File Type",
-        description: "Please upload a valid image (PNG, JPG, GIF, SVG, WebP).",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle attachment button click
-  const handleAttachClick = () => {
-    document.getElementById('fileUpload')?.click();
-  };
-
-  const loadProject = (projectId: string) => {
-    // Set the current project ID BEFORE navigation 
-    // This is critical for project isolation
+  const onLoadProject = (projectId: string) => {
     localStorage.setItem("current_project_id", projectId);
-    
-    // Save the API key if entered, to sync between homepage and editor
-    if (apiKey) {
-      localStorage.setItem("api_key", apiKey);
-      localStorage.setItem("gemini_api_key", apiKey);
-    }
-    
-    // Navigate to the project with the ID in the URL
+    // Update lastModified for the loaded project
+    const updatedProjects = projects.map(p => 
+      p.id === projectId ? { ...p, lastModified: new Date().toISOString() } : p
+    );
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
     navigate(`/project?id=${projectId}`);
   };
 
-  const deleteProject = (e: React.MouseEvent, projectId: string) => {
+  const onDeleteProject = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    
-    try {
-      const updatedProjects = projects.filter(project => project.id !== projectId);
-      setProjects(updatedProjects);
-      localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
-      // Also remove project-specific storage items
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(`${projectId}_`)) {
-          localStorage.removeItem(key);
-        }
-      });
-      
-      toast({
-        title: "Project deleted",
-        description: "The project has been successfully deleted.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete the project.",
-        variant: "destructive"
-      });
+    const projectToDelete = projects.find(p => p.id === projectId);
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    toast({ title: "Project Deleted", description: `"${projectToDelete?.name}" has been deleted.`, variant: "destructive" });
+    if (localStorage.getItem("current_project_id") === projectId) {
+      localStorage.removeItem("current_project_id");
     }
   };
 
-  const duplicateProject = (e: React.MouseEvent, projectToDuplicate: Project) => { // Ensure type is Project
+  const handleDuplicateProject = (e: React.MouseEvent, project: Project) => {
     e.stopPropagation();
-
-    const projectLimit = userPlan === "FREE" ? 5 : userPlan === "PRO" ? 12 : userPlan === "TEAMS" ? 20 : Infinity;
-    if (projects.length >= projectLimit) {
-        toast({
-            title: "Project Limit Reached",
-            description: `Cannot duplicate project. You have reached the maximum of ${projectLimit} projects for the ${userPlan} plan.`,
-            variant: "destructive",
-        });
-        return;
-    }
-    
-    try {
-      const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const duplicatedProject: Project = { // Ensure type is Project
-        ...projectToDuplicate,
-        id: projectId,
-        name: `Copy of ${projectToDuplicate.name}`,
-        createdAt: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        isFeatured: projectToDuplicate.isFeatured || false, // Carry over featured status
-      };
-      
-      const updatedProjects = [...projects, duplicatedProject];
-      setProjects(updatedProjects);
-      localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(`${projectToDuplicate.id}_`)) {
-          const newKey = key.replace(projectToDuplicate.id, projectId);
-          const value = localStorage.getItem(key);
-          if (value) {
-            localStorage.setItem(newKey, value);
-          }
-        }
-      });
-      
-      toast({
-        title: "Project duplicated",
-        description: "A copy of the project has been created.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to duplicate the project.",
-        variant: "destructive"
-      });
-    }
+    const newProjectId = uuidv4();
+    const newProject: Project = {
+      ...project,
+      id: newProjectId,
+      name: `${project.name} (Copy)`,
+      createdAt: new Date().toISOString(), // Set new createdAt
+      lastModified: new Date().toISOString(),
+    };
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    toast({ title: "Project Duplicated", description: `"${project.name}" has been duplicated.` });
+  };
+  
+  const handleToggleFeatured = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    const updatedProjects = projects.map(p =>
+      p.id === project.id ? { ...p, isFeatured: !p.isFeatured } : p
+    );
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    toast({
+      title: project.isFeatured ? "Project Unpinned" : "Project Pinned",
+      description: `"${project.name}" is no longer featured.`
+    });
   };
 
-  const saveApiKey = () => {
-    try {
-      localStorage.setItem("api_key", apiKey);
-      localStorage.setItem("gemini_api_key", apiKey); // Sync with editor
-      toast({
-        title: "API Key saved",
-        description: "Your API key has been saved successfully.",
-      });
-      setShowApiKeyInput(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save API key.",
-        variant: "destructive"
-      });
-    }
-  };
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filter === 'all' || (filter === 'featured' && project.isFeatured);
+    return matchesSearch && matchesFilter;
+  }).sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+
 
   return (
-    <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-black to-slate-900 text-white' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900'}`}>
-      <div ref={topRef}></div>
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 dark:from-slate-900 dark:to-purple-900/30 text-foreground flex flex-col items-center p-4 sm:p-6 lg:p-8">
       <HomepageNav />
-      <main className="flex-1">
-        <div className="container max-w-6xl mx-auto px-4 py-12 flex-1 flex flex-col">
-          {/* Real-time generation status */}
-          <GenerationStatus items={generationStatus} visible={showStatus} />
-          
-          <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
-            <div className="text-center">
-              <h1 className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in`}>
-                What do you want to build today?
-              </h1>
-              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} mt-4 text-lg`}>
-                Prompt, run, edit, and deploy full-stack <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>web</span> and <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>mobile</span> apps.
-              </p>
-            </div>
-            
-            <div className="w-full max-w-3xl mt-4 md:mt-8">
-              <BorderTrail 
-                className="rounded-3xl" 
-                variant={theme === 'dark' ? "default" : "default"} 
-                duration="slow"
-              >
-                <div className={`${theme === 'dark' ? 'bg-black/70 backdrop-blur-md border border-white/10' : 'bg-white shadow-2xl border border-slate-200'} rounded-3xl p-6 space-y-4`}>
-                  <ModernPromptInput
-                    value={prompt}
-                    onChange={setPrompt}
-                    onSubmit={createNewProject}
-                    isLoading={isLoading}
-                    onAttach={handleAttachClick}
-                    selectedModel={selectedModel}
-                    onModelChange={handleModelChange}
-                    userPlan={userPlan}
-                  />
 
-                  <div>
-                    {attachedImage ? (
-                      <div className={`p-3 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-md`}>
-                        <div className="flex justify-between items-center mb-2">
-                          <p className={`text-sm ${theme === 'dark' ? 'text-white/80' : 'text-slate-700'} truncate pr-2`}>Attached: {imageFileName}</p>
-                          <Button 
-                            onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-red-500 hover:text-red-400 h-7 w-7 flex-shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <img 
-                          src={attachedImage} 
-                          alt="Attached preview" 
-                          className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
-                        />
-                      </div>
-                    ) : (
-                      <div id="fileUpload">
-                         <FileExplorerUpload 
-                          onFileUpload={handleImageUpload} 
-                          buttonProps={{
-                            variant: 'attach-gradient',
-                            className: 'w-full justify-center',
-                            children: (
-                              <>
-                                <Paperclip className="mr-2 h-4 w-4" /> Attach Image
-                              </>
-                            )
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </BorderTrail>
-              
-              <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
-                <Button
-                  onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                  variant={theme === 'dark' ? 'default' : 'modern'}
-                  className={`
-                    ${theme === 'dark' 
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white' 
-                      : 'border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400'} 
-                    font-semibold py-2 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 w-full sm:w-auto
-                  `}
-                >
-                  <Key className="h-4 w-4 mr-2" />
-                  {apiKey ? "Change API Key" : "Set API Key"}
-                </Button>
-              </div>
-
-              {showApiKeyInput && (
-                <div className={`mt-4 p-4 ${theme === 'dark' ? 'bg-black/50 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-lg animate-fade-in backdrop-blur-sm`}>
-                  <label className={`block ${theme === 'dark' ? 'text-white' : 'text-slate-800'} text-sm mb-2`}>API Key</label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="Enter your API key"
-                      className={`${theme === 'dark' ? 'bg-black/80 text-white border-white/20 placeholder:text-white/50' : 'bg-white text-slate-900 border-slate-300 focus:border-primary focus:ring-primary/20'}`}
-                    />
-                    <Button onClick={saveApiKey} variant={theme === 'dark' ? 'default' : 'modern'} className={`${theme === 'light' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white'}`}>Save</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Projects Section using new Tabs component */}
-          {projects.length > 0 && <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} my-8`} />}
-          <ProjectsSection
-            projects={projects}
-            setProjects={setProjects}
-            onLoadProject={loadProject}
-            onDeleteProject={deleteProject}
-            onDuplicateProject={duplicateProject}
-            userPlan={userPlan}
-            apiKey={apiKey}
-          />
-
-          {/* How to get Started Section */}
-          <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
-              How to get Started with Boongle AI?
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              {/* Card 1 */}
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="slow" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-black/50 backdrop-blur-sm border-white/10' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-green-400/10 transition-shadow duration-300`}>
-                  <div className={`${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/50' : 'ring-green-300'}`}>
-                    <Compass className="h-10 w-10 text-green-500" />
-                  </div>
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Step 1: Describe Your Idea</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
-                    Simply tell Boongle AI what you want to build. Be as descriptive as you like.
-                  </p>
-                </div>
-              </BorderTrail>
-              {/* Card 2 */}
-               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "default"} duration="slow" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-black/50 backdrop-blur-sm border-white/10' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-blue-400/10 transition-shadow duration-300`}>
-                  <div className={`${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/50' : 'ring-blue-300'}`}>
-                    <Code className="h-10 w-10 text-blue-500" />
-                  </div>
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Step 2: AI Generates Code</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
-                    Watch as Boongle AI translates your description into functional code in real-time.
-                  </p>
-                </div>
-              </BorderTrail>
-              {/* Card 3 */}
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'default'} duration="slow" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-black/50 backdrop-blur-sm border-white/10' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-purple-400/10 transition-shadow duration-300`}>
-                  <div className={`${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/50' : 'ring-purple-300'}`}>
-                    <Rocket className="h-10 w-10 text-purple-500" />
-                  </div>
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Step 3: Iterate & Launch</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
-                    Refine your app with further instructions, add features, and deploy your project.
-                  </p>
-                </div>
-              </BorderTrail>
-            </div>
-          </div>
-
-          {/* Partners Section */}
-          <div className="mt-12 w-full max-w-3xl mx-auto">
-            <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} my-8`} />
-            <h2 className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-2xl font-semibold mb-6 text-center`}>Our Partners</h2>
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-              <BorderTrail className="rounded-lg" variant={theme === 'dark' ? 'destructive' : 'default'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm border-white/10' : 'bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-slate-200'} rounded-lg p-6 flex flex-col items-center text-center`}>
-                  <Users className="h-10 w-10 text-green-500 mb-3" />
-                  <h3 className={`${theme === 'dark' ? 'text-white' : 'text-slate-800'} font-medium`}>Become a Partner</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} text-sm mt-2`}>
-                    Contact us to become our first official partner and get featured here!
-                  </p>
-                  <Button 
-                    className="mt-4" 
-                    variant={theme === 'light' ? 'modern' : 'default'}
-                    onClick={() => navigate('/important')}
-                  >
-                    Contact Us
-                  </Button>
-                </div>
-              </BorderTrail>
-            </div>
-          </div>
-          
-          {/* 20x Faster Section */}
-          <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} mb-16`} />
-            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
-              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">20x Faster than Coding</span>
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'default' : 'default'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/10 to-green-500/10 backdrop-blur-sm border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
-                  <div className={`${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/20' : 'ring-blue-300'}`}>
-                    <Zap className="h-10 w-10 text-yellow-400" />
-                  </div>
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Lightning Fast</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
-                    Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
-                  </p>
-                </div>
-              </BorderTrail>
-
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-sm border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
-                  <div className={`${theme === 'dark' ? 'bg-purple-500/10' : 'bg-purple-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/20' : 'ring-purple-300'}`}>
-                    <Timer className="h-10 w-10 text-purple-400" />
-                  </div>
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Completely Free</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
-                    Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
-                  </p>
-                </div>
-              </BorderTrail>
-
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'default'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/10 to-teal-500/10 backdrop-blur-sm border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
-                  <div className={`${theme === 'dark' ? 'bg-green-500/10' : 'bg-green-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/20' : 'ring-green-300'}`}>
-                    <Eye className="h-10 w-10 text-green-400" />
-                  </div>
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>See Live Preview Here</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
-                    Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
-                  </p>
-                </div>
-              </BorderTrail>
-            </div>
-          </div>
-          
-          {/* Design Excellence Section */}
-          <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} mb-16`} />
-            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
-              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Design Excellence</span>
-            </h2>
-            
-            <div className="grid md:grid-cols-2 gap-12">
-              <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-white/10 backdrop-blur-sm' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl relative overflow-hidden group`}>
-                <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-r from-pink-500/5 to-purple-500/5' : 'bg-gradient-to-r from-pink-100/0 to-purple-100/0'} transform group-hover:scale-105 transition-all duration-700 opacity-50`}></div>
-                <div className="relative z-10">
-                  <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-pink-500/20 to-purple-500/20 ring-pink-500/20' : 'bg-gradient-to-br from-pink-100 to-purple-100 ring-pink-300'} p-4 rounded-full inline-flex mb-6 ring-2`}>
-                    <Palette className="h-8 w-8 text-pink-500" />
-                  </div>
-                  <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Stunning Visuals</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed mb-6`}>
-                    Our AI understands modern design principles and creates visually appealing interfaces with perfect color harmony, typography, and layout composition.
-                  </p>
-                  <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'}`}>
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-pink-500"></div>
-                      <span>Beautiful gradients and color schemes</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                      <span>Harmonious typography combinations</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
-                      <span>Balanced visual layouts</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border-white/10 backdrop-blur-sm' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl relative overflow-hidden group`}>
-                <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-r from-indigo-500/5 to-blue-500/5' : 'bg-gradient-to-r from-indigo-100/0 to-blue-100/0'} transform group-hover:scale-105 transition-all duration-700 opacity-50`}></div>
-                <div className="relative z-10">
-                  <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-indigo-500/20 to-blue-500/20 ring-indigo-500/20' : 'bg-gradient-to-br from-indigo-100 to-blue-100 ring-indigo-300'} p-4 rounded-full inline-flex mb-6 ring-2`}>
-                    <Sparkles className="h-8 w-8 text-blue-500" />
-                  </div>
-                  <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Interactive Elements</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed mb-6`}>
-                    Create engaging user experiences with micro-animations, transitions, and interactive elements that delight your users.
-                  </p>
-                  <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'}`}>
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
-                      <span>Smooth animations and transitions</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                      <span>Responsive hover and click effects</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-sky-500"></div>
-                      <span>Engaging scrolling experiences</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* "But, what are you building?" Section */}
-          <div className="w-full max-w-5xl mx-auto py-24 px-4">
-            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 border-white/10 backdrop-blur-sm' : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-slate-200'} rounded-2xl p-12 text-center border shadow-xl`}>
-              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'dark' ? 'bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent' : 'text-slate-900'}`}>
-                But, what are you building?
-              </h2>
-              <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-slate-700'} max-w-2xl mx-auto mb-8`}>
-                It's time to transform your ideas into reality. Let's create something amazing together.
-              </p>
-              <Button 
-                size="xl" 
-                onClick={scrollToTop} 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-7 rounded-xl font-bold text-lg group shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:-translate-y-1"
-              >
-                Start Building
-                <ArrowUp className="ml-3 h-6 w-6 group-hover:-translate-y-1 transition-transform duration-300" />
+      <header className="text-center my-12 sm:my-16 lg:my-20 fade-in">
+        <Zap className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse-glow" />
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-4">
+          <span className="text-gradient-primary">Lovable</span>: Build with AI
+        </h1>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+          Your AI-powered partner for crafting stunning web applications. Describe your vision, and watch it come to life in real-time.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Dialog open={isNameModalOpen} onOpenChange={setIsNameModalOpen}>
+            <DialogTrigger asChild>
+              <Button size="lg" className="btn-primary shadow-lg hover:shadow-primary/40 transform hover:scale-105 transition-all duration-300 group">
+                <PlusCircle className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                Create New Project
               </Button>
-            </div>
-          </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] glass-card">
+              <DialogHeader>
+                <DialogTitle>Name Your New Project</DialogTitle>
+                <DialogDescription>
+                  Give your project a memorable name to get started.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <Input
+                  id="projectName"
+                  ref={newProjectInputRef}
+                  placeholder="e.g., My Awesome App"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="modern-input"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateNewProject()}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsNameModalOpen(false)}>Cancel</Button>
+                <Button onClick={() => handleCreateNewProject()} className="btn-primary">Create Project</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <FileExplorerUpload onFileUpload={handleFileUpload}>
+             {/* Content for FileExplorerUpload trigger, if any, is handled internally by the component based on its props. Cannot pass children here */}
+          </FileExplorerUpload>
         </div>
+      </header>
+      
+      <main className="w-full max-w-7xl mx-auto">
+        <ProjectsSection
+          projects={filteredProjects}
+          setProjects={setProjects} // Pass setProjects to allow ProjectsSection to update featured status
+          onLoadProject={onLoadProject}
+          onDeleteProject={onDeleteProject}
+          onDuplicateProject={handleDuplicateProject}
+          userPlan={userPlan}
+          apiKey={apiKey}
+        />
+
+        {/* ... Rest of the Homepage content, e.g., features, testimonials ... */}
+        <section id="features" className="py-16 sm:py-20 lg:py-24">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Why Choose <span className="text-gradient-primary">Lovable</span>?</h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">Unlock features designed for speed, creativity, and ease of use.</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              { icon: Zap, title: "AI-Powered Development", description: "Generate code, components, and full pages with simple chat commands." },
+              { icon: LayoutGrid, title: "Real-time Preview", description: "See your changes instantly, making iteration fast and intuitive." },
+              { icon: Package, title: "Shadcn UI & Tailwind", description: "Build beautiful, responsive UIs with modern, best-in-class tools." },
+              { icon: BookOpen, title: "Learn As You Build", description: "Understand the code with explanations from Lovable as it works." },
+              { icon: Users2, title: "Community & Support", description: "Join our Discord, access docs, and get help when you need it." },
+              { icon: Briefcase, title: "Focus on Your Vision", description: "Let Lovable handle the boilerplate, so you can focus on the unique aspects of your project." }
+            ].map((feature, index) => (
+              <Card key={index} className="modern-card hover-lift fade-in" style={{animationDelay: `${index * 100}ms`}}>
+                <CardHeader className="pb-4">
+                  <div className="bg-primary/10 p-3 rounded-full w-fit mb-3">
+                    <feature.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        <Separator className="my-16 sm:my-20 lg:my-24" />
+
+        <section id="testimonials" className="py-16 sm:py-20 lg:py-24">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Loved by Developers</h2>
+             <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">Hear what others are saying about their experience with Lovable.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            {[
+              { name: "Alice DevOps", role: "Full-Stack Developer", quote: "Lovable has revolutionized my workflow. I can prototype and build UIs faster than ever before!" },
+              { name: "Bob Frontend", role: "UI/UX Designer", quote: "The real-time preview is a game-changer. It's amazing to see my ideas turn into code instantly." }
+            ].map((testimonial, index) => (
+              <Card key={index} className="modern-card fade-in" style={{animationDelay: `${index * 150}ms`}}>
+                <CardContent className="pt-6">
+                  <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
+                    "{testimonial.quote}"
+                  </blockquote>
+                  <p className="font-semibold">{testimonial.name}</p>
+                  <p className="text-sm text-primary">{testimonial.role}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
       </main>
+
+      <footer className="w-full max-w-7xl mx-auto text-center py-12 mt-16 border-t border-border/50">
+        <p className="text-muted-foreground">&copy; {new Date().getFullYear()} Lovable.ai. All rights reserved.</p>
+        <div className="flex justify-center gap-4 mt-4">
+          <Link to="/important" className="text-sm hover:text-primary transition-colors">Important Info</Link>
+          <a href="https://discord.gg/hrq9cjXr27" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-primary transition-colors">Discord</a>
+          {/* <Link to="/pricing" className="text-sm hover:text-primary transition-colors">Pricing</Link> */}
+        </div>
+      </footer>
     </div>
   );
 };

@@ -9,30 +9,20 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "light",
+  theme: "light", // Default to light or derive from system
   setTheme: () => null,
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check for saved theme preference in localStorage or use system preference
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme") as Theme;
-      
-      if (!savedTheme) {
-        const systemPreference = window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-        return systemPreference;
-      }
-      
-      return savedTheme || "light";
+      if (savedTheme) return savedTheme;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
-    
-    return "light";
+    return "light"; // Fallback for server-side rendering or environments without window
   });
 
-  // Apply theme class to document
   useEffect(() => {
     if (typeof window === "undefined") return;
     
@@ -41,124 +31,111 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
 
-    // Apply custom CSS variables for the completely redesigned dark mode
+    // Apply custom CSS variables. These should ideally match definitions in index.css
+    // for consistency and serve as JS-driven overrides if needed.
     if (theme === "dark") {
       // Modern dark theme with deep blues and purples
-      root.style.setProperty("--background", "224 71% 4%"); // Dark blue-black background
-      root.style.setProperty("--foreground", "213 31% 91%"); // Light blue-white text
+      root.style.setProperty("--background", "224 71% 4%"); 
+      root.style.setProperty("--foreground", "213 31% 91%"); 
+      root.style.setProperty("--card", "224 71% 4%"); 
+      root.style.setProperty("--card-foreground", "213 31% 91%"); 
+      root.style.setProperty("--popover", "224 71% 4%"); 
+      root.style.setProperty("--popover-foreground", "213 31% 91%"); 
+      root.style.setProperty("--primary", "262 80% 70%"); 
+      root.style.setProperty("--primary-foreground", "210 20% 98%"); 
+      root.style.setProperty("--secondary", "215 27% 11%"); 
+      root.style.setProperty("--secondary-foreground", "210 20% 98%"); 
+      root.style.setProperty("--muted", "215 27% 11%"); 
+      root.style.setProperty("--muted-foreground", "217 33% 60%"); 
+      root.style.setProperty("--accent", "215 27% 11%"); 
+      root.style.setProperty("--accent-foreground", "210 20% 98%"); 
+      root.style.setProperty("--destructive", "0 62% 30%"); 
+      root.style.setProperty("--destructive-foreground", "210 20% 98%"); 
+      root.style.setProperty("--border", "215 28% 17%"); 
+      root.style.setProperty("--input", "215 28% 17%"); 
+      root.style.setProperty("--ring", "262 80% 70%"); 
       
-      root.style.setProperty("--card", "224 71% 4%"); // Dark blue-black card
-      root.style.setProperty("--card-foreground", "213 31% 91%"); // Light blue-white text
+      // Update sidebar colors for dark theme
+      root.style.setProperty("--sidebar-background", "222 47% 11%");
+      root.style.setProperty("--sidebar-foreground", "210 40% 98%");
+      root.style.setProperty("--sidebar-primary", "263 70% 66%");
+      root.style.setProperty("--sidebar-primary-foreground", "210 40% 98%");
+      root.style.setProperty("--sidebar-accent", "217 33% 17%");
+      root.style.setProperty("--sidebar-accent-foreground", "210 40% 98%");
+      root.style.setProperty("--sidebar-border", "215 28% 22%");
+      root.style.setProperty("--sidebar-ring", "263 70% 66%");
       
-      root.style.setProperty("--popover", "224 71% 4%"); // Dark blue-black popover
-      root.style.setProperty("--popover-foreground", "213 31% 91%"); // Light blue-white text
-      
-      root.style.setProperty("--primary", "262 80% 70%"); // Vibrant purple primary
-      root.style.setProperty("--primary-foreground", "210 20% 98%"); // Nearly white primary text
-      
-      root.style.setProperty("--secondary", "215 27% 11%"); // Dark blue secondary
-      root.style.setProperty("--secondary-foreground", "210 20% 98%"); // Nearly white secondary text
-      
-      root.style.setProperty("--muted", "215 27% 11%"); // Dark blue muted
-      root.style.setProperty("--muted-foreground", "217 33% 60%"); // Muted blue-gray text
-      
-      root.style.setProperty("--accent", "215 27% 11%"); // Dark blue accent
-      root.style.setProperty("--accent-foreground", "210 20% 98%"); // Nearly white accent text
-      
-      root.style.setProperty("--destructive", "0 62% 30%"); // Deep red for destructive
-      root.style.setProperty("--destructive-foreground", "210 20% 98%"); // Nearly white destructive text
-      
-      root.style.setProperty("--border", "215 28% 17%"); // Dark blue border
-      root.style.setProperty("--input", "215 28% 17%"); // Dark blue input
-      root.style.setProperty("--ring", "262 80% 70%"); // Vibrant purple ring
-      
-      // Update sidebar colors to match completely modernized dark theme
-      root.style.setProperty("--sidebar-background", "224 71% 4%"); // Dark blue-black sidebar
-      root.style.setProperty("--sidebar-foreground", "213 31% 91%"); // Light blue-white text
-      root.style.setProperty("--sidebar-primary", "262 80% 70%"); // Vibrant purple primary
-      root.style.setProperty("--sidebar-primary-foreground", "0 0% 100%"); // Pure white text
-      root.style.setProperty("--sidebar-accent", "215 27% 11%"); // Dark blue accent
-      root.style.setProperty("--sidebar-accent-foreground", "213 31% 91%"); // Light blue-white text
-      root.style.setProperty("--sidebar-border", "215 28% 17%"); // Dark blue border
-      root.style.setProperty("--sidebar-ring", "262 80% 70%"); // Vibrant purple ring
-      
-      // Syntax highlighting variables for dark mode - more vibrant colors
-      root.style.setProperty("--syntax-keyword", "262 80% 70%"); // Vibrant purple for keywords
-      root.style.setProperty("--syntax-string", "35 90% 61%"); // Bright gold for strings
-      root.style.setProperty("--syntax-comment", "220 14% 53%"); // Muted blue-gray for comments
-      root.style.setProperty("--syntax-number", "176 85% 55%"); // Bright cyan for numbers
-      root.style.setProperty("--syntax-class", "290 90% 80%"); // Bright magenta for classes
-      root.style.setProperty("--syntax-property", "197 90% 70%"); // Bright blue for properties
-      root.style.setProperty("--syntax-tag", "330 90% 70%"); // Bright pink for tags
-      root.style.setProperty("--syntax-attribute", "119 80% 50%"); // Bright green for attributes
-      root.style.setProperty("--syntax-operator", "35 90% 61%"); // Gold for operators
-      root.style.setProperty("--syntax-function", "35 90% 61%"); // Gold for functions
+      // Syntax highlighting variables for dark mode
+      root.style.setProperty("--syntax-keyword", "var(--dark-syntax-keyword)");
+      root.style.setProperty("--syntax-string", "var(--dark-syntax-string)");
+      root.style.setProperty("--syntax-comment", "var(--dark-syntax-comment)");
+      root.style.setProperty("--syntax-number", "var(--dark-syntax-number)");
+      root.style.setProperty("--syntax-class", "var(--dark-syntax-class)");
+      root.style.setProperty("--syntax-property", "var(--dark-syntax-property)");
+      root.style.setProperty("--syntax-tag", "var(--dark-syntax-tag)");
+      root.style.setProperty("--syntax-attribute", "var(--dark-syntax-attribute)");
+      root.style.setProperty("--syntax-operator", "var(--dark-syntax-operator)");
+      root.style.setProperty("--syntax-function", "var(--dark-syntax-function)");
+
     } else {
-      // Enhanced light mode with cleaner, more modern aesthetics
-      root.style.setProperty("--background", "0 0% 100%"); // Pure white background
-      root.style.setProperty("--foreground", "222 47% 11%"); // Dark blue-gray text
+      // Enhanced light mode - yellowish tint
+      root.style.setProperty("--background", "var(--light-background)"); // "48 90% 97%"
+      root.style.setProperty("--foreground", "var(--light-foreground)"); // "220 25% 15%"
+      root.style.setProperty("--card", "var(--light-card)"); // "45 100% 98%"
+      root.style.setProperty("--card-foreground", "var(--light-foreground)");
+      root.style.setProperty("--popover", "var(--light-popover)"); // "45 100% 98%"
+      root.style.setProperty("--popover-foreground", "var(--light-foreground)");
+      root.style.setProperty("--primary", "var(--light-primary)"); // "248 85% 60%"
+      root.style.setProperty("--primary-foreground", "var(--light-primary-foreground)"); // "0 0% 100%"
+      root.style.setProperty("--secondary", "var(--light-secondary)"); // "48 70% 94%"
+      root.style.setProperty("--secondary-foreground", "var(--light-secondary-foreground)"); // "220 25% 20%"
+      root.style.setProperty("--muted", "var(--light-muted)"); // "48 75% 95%"
+      root.style.setProperty("--muted-foreground", "var(--light-muted-foreground)"); // "215 20% 45%"
+      root.style.setProperty("--accent", "var(--light-accent)"); // "48 80% 92%"
+      root.style.setProperty("--accent-foreground", "var(--light-accent-foreground)"); // "220 25% 18%"
+      root.style.setProperty("--destructive", "0 70% 55%"); 
+      root.style.setProperty("--destructive-foreground", "0 0% 100%");
+      root.style.setProperty("--border", "var(--light-border)"); // "45 50% 90%"
+      root.style.setProperty("--input", "var(--light-input)"); // "45 50% 92%"
+      root.style.setProperty("--ring", "var(--light-ring)"); // "248 80% 58%"
       
-      root.style.setProperty("--card", "0 0% 100%"); // White card
-      root.style.setProperty("--card-foreground", "222 47% 11%"); // Dark blue-gray text
-      
-      root.style.setProperty("--popover", "0 0% 100%"); // White popover
-      root.style.setProperty("--popover-foreground", "222 47% 11%"); // Dark blue-gray text
-      
-      root.style.setProperty("--primary", "262 83% 58%"); // Vibrant purple primary
-      root.style.setProperty("--primary-foreground", "0 0% 100%"); // White primary text
-      
-      root.style.setProperty("--secondary", "220 14% 96%"); // Light gray secondary
-      root.style.setProperty("--secondary-foreground", "222 47% 11%"); // Dark blue-gray secondary text
-      
-      root.style.setProperty("--muted", "220 14% 96%"); // Light gray muted
-      root.style.setProperty("--muted-foreground", "220 8% 46%"); // Gray text for muted
-      
-      root.style.setProperty("--accent", "220 14% 96%"); // Light gray accent
-      root.style.setProperty("--accent-foreground", "222 47% 11%"); // Dark blue-gray accent text
-      
-      root.style.setProperty("--destructive", "0 84% 60%"); // Bright red destructive
-      root.style.setProperty("--destructive-foreground", "210 20% 98%"); // Light destructive text
-      
-      root.style.setProperty("--border", "220 13% 91%"); // Light gray border
-      root.style.setProperty("--input", "220 13% 91%"); // Light gray input
-      root.style.setProperty("--ring", "262 83% 58%"); // Purple ring
-      
-      // Light mode syntax highlighting - cleaner, more readable colors
-      root.style.setProperty("--syntax-keyword", "262 60% 50%"); // Purple for keywords
-      root.style.setProperty("--syntax-string", "22 80% 45%"); // Orange-brown for strings
-      root.style.setProperty("--syntax-comment", "220 10% 50%"); // Gray for comments
-      root.style.setProperty("--syntax-number", "195 70% 50%"); // Blue for numbers
-      root.style.setProperty("--syntax-class", "280 60% 50%"); // Magenta for classes
-      root.style.setProperty("--syntax-property", "210 80% 45%"); // Blue for properties
-      root.style.setProperty("--syntax-tag", "330 70% 45%"); // Pink for tags
-      root.style.setProperty("--syntax-attribute", "90 60% 40%"); // Green for attributes
-      root.style.setProperty("--syntax-operator", "35 80% 45%"); // Orange for operators
-      root.style.setProperty("--syntax-function", "210 80% 45%"); // Blue for functions
+      // Standard light mode sidebar colors (can be adjusted if yellowish tint desired for sidebar too)
+      root.style.setProperty("--sidebar-background", "0 0% 98%");
+      root.style.setProperty("--sidebar-foreground", "240 5.3% 26.1%");
+      root.style.setProperty("--sidebar-primary", "248 90% 66%");
+      root.style.setProperty("--sidebar-primary-foreground", "0 0% 98%");
+      root.style.setProperty("--sidebar-accent", "240 4.8% 95.9%");
+      root.style.setProperty("--sidebar-accent-foreground", "240 5.9% 10%");
+      root.style.setProperty("--sidebar-border", "220 13% 91%");
+      root.style.setProperty("--sidebar-ring", "248 90% 66%");
+
+      // Syntax highlighting variables for light mode
+      root.style.setProperty("--syntax-keyword", "var(--light-syntax-keyword)");
+      root.style.setProperty("--syntax-string", "var(--light-syntax-string)");
+      root.style.setProperty("--syntax-comment", "var(--light-syntax-comment)");
+      root.style.setProperty("--syntax-number", "var(--light-syntax-number)");
+      root.style.setProperty("--syntax-class", "var(--light-syntax-class)");
+      root.style.setProperty("--syntax-property", "var(--light-syntax-property)");
+      root.style.setProperty("--syntax-tag", "var(--light-syntax-tag)");
+      root.style.setProperty("--syntax-attribute", "var(--light-syntax-attribute)");
+      root.style.setProperty("--syntax-operator", "var(--light-syntax-operator)");
+      root.style.setProperty("--syntax-function", "var(--light-syntax-function)");
     }
   }, [theme]);
 
-  // Listen for system preference changes with safety checks
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    
     const handleChange = () => {
-      if (!localStorage.getItem("theme")) {
+      if (!localStorage.getItem("theme")) { // Only change if no explicit theme is set
         setTheme(mediaQuery.matches ? "dark" : "light");
       }
     };
-    
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  const value = {
-    theme,
-    setTheme,
-  };
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {
@@ -168,3 +145,4 @@ export const useTheme = () => {
   }
   return context;
 };
+

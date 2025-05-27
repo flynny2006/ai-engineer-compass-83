@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,6 +36,23 @@
 
     --radius: 0.75rem;
 
+    /* Light Theme - slightly more yellowish */
+    --light-background: 48 90% 97%; /* Light yellowish white */
+    --light-foreground: 220 25% 15%; /* Darker, near-black text */
+    --light-card: 45 100% 98%; /* Very light yellow for cards */
+    --light-popover: 45 100% 98%;
+    --light-primary: 248 85% 60%; /* Adjusted primary for light bg */
+    --light-primary-foreground: 0 0% 100%;
+    --light-secondary: 48 70% 94%; /* Lighter yellowish secondary */
+    --light-secondary-foreground: 220 25% 20%;
+    --light-muted: 48 75% 95%; /* Muted yellowish */
+    --light-muted-foreground: 215 20% 45%; /* Darker muted text */
+    --light-accent: 48 80% 92%; /* Accent yellowish */
+    --light-accent-foreground: 220 25% 18%;
+    --light-border: 45 50% 90%; /* Softer yellowish border */
+    --light-input: 45 50% 92%;
+    --light-ring: 248 80% 58%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 248 90% 66%;
@@ -45,21 +63,67 @@
     --sidebar-ring: 248 90% 66%;
 
     /* Syntax highlighting variables */
-    --syntax-keyword: 248 90% 66%;
-    --syntax-string: 24.6 95% 53.1%;
-    --syntax-comment: 142.1 76.2% 36.3%;
-    --syntax-number: 182.1 43.8% 40.2%;
-    --syntax-class: 291.1 64.2% 42.2%;
-    --syntax-property: 221.2 83.2% 53.3%;
-    --syntax-tag: 330.3 81.2% 60.2%;
-    --syntax-attribute: 160.1 84.1% 39.2%;
-    --syntax-operator: 60 54% 50%;
-    --syntax-function: 41.2 88.5% 47.5%;
+    /* Light theme syntax */
+    --light-syntax-keyword: 262 60% 50%; 
+    --light-syntax-string: 22 80% 45%; 
+    --light-syntax-comment: 220 10% 50%; 
+    --light-syntax-number: 195 70% 50%;
+    --light-syntax-class: 280 60% 50%; 
+    --light-syntax-property: 210 80% 45%; 
+    --light-syntax-tag: 330 70% 45%;
+    --light-syntax-attribute: 90 60% 40%; 
+    --light-syntax-operator: 35 80% 45%; 
+    --light-syntax-function: 210 80% 45%;
+
+    /* Dark theme syntax (fallback, primarily set in use-theme.tsx) */
+    --dark-syntax-keyword: 262 80% 70%;
+    --dark-syntax-string: 35 90% 61%;
+    --dark-syntax-comment: 220 14% 53%;
+    --dark-syntax-number: 176 85% 55%;
+    --dark-syntax-class: 290 90% 80%;
+    --dark-syntax-property: 197 90% 70%;
+    --dark-syntax-tag: 330 90% 70%;
+    --dark-syntax-attribute: 119 80% 50%;
+    --dark-syntax-operator: 35 90% 61%;
+    --dark-syntax-function: 35 90% 61%;
   }
 
+  /* Apply light theme variables when .light class is present */
+  .light {
+    --background: var(--light-background);
+    --foreground: var(--light-foreground);
+    --card: var(--light-card);
+    --card-foreground: var(--light-foreground);
+    --popover: var(--light-popover);
+    --popover-foreground: var(--light-foreground);
+    --primary: var(--light-primary);
+    --primary-foreground: var(--light-primary-foreground);
+    --secondary: var(--light-secondary);
+    --secondary-foreground: var(--light-secondary-foreground);
+    --muted: var(--light-muted);
+    --muted-foreground: var(--light-muted-foreground);
+    --accent: var(--light-accent);
+    --accent-foreground: var(--light-accent-foreground);
+    --destructive: 0 70% 55%; 
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--light-border);
+    --input: var(--light-input);
+    --ring: var(--light-ring);
+
+    --syntax-keyword: var(--light-syntax-keyword);
+    --syntax-string: var(--light-syntax-string);
+    --syntax-comment: var(--light-syntax-comment);
+    --syntax-number: var(--light-syntax-number);
+    --syntax-class: var(--light-syntax-class);
+    --syntax-property: var(--light-syntax-property);
+    --syntax-tag: var(--light-syntax-tag);
+    --syntax-attribute: var(--light-syntax-attribute);
+    --syntax-operator: var(--light-syntax-operator);
+    --syntax-function: var(--light-syntax-function);
+  }
+  
   .dark {
-    /* Modern dark blue theme with purple accents - defined in use-theme.tsx */
-    /* These are fallbacks in case the JavaScript doesn't load */
+    /* ... keep existing code (dark theme variables) */
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
 
@@ -88,6 +152,27 @@
     --border: 215 28% 17%;
     --input: 215 28% 17%;
     --ring: 262 80% 70%;
+
+    /* Dark theme specific sidebar variables */
+    --sidebar-background: 222 47% 11%; 
+    --sidebar-foreground: 210 40% 98%; 
+    --sidebar-primary: 263 70% 66%; 
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217 33% 17%; 
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 28% 22%; 
+    --sidebar-ring: 263 70% 66%;
+
+    --syntax-keyword: var(--dark-syntax-keyword);
+    --syntax-string: var(--dark-syntax-string);
+    --syntax-comment: var(--dark-syntax-comment);
+    --syntax-number: var(--dark-syntax-number);
+    --syntax-class: var(--dark-syntax-class);
+    --syntax-property: var(--dark-syntax-property);
+    --syntax-tag: var(--dark-syntax-tag);
+    --syntax-attribute: var(--dark-syntax-attribute);
+    --syntax-operator: var(--dark-syntax-operator);
+    --syntax-function: var(--dark-syntax-function);
   }
 }
 
@@ -107,18 +192,33 @@
   @apply bg-background/70 backdrop-blur-lg border border-border/40 shadow-lg;
 }
 
+.light .glass-card {
+  /* Use CSS variables for background and border to respect opacity */
+  background-color: hsl(var(--light-card) / 0.7);
+  border-color: hsl(var(--light-border) / 0.4);
+  @apply backdrop-blur-lg shadow-lg;
+}
+
 .dark .glass-card {
   @apply bg-secondary/30 border-white/5;
 }
 
 .modern-input {
-  @apply rounded-lg border-input/50 bg-background/80 focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+  @apply rounded-lg border-input bg-background/80 focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all duration-200;
 }
+
+.light .modern-input {
+  background-color: hsl(var(--light-background) / 0.8);
+  border-color: hsl(var(--light-input)); /* Use full opacity for border then apply specific opacity if needed */
+  @apply focus:border-primary/50 focus:bg-light-background focus:ring-2 focus:ring-primary/20;
+}
+
 
 .dark .modern-input {
   @apply bg-secondary/30 border-white/10;
 }
 
+/* ... keep existing code (button styles, card styles, etc. up to code editor styles) */
 /* Enhanced Button Styles */
 .btn-primary {
   @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 rounded-lg px-4 py-2 font-medium shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-[0.98];
@@ -132,31 +232,56 @@
   @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-all duration-200 rounded-lg px-4 py-2 font-medium;
 }
 
+/* No need for .light .btn-outline specific override if using CSS variables correctly */
+
 .btn-circle {
   @apply bg-primary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:shadow-lg hover:bg-primary/90 transition-all duration-200;
 }
 
 /* Enhanced Card Styles */
-.card {
-  @apply rounded-xl border border-border/40 bg-background p-6 shadow-sm transition-all duration-300 hover:shadow-md;
+.card { /* General card styling */
+  @apply rounded-xl border bg-card text-card-foreground p-6 shadow-sm transition-all duration-300 hover:shadow-md;
 }
+/* .light .card specific styling is handled by CSS variables */
 
 .dark .card {
   @apply border-white/5 bg-secondary/30 shadow-md shadow-black/20;
 }
+
+
+/* Specific card styling for Homepage features etc. */
+.modern-card { /* This class is used in Homepage for feature cards, testimonials etc. */
+  @apply rounded-xl shadow-lg overflow-hidden transition-all duration-300 bg-card text-card-foreground border border-border/40;
+}
+.modern-card:hover {
+  @apply shadow-xl transform -translate-y-1;
+}
+/* .light .modern-card specific styling is handled by CSS variables */
+
+.dark .modern-card {
+  @apply bg-secondary/40 border-white/10 text-primary-foreground/90; 
+}
+
+.projects-section-bg { /* General class that can be themed */
+  background-color: hsl(var(--background) / 0.1);
+}
+/* No specific .light or .dark needed if var(--background) is used */
+
 
 /* Code editor styles */
 .code-editor {
   font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
   line-height: 1.5;
   tab-size: 2;
-  @apply bg-muted/30 rounded-lg;
+  @apply bg-muted/30 rounded-lg p-4; /* Added padding */
 }
+/* .light .code-editor specific styling is handled by CSS variables */
 
 .dark .code-editor {
   @apply bg-secondary shadow-inner;
 }
 
+/* ... keep existing code (syntax highlighting, file explorer, scrollbar, animations, etc.) */
 /* Code editor styles with enhanced syntax highlighting */
 .code-editor .keyword {
   color: hsl(var(--syntax-keyword));
@@ -279,10 +404,12 @@
 .file-explorer-item:hover {
   @apply bg-muted/50;
 }
+/* .light .file-explorer-item:hover is handled by CSS variables */
 
 .file-explorer-item.active {
   @apply bg-accent text-accent-foreground;
 }
+/* .light .file-explorer-item.active is handled by CSS variables */
 
 .file-folder {
   @apply text-amber-500;
@@ -311,7 +438,7 @@
 /* VS Code-like styles for editor */
 .vs-code-editor {
   @apply font-mono text-sm leading-normal;
-  background-color: #1e1e1e;
+  background-color: #1e1e1e; /* Explicit for dark, consider variables if light mode editor needed */
   color: #d4d4d4;
 }
 
@@ -327,7 +454,7 @@
 }
 
 .editor-search-box {
-  background-color: #252526;
+  background-color: #252526; /* Explicit for dark */
   border: 1px solid #3c3c3c;
 }
 
@@ -345,9 +472,9 @@
   @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/30 hover:bg-muted-foreground/40;
-}
+/* .dark ::-webkit-scrollbar-thumb is handled by CSS variables for muted-foreground */
+/* .light ::-webkit-scrollbar-thumb is handled by CSS variables for muted-foreground */
+
 
 /* Animation for transitions */
 .fade-in {
@@ -403,10 +530,12 @@
 .chat-message-user {
   @apply bg-primary/90 text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm;
 }
+/* .light .chat-message-user is handled by CSS variables */
 
 .chat-message-ai {
   @apply bg-muted/80 text-foreground rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm;
 }
+/* .light .chat-message-ai is handled by CSS variables */
 
 .dark .chat-message-ai {
   @apply bg-secondary/80;
@@ -420,62 +549,48 @@
 .form-label {
   @apply text-sm font-medium text-foreground/80;
 }
+/* .light .form-label is handled by CSS variables */
+
 
 /* File explorer styling */
-.file-explorer-item {
-  @apply flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-muted/70;
-}
-
-.dark .file-explorer-item {
-  @apply hover:bg-secondary/80;
-}
-
-.file-explorer-item.active {
-  @apply bg-primary/10 text-primary font-medium;
-}
-
-.dark .file-explorer-item.active {
-  @apply bg-primary/20;
-}
+/* Re-using .file-explorer-item defined earlier with light/dark specifics handled by CSS variables */
 
 /* Preview container */
 .preview-container {
-  @apply bg-white rounded-lg shadow-md h-full w-full overflow-hidden border border-border/30;
+  @apply bg-card rounded-lg shadow-md h-full w-full overflow-hidden border border-border/30;
 }
+/* .dark .preview-container and .light .preview-container handled by CSS variables for card, background, border */
 
-.dark .preview-container {
-  @apply bg-background border-white/5;
-}
 
 /* Enhanced tabs */
-.modern-tabs {
-  @apply bg-muted/50 rounded-lg p-1;
+.modern-tabs { /* Used for the main tabs in ProjectsSection and Index (console/chat) */
+  @apply bg-muted/20 rounded-lg p-1 border border-border/30;
+}
+/* .light .modern-tabs handled by CSS variables */
+.dark .modern-tabs { 
+  @apply bg-black/50 border-white/10; /* For dark mode nav tabs, for example */
 }
 
-.dark .modern-tabs {
-  @apply bg-secondary/50;
+
+.modern-tab { /* Tab Triggers */
+  @apply px-4 py-1.5 rounded-md font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm;
+}
+/* .light .modern-tab handled by CSS variables */
+.dark .modern-tab {
+  @apply text-gray-400 hover:text-white data-[state=active]:text-white data-[state=active]:bg-white/10;
 }
 
-.modern-tab {
-  @apply px-4 py-1.5 rounded-md font-medium text-muted-foreground transition-all hover:text-foreground;
-}
-
-.modern-tab.active {
-  @apply bg-background text-foreground shadow-sm;
-}
-
-.dark .modern-tab.active {
-  @apply bg-background/60 text-foreground shadow-sm;
-}
 
 /* Header styling */
-.modern-header {
-  @apply border-b border-border/40 bg-background/90 backdrop-blur-md sticky top-0 z-10;
+.modern-header { /* Used for HomepageNav's main nav element */
+  @apply border-b border-border/40 bg-background/90 backdrop-blur-md sticky top-0 z-50 w-full;
+}
+/* .light .modern-header handled by CSS variables */
+
+.dark .modern-header { /* HomepageNav has specific dark styling */
+  @apply bg-black/50 backdrop-blur-md border-white/10;
 }
 
-.dark .modern-header {
-  @apply border-white/5 bg-background/80;
-}
 
 /* Code syntax highlighting placeholder - could be replaced with a proper syntax highlighter */
 .code-token-keyword {
@@ -504,14 +619,6 @@
   100% { content: '.....'; }
 }
 
-/* Modern cards */
-.modern-card {
-  @apply rounded-xl shadow-lg overflow-hidden transition-all duration-300;
-}
-
-.modern-card:hover {
-  @apply shadow-xl transform -translate-y-1;
-}
 
 /* Futuristic UI elements */
 .futuristic-border {
@@ -523,7 +630,7 @@
 
 /* Soft shadows */
 .soft-shadow {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 15px -3px hsl(var(--foreground) / 0.05), 0 4px 6px -2px hsl(var(--foreground) / 0.03);
 }
 
 .dark .soft-shadow {
@@ -534,35 +641,42 @@
 .button-3d {
   transform-style: preserve-3d;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 0 theme('colors.blue.700');
+  /* Ensure blue-700 is defined or use a variable like primary */
+  box-shadow: 0 4px 0 hsl(var(--primary) / 0.7); 
 }
 
 .button-3d:active {
   transform: translateY(4px);
-  box-shadow: 0 0 0 theme('colors.blue.700');
+  box-shadow: 0 0 0 hsl(var(--primary) / 0.7);
 }
 
 /* Additional Modern UI Styles */
 
 /* Neumorphic design */
 .neumorphic {
-  @apply bg-gray-100 rounded-xl;
-  box-shadow: 8px 8px 15px #d1d1d1, -8px -8px 15px #ffffff;
+  @apply bg-gray-100 rounded-xl; /* Standard Tailwind class */
+  /* Light mode neumorphic shadows */
+  box-shadow: 8px 8px 15px #d9d7ce, -8px -8px 15px #ffffff; /* Adjusted for yellowish bg */
+}
+.light .neumorphic { /* Specific overrides for light if needed, otherwise relies on var(--light-background) */
+   background-color: hsl(var(--light-background));
+   box-shadow: 8px 8px 15px hsl(var(--light-border)), -8px -8px 15px hsl(0 0% 100% / 0.7);
 }
 
+
 .dark .neumorphic {
-  @apply bg-gray-800;
+  @apply bg-gray-800; /* Standard Tailwind class */
   box-shadow: 8px 8px 15px #1a1a1a, -8px -8px 15px #2c2c2c;
 }
 
 /* Frosted glass effect */
-.frosted-glass {
-  @apply backdrop-blur-md bg-white/30 border border-white/30;
+.frosted-glass { /* General definition */
+  @apply backdrop-blur-md border;
+  background-color: hsl(var(--background) / 0.3);
+  border-color: hsl(var(--border) / 0.3);
 }
+/* .light and .dark will inherit and use their respective CSS variables */
 
-.dark .frosted-glass {
-  @apply backdrop-blur-md bg-gray-900/30 border border-gray-700/30;
-}
 
 /* Modern gradients */
 .gradient-cosmic {
@@ -592,35 +706,32 @@
 /* Text gradients */
 .text-gradient {
   @apply bg-clip-text text-transparent;
-  background-image: linear-gradient(45deg, #f3ec78, #af4261);
+  background-image: linear-gradient(45deg, #f3ec78, #af4261); /* Generic example */
 }
 
 .text-gradient-primary {
   @apply bg-clip-text text-transparent;
-  background-image: linear-gradient(45deg, #4776e6, #8e54e9);
+  background-image: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--primary) / 0.7));
 }
+/* .light .text-gradient-primary will use --light-primary automatically if var(--primary) is used */
+
 
 .text-gradient-secondary {
   @apply bg-clip-text text-transparent;
-  background-image: linear-gradient(45deg, #00cdac, #8ddad5);
+  background-image: linear-gradient(45deg, hsl(var(--secondary)), hsl(var(--secondary) / 0.7));
 }
 
 /* Glow effects */
 .glow {
-  box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.5);
 }
-
-.dark .glow {
-  box-shadow: 0 0 15px rgba(99, 179, 237, 0.5);
-}
+/* .dark .glow and .light .glow will use their respective --primary */
 
 .text-glow {
-  text-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+  text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
 }
+/* .dark .text-glow and .light .text-glow will use their respective --primary */
 
-.dark .text-glow {
-  text-shadow: 0 0 10px rgba(99, 179, 237, 0.5);
-}
 
 /* Floating elements */
 .floating {
@@ -633,36 +744,25 @@
 }
 
 /* Microinteractions */
-.hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+/* .hover-lift already defined and uses shadow-lg which should adapt */
 
-.hover-lift:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
 
 /* Dot patterns background */
 .dot-pattern {
-  background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+  background-image: radial-gradient(circle, hsl(var(--muted-foreground) / 0.3) 1px, transparent 1px);
   background-size: 20px 20px;
 }
-
-.dark .dot-pattern {
-  background-image: radial-gradient(circle, #4b5563 1px, transparent 1px);
-}
+/* .dark .dot-pattern will use dark muted-foreground */
 
 /* Grid patterns background */
 .grid-pattern {
-  background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(to right, #e5e7eb 1px, transparent 1px);
+  background-image: linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px);
   background-size: 20px 20px;
 }
+/* .dark .grid-pattern will use dark border */
 
-.dark .grid-pattern {
-  background-image: linear-gradient(#374151 1px, transparent 1px), linear-gradient(to right, #374151 1px, transparent 1px);
-}
-
-/* Modern color palettes */
+/* ... keep existing code (Modern color palettes, File explorer theme colors, etc.) */
+/* Modern color palettes (These are illustrative, not directly used by Tailwind variables yet) */
 .color-palette-1 {
   --primary-color: #2563eb;
   --secondary-color: #4ade80;
@@ -695,40 +795,38 @@
   --text-color: #7c2d12;
 }
 
-/* File explorer theme colors */
+/* File explorer theme colors (Example, not directly tied to Tailwind vars) */
 .file-explorer {
-  --explorer-bg: #fafafa;
-  --explorer-text: #333;
-  --explorer-border: #e5e5e5;
-  --explorer-hover: #f0f0f0;
-  --explorer-active: #e6f2ff;
-  --explorer-active-text: #0066cc;
+  --explorer-bg: hsl(var(--background));
+  --explorer-text: hsl(var(--foreground));
+  --explorer-border: hsl(var(--border));
+  --explorer-hover: hsl(var(--muted) / 0.5);
+  --explorer-active: hsl(var(--accent));
+  --explorer-active-text: hsl(var(--accent-foreground));
 }
-
-.dark .file-explorer {
-  --explorer-bg: #1e1e1e;
-  --explorer-text: #d4d4d4;
-  --explorer-border: #333333;
-  --explorer-hover: #2a2a2a;
-  --explorer-active: #094771;
-  --explorer-active-text: #ffffff;
-}
+/* .dark .file-explorer would need separate definitions if not using main theme vars */
 
 /* VS Code-like search and find UI */
 .search-panel {
   @apply flex items-center p-2 gap-2 border-b;
-  background-color: var(--background);
+  background-color: var(--background); /* Uses theme variable */
+  border-bottom-color: var(--border); /* Uses theme variable */
 }
 
 .search-input {
   @apply flex-1 p-1 px-2 rounded border;
+  background-color: var(--input); /* Uses theme variable for input background */
+  border-color: var(--border); /* Uses theme variable for border */
+  color: var(--foreground); /* Uses theme variable for text */
 }
 
 .folder-structure-line {
-  @apply border-l-2 border-gray-200 dark:border-gray-700 ml-2 pl-2;
+  @apply border-l-2 ml-2 pl-2;
+  border-left-color: var(--border); /* Uses theme variable */
 }
 
 /* JSX/TSX syntax highlighting */
+/* These are already covered by .code-editor .TAG type styles with CSS variables */
 .code-editor .jsx-tag {
   color: hsl(var(--syntax-tag));
 }
@@ -742,6 +840,7 @@
 }
 
 /* Syntax highlighting for different languages */
+/* These are already covered by .code-editor .TAG type styles with CSS variables */
 .language-html .tag { color: hsl(var(--syntax-tag)); }
 .language-html .attr { color: hsl(var(--syntax-attribute)); }
 .language-html .string { color: hsl(var(--syntax-string)); }
@@ -755,3 +854,4 @@
 .language-js .string { color: hsl(var(--syntax-string)); }
 .language-js .number { color: hsl(var(--syntax-number)); }
 .language-js .function { color: hsl(var(--syntax-function)); }
+
