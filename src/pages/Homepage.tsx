@@ -5,12 +5,14 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp } from "lucide-react";
+import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp, Star, LayoutDashboard, FolderKanban, PackageSearch } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
 import ModernPromptInput from "@/components/ModernPromptInput";
 import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
+import ProjectsSection from "@/components/ProjectsSection";
+import { Badge } from "@/components/ui/badge";
 
 interface Project {
   id: string;
@@ -18,6 +20,7 @@ interface Project {
   createdAt: string;
   files: any[];
   lastModified: string;
+  isFeatured?: boolean; // Added for starring projects
 }
 
 interface Partner {
@@ -62,8 +65,13 @@ const Homepage = () => {
     try {
       const savedProjects = localStorage.getItem("saved_projects");
       if (savedProjects) {
-        const parsedProjects = JSON.parse(savedProjects);
-        setProjects(parsedProjects);
+        const parsedProjects: Project[] = JSON.parse(savedProjects);
+        // Ensure isFeatured is boolean or undefined
+        const validatedProjects = parsedProjects.map(p => ({
+          ...p,
+          isFeatured: typeof p.isFeatured === 'boolean' ? p.isFeatured : false,
+        }));
+        setProjects(validatedProjects);
       }
       
       const savedApiKey = localStorage.getItem("api_key");
@@ -83,7 +91,10 @@ const Homepage = () => {
         setSelectedModel(savedModel);
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Error loading data from localStorage:", error);
+      // If parsing fails, it might be due to old format, try to clear or handle gracefully
+      localStorage.removeItem("saved_projects"); 
+      setProjects([]);
     }
   }, []);
 
@@ -182,12 +193,13 @@ const Homepage = () => {
     const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Create new project
-    const newProject = {
+    const newProject: Project = {
       id: projectId,
       name: prompt.length > 30 ? `${prompt.substring(0, 30)}...` : prompt,
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
       files: [], // Will be populated in the project editor
+      isFeatured: false, // Default for new projects
     };
 
     // Add to existing projects
@@ -318,27 +330,29 @@ const Homepage = () => {
     }
   };
 
-  const duplicateProject = (e: React.MouseEvent, project: Project) => {
+  const duplicateProject = (e: React.MouseEvent, projectToDuplicate: Project) => { // Ensure type is Project
     e.stopPropagation();
 
-    if (projects.length >= 5) {
-      toast({
-        title: "Project Limit Reached",
-        description: "Cannot duplicate project. You have reached the maximum of 5 projects for the free plan.",
-        variant: "destructive",
-      });
-      return;
+    const projectLimit = userPlan === "FREE" ? 5 : userPlan === "PRO" ? 12 : userPlan === "TEAMS" ? 20 : Infinity;
+    if (projects.length >= projectLimit) {
+        toast({
+            title: "Project Limit Reached",
+            description: `Cannot duplicate project. You have reached the maximum of ${projectLimit} projects for the ${userPlan} plan.`,
+            variant: "destructive",
+        });
+        return;
     }
     
     try {
       const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      const duplicatedProject = {
-        ...project,
+      const duplicatedProject: Project = { // Ensure type is Project
+        ...projectToDuplicate,
         id: projectId,
-        name: `Copy of ${project.name}`,
+        name: `Copy of ${projectToDuplicate.name}`,
         createdAt: new Date().toISOString(),
         lastModified: new Date().toISOString(),
+        isFeatured: projectToDuplicate.isFeatured || false, // Carry over featured status
       };
       
       const updatedProjects = [...projects, duplicatedProject];
@@ -346,8 +360,8 @@ const Homepage = () => {
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
       
       Object.keys(localStorage).forEach(key => {
-        if (key.startsWith(`${project.id}_`)) {
-          const newKey = key.replace(project.id, projectId);
+        if (key.startsWith(`${projectToDuplicate.id}_`)) {
+          const newKey = key.replace(projectToDuplicate.id, projectId);
           const value = localStorage.getItem(key);
           if (value) {
             localStorage.setItem(newKey, value);
@@ -387,7 +401,7 @@ const Homepage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white">
+    <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'}`}>
       <div ref={topRef}></div>
       <HomepageNav />
       <main className="flex-1">
@@ -397,17 +411,21 @@ const Homepage = () => {
           
           <div className="flex-1 flex flex-col items-center justify-center gap-8 py-12">
             <div className="text-center">
-              <h1 className="text-white font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in">
+              <h1 className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in`}>
                 What do you want to build today?
               </h1>
-              <p className="text-gray-400 mt-4 text-lg">
-                Prompt, run, edit, and deploy full-stack <span className="font-bold text-white">web</span> and <span className="font-bold text-white">mobile</span> apps.
+              <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mt-4 text-lg`}>
+                Prompt, run, edit, and deploy full-stack <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>web</span> and <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>mobile</span> apps.
               </p>
             </div>
             
             <div className="w-full max-w-3xl mt-4 md:mt-8">
-              <BorderTrail className="rounded-3xl" variant="default" duration="slow">
-                <div className="bg-black rounded-3xl p-6 space-y-4">
+              <BorderTrail 
+                className="rounded-3xl" 
+                variant={theme === 'dark' ? "default" : "primary"} 
+                duration="slow"
+              >
+                <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white shadow-xl border border-gray-200'} rounded-3xl p-6 space-y-4`}>
                   <ModernPromptInput
                     value={prompt}
                     onChange={setPrompt}
@@ -415,20 +433,21 @@ const Homepage = () => {
                     isLoading={isLoading}
                     onAttach={handleAttachClick}
                     selectedModel={selectedModel}
-                    onModelChange={setSelectedModel}
+                    onModelChange={handleModelChange} // Pass handleModelChange here
                     userPlan={userPlan}
+                    placeholder="Describe the web or mobile app you want to build..."
                   />
 
                   <div>
                     {attachedImage ? (
-                      <div className="p-3 bg-white/5 rounded-md border border-white/10">
+                      <div className={`p-3 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'} rounded-md`}>
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-sm text-white/80 truncate pr-2">Attached: {imageFileName}</p>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-white/80' : 'text-gray-700'} truncate pr-2`}>Attached: {imageFileName}</p>
                           <Button 
                             onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
                             variant="ghost" 
                             size="icon" 
-                            className="text-red-400 hover:text-red-300 h-7 w-7 flex-shrink-0"
+                            className="text-red-500 hover:text-red-400 h-7 w-7 flex-shrink-0"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -451,8 +470,13 @@ const Homepage = () => {
               <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
                 <Button
                   onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                  variant="outline"
-                  className={`border-white/20 ${theme === 'light' ? 'text-black' : 'text-white/80'} hover:bg-white/10 w-full sm:w-auto`}
+                  variant="default" // Changed variant
+                  className={`
+                    ${theme === 'dark' 
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white' 
+                      : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white'} 
+                    font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 w-full sm:w-auto
+                  `}
                 >
                   <Key className="h-4 w-4 mr-2" />
                   {apiKey ? "Change API Key" : "Set API Key"}
@@ -460,113 +484,84 @@ const Homepage = () => {
               </div>
 
               {showApiKeyInput && (
-                <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10 animate-fade-in">
-                  <label className="block text-white text-sm mb-2">API Key</label>
+                <div className={`mt-4 p-4 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'} rounded-lg animate-fade-in`}>
+                  <label className={`block ${theme === 'dark' ? 'text-white' : 'text-gray-800'} text-sm mb-2`}>API Key</label>
                   <div className="flex gap-2">
                     <Input
                       type="password"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder="Enter your API key"
-                      className="bg-black text-white border-white/20"
+                      className={`${theme === 'dark' ? 'bg-black text-white border-white/20' : 'bg-white text-gray-900 border-gray-300'}`}
                     />
-                    <Button onClick={saveApiKey}>Save</Button>
+                    <Button onClick={saveApiKey} variant={theme === 'dark' ? 'default' : 'modern'}>Save</Button>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Projects Section using new Tabs component */}
+          {projects.length > 0 && <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'} my-8`} />}
+          <ProjectsSection
+            projects={projects}
+            setProjects={setProjects}
+            onLoadProject={loadProject}
+            onDeleteProject={deleteProject}
+            onDuplicateProject={duplicateProject}
+            userPlan={userPlan}
+            apiKey={apiKey}
+          />
+
           {/* How to get Started Section */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <h2 className="text-3xl font-bold text-center text-white mb-12">
+            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-12`}>
               How to get Started with Boongle AI?
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
+              {/* Card 1 */}
               <BorderTrail className="rounded-xl" variant="primary" duration="slow" spacing="sm">
-                <div className="bg-white/5 p-8 rounded-xl border-none flex flex-col items-center shadow-xl hover:shadow-green-400/20 transition-shadow duration-300">
+                <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-lg border border-gray-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-green-400/20 transition-shadow duration-300`}>
                   <div className="bg-green-500/20 p-4 rounded-full mb-6 ring-2 ring-green-500/50">
                     <Compass className="h-10 w-10 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Step 1: Describe Your Idea</h3>
-                  <p className="text-gray-400 leading-relaxed">
-                    Simply tell Boongle AI what you want to build. Be as descriptive as you like – from a simple landing page to a full-stack application.
+                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Step 1: Describe Your Idea</h3>
+                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} leading-relaxed`}>
+                    Simply tell Boongle AI what you want to build. Be as descriptive as you like.
                   </p>
                 </div>
               </BorderTrail>
-
-              <BorderTrail className="rounded-xl" variant="default" duration="slow" spacing="sm">
-                <div className="bg-white/5 p-8 rounded-xl border-none flex flex-col items-center shadow-xl hover:shadow-blue-400/20 transition-shadow duration-300">
+              {/* Card 2 */}
+               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "secondary"} duration="slow" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-lg border border-gray-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-blue-400/20 transition-shadow duration-300`}>
                   <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
                     <Code className="h-10 w-10 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Step 2: AI Generates Code</h3>
-                  <p className="text-gray-400 leading-relaxed">
-                    Watch as Boongle AI translates your description into functional code in real-time. Preview your application as it comes to life.
+                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Step 2: AI Generates Code</h3>
+                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} leading-relaxed`}>
+                    Watch as Boongle AI translates your description into functional code in real-time.
                   </p>
                 </div>
               </BorderTrail>
-
+              {/* Card 3 */}
               <BorderTrail className="rounded-xl" variant="destructive" duration="slow" spacing="sm">
-                <div className="bg-white/5 p-8 rounded-xl border-none flex flex-col items-center shadow-xl hover:shadow-purple-400/20 transition-shadow duration-300">
+                <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-lg border border-gray-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-purple-400/20 transition-shadow duration-300`}>
                   <div className="bg-purple-500/20 p-4 rounded-full mb-6 ring-2 ring-purple-500/50">
                     <Rocket className="h-10 w-10 text-purple-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">Step 3: Iterate & Launch</h3>
-                  <p className="text-gray-400 leading-relaxed">
-                    Refine your app with further instructions, add features, and deploy your project to the world with a single click.
+                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>Step 3: Iterate & Launch</h3>
+                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} leading-relaxed`}>
+                    Refine your app with further instructions, add features, and deploy your project.
                   </p>
                 </div>
               </BorderTrail>
             </div>
           </div>
 
-          {projects.length > 0 && (
-            <div className="mt-12 w-full max-w-3xl mx-auto">
-              <Separator className="bg-white/20 my-8" />
-              <h2 className="text-white text-2xl font-semibold mb-6">Your Projects</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.map((project) => (
-                  <div 
-                    key={project.id}
-                    onClick={() => loadProject(project.id)}
-                    className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/10 transition-all hover:-translate-y-1"
-                  >
-                    <h3 className="text-white font-medium text-lg">{project.name}</h3>
-                    <p className="text-gray-400 text-sm mt-1">
-                      Created: {new Date(project.createdAt).toLocaleDateString()}
-                    </p>
-                    <div className="flex justify-end mt-4 gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => duplicateProject(e, project)} 
-                        className="text-blue-400 hover:text-blue-300 p-1"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => deleteProject(e, project.id)} 
-                        className="text-red-400 hover:text-red-300 p-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300 p-1">
-                        <ArrowRight className="h-4 w-4" /> Open
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
           {/* Partners Section - Updated to remove example partners */}
           <div className="mt-12 w-full max-w-3xl mx-auto">
-            <Separator className="bg-white/20 my-8" />
-            <h2 className="text-white text-2xl font-semibold mb-6">Our Partners</h2>
+            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'} my-8`} />
+            <h2 className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} text-2xl font-semibold mb-6`}>Our Partners</h2>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
               <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
                 <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center border-none">
@@ -589,9 +584,9 @@ const Homepage = () => {
           
           {/* 20x Faster Section */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <Separator className="bg-white/20 mb-16" />
-            <h2 className="text-3xl font-bold text-center text-white mb-12">
-              <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">20x Faster than Coding</span>
+            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'} mb-16`} />
+            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-12`}>
+              <span className="bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent">20x Faster than Coding</span>
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <BorderTrail className="rounded-xl" variant="default" duration="default" spacing="sm">
@@ -634,8 +629,8 @@ const Homepage = () => {
           
           {/* NEW SECTION 1: Design Excellence */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <Separator className="bg-white/20 mb-16" />
-            <h2 className="text-3xl font-bold text-center text-white mb-12">
+            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-gray-300'} mb-16`} />
+            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-12`}>
               <span className="bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent">Design Excellence</span>
             </h2>
             
@@ -698,11 +693,11 @@ const Homepage = () => {
           
           {/* NEW SECTION 2: "But, what are you building?" */}
           <div className="w-full max-w-5xl mx-auto py-24 px-4">
-            <div className="bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl p-12 text-center border border-white/10 shadow-xl">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 border-white/10' : 'bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 border-gray-200'} rounded-2xl p-12 text-center border shadow-xl`}>
+              <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'dark' ? 'bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent' : 'text-gray-900'}`}>
                 But, what are you building?
               </h2>
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+              <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} max-w-2xl mx-auto mb-8`}>
                 It's time to transform your ideas into reality. Let's create something amazing together.
               </p>
               <Button 
