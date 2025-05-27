@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp, Star, LayoutDashboard, FolderKanban, PackageSearch } from "lucide-react";
+import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp, Star, LayoutDashboard, FolderKanban, PackageSearch, Paperclip } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
@@ -401,7 +401,7 @@ const Homepage = () => {
   };
 
   return (
-    <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-slate-900'}`}>
+    <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-black to-slate-900 text-white' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900'}`}>
       <div ref={topRef}></div>
       <HomepageNav />
       <main className="flex-1">
@@ -414,7 +414,7 @@ const Homepage = () => {
               <h1 className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-bold text-4xl md:text-5xl lg:text-6xl text-center animate-fade-in`}>
                 What do you want to build today?
               </h1>
-              <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} mt-4 text-lg`}>
+              <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} mt-4 text-lg`}>
                 Prompt, run, edit, and deploy full-stack <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>web</span> and <span className={`font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>mobile</span> apps.
               </p>
             </div>
@@ -422,10 +422,10 @@ const Homepage = () => {
             <div className="w-full max-w-3xl mt-4 md:mt-8">
               <BorderTrail 
                 className="rounded-3xl" 
-                variant={theme === 'dark' ? "default" : "primary"} 
+                variant={theme === 'dark' ? "default" : "default"} 
                 duration="slow"
               >
-                <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white shadow-2xl border border-slate-200'} rounded-3xl p-6 space-y-4`}>
+                <div className={`${theme === 'dark' ? 'bg-black/70 backdrop-blur-md border border-white/10' : 'bg-white shadow-2xl border border-slate-200'} rounded-3xl p-6 space-y-4`}>
                   <ModernPromptInput
                     value={prompt}
                     onChange={setPrompt}
@@ -433,9 +433,8 @@ const Homepage = () => {
                     isLoading={isLoading}
                     onAttach={handleAttachClick}
                     selectedModel={selectedModel}
-                    onModelChange={handleModelChange} // Pass handleModelChange here
+                    onModelChange={handleModelChange}
                     userPlan={userPlan}
-                    // Placeholder is now handled internally by ModernPromptInput
                   />
 
                   <div>
@@ -460,7 +459,18 @@ const Homepage = () => {
                       </div>
                     ) : (
                       <div id="fileUpload">
-                        <FileExplorerUpload onFileUpload={handleImageUpload} />
+                         <FileExplorerUpload 
+                          onFileUpload={handleImageUpload} 
+                          buttonProps={{
+                            variant: 'attach-gradient',
+                            className: 'w-full justify-center',
+                            children: (
+                              <>
+                                <Paperclip className="mr-2 h-4 w-4" /> Attach Image
+                              </>
+                            )
+                          }}
+                        />
                       </div>
                     )}
                   </div>
@@ -470,7 +480,7 @@ const Homepage = () => {
               <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
                 <Button
                   onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  variant={theme === 'dark' ? 'default' : 'modern'}
                   className={`
                     ${theme === 'dark' 
                       ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white' 
@@ -484,7 +494,7 @@ const Homepage = () => {
               </div>
 
               {showApiKeyInput && (
-                <div className={`mt-4 p-4 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-lg animate-fade-in`}>
+                <div className={`mt-4 p-4 ${theme === 'dark' ? 'bg-black/50 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-lg animate-fade-in backdrop-blur-sm`}>
                   <label className={`block ${theme === 'dark' ? 'text-white' : 'text-slate-800'} text-sm mb-2`}>API Key</label>
                   <div className="flex gap-2">
                     <Input
@@ -492,9 +502,9 @@ const Homepage = () => {
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder="Enter your API key"
-                      className={`${theme === 'dark' ? 'bg-black text-white border-white/20' : 'bg-white text-slate-900 border-slate-300 focus:border-primary focus:ring-primary/20'}`}
+                      className={`${theme === 'dark' ? 'bg-black/80 text-white border-white/20 placeholder:text-white/50' : 'bg-white text-slate-900 border-slate-300 focus:border-primary focus:ring-primary/20'}`}
                     />
-                    <Button onClick={saveApiKey} variant={theme === 'dark' ? 'default' : 'modern'} className={`${theme === 'light' && 'bg-primary text-primary-foreground hover:bg-primary/90'}`}>Save</Button>
+                    <Button onClick={saveApiKey} variant={theme === 'dark' ? 'default' : 'modern'} className={`${theme === 'light' ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white'}`}>Save</Button>
                   </div>
                 </div>
               )}
@@ -502,7 +512,7 @@ const Homepage = () => {
           </div>
 
           {/* Projects Section using new Tabs component */}
-          {projects.length > 0 && <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} my-8`} />}
+          {projects.length > 0 && <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} my-8`} />}
           <ProjectsSection
             projects={projects}
             setProjects={setProjects}
@@ -520,37 +530,37 @@ const Homepage = () => {
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
               {/* Card 1 */}
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'outline'} duration="slow" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-green-400/10 transition-shadow duration-300`}>
-                  <div className={`${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-500/10'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/50' : 'ring-green-500/30'}`}>
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="slow" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-black/50 backdrop-blur-sm border-white/10' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-green-400/10 transition-shadow duration-300`}>
+                  <div className={`${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/50' : 'ring-green-300'}`}>
                     <Compass className="h-10 w-10 text-green-500" />
                   </div>
                   <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Step 1: Describe Your Idea</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} leading-relaxed`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
                     Simply tell Boongle AI what you want to build. Be as descriptive as you like.
                   </p>
                 </div>
               </BorderTrail>
               {/* Card 2 */}
-               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "outline"} duration="slow" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-blue-400/10 transition-shadow duration-300`}>
-                  <div className={`${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/10'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/50' : 'ring-blue-500/30'}`}>
+               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "default"} duration="slow" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-black/50 backdrop-blur-sm border-white/10' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-blue-400/10 transition-shadow duration-300`}>
+                  <div className={`${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/50' : 'ring-blue-300'}`}>
                     <Code className="h-10 w-10 text-blue-500" />
                   </div>
                   <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Step 2: AI Generates Code</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} leading-relaxed`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
                     Watch as Boongle AI translates your description into functional code in real-time.
                   </p>
                 </div>
               </BorderTrail>
               {/* Card 3 */}
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'outline'} duration="slow" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-purple-400/10 transition-shadow duration-300`}>
-                  <div className={`${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-500/10'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/50' : 'ring-purple-500/30'}`}>
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'default'} duration="slow" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-black/50 backdrop-blur-sm border-white/10' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-purple-400/10 transition-shadow duration-300`}>
+                  <div className={`${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/50' : 'ring-purple-300'}`}>
                     <Rocket className="h-10 w-10 text-purple-500" />
                   </div>
                   <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Step 3: Iterate & Launch</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} leading-relaxed`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
                     Refine your app with further instructions, add features, and deploy your project.
                   </p>
                 </div>
@@ -560,14 +570,14 @@ const Homepage = () => {
 
           {/* Partners Section */}
           <div className="mt-12 w-full max-w-3xl mx-auto">
-            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} my-8`} />
-            <h2 className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-2xl font-semibold mb-6`}>Our Partners</h2>
+            <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} my-8`} />
+            <h2 className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-2xl font-semibold mb-6 text-center`}>Our Partners</h2>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-              <BorderTrail className="rounded-lg" variant={theme === 'dark' ? 'destructive' : 'outline'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/20 to-blue-500/20' : 'bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-slate-200'} backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center`}>
+              <BorderTrail className="rounded-lg" variant={theme === 'dark' ? 'destructive' : 'default'} duration="default" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-sm border-white/10' : 'bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-slate-200'} rounded-lg p-6 flex flex-col items-center text-center`}>
                   <Users className="h-10 w-10 text-green-500 mb-3" />
                   <h3 className={`${theme === 'dark' ? 'text-white' : 'text-slate-800'} font-medium`}>Become a Partner</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} text-sm mt-2`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} text-sm mt-2`}>
                     Contact us to become our first official partner and get featured here!
                   </p>
                   <Button 
@@ -584,42 +594,42 @@ const Homepage = () => {
           
           {/* 20x Faster Section */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} mb-16`} />
+            <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} mb-16`} />
             <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
               <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">20x Faster than Coding</span>
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'default' : 'outline'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/10 to-green-500/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
-                  <div className={`${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-500/5'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/20' : 'ring-blue-500/10'}`}>
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'default' : 'default'} duration="default" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/10 to-green-500/10 backdrop-blur-sm border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
+                  <div className={`${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/20' : 'ring-blue-300'}`}>
                     <Zap className="h-10 w-10 text-yellow-400" />
                   </div>
                   <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Lightning Fast</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} leading-relaxed`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
                     Turn your ideas into working code in seconds, not hours or days. Skip the boilerplate and focus on what matters.
                   </p>
                 </div>
               </BorderTrail>
 
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'outline'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
-                  <div className={`${theme === 'dark' ? 'bg-purple-500/10' : 'bg-purple-500/5'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/20' : 'ring-purple-500/10'}`}>
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="default" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-sm border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
+                  <div className={`${theme === 'dark' ? 'bg-purple-500/10' : 'bg-purple-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/20' : 'ring-purple-300'}`}>
                     <Timer className="h-10 w-10 text-purple-400" />
                   </div>
                   <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>Completely Free</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} leading-relaxed`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
                     Start building with Boongle AI at no cost. Create up to 5 projects with our powerful AI toolset without spending a dime.
                   </p>
                 </div>
               </BorderTrail>
 
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'outline'} duration="default" spacing="sm">
-                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/10 to-teal-500/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
-                  <div className={`${theme === 'dark' ? 'bg-green-500/10' : 'bg-green-500/5'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/20' : 'ring-green-500/10'}`}>
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'default'} duration="default" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/10 to-teal-500/10 backdrop-blur-sm border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
+                  <div className={`${theme === 'dark' ? 'bg-green-500/10' : 'bg-green-100'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/20' : 'ring-green-300'}`}>
                     <Eye className="h-10 w-10 text-green-400" />
                   </div>
                   <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-3`}>See Live Preview Here</h3>
-                  <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} leading-relaxed`}>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} leading-relaxed`}>
                     Watch your application come to life as you build it. Real-time preview lets you see changes instantly.
                   </p>
                 </div>
@@ -629,16 +639,16 @@ const Homepage = () => {
           
           {/* Design Excellence Section */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
-            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} mb-16`} />
+            <Separator className={`${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'} mb-16`} />
             <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
               <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Design Excellence</span>
             </h2>
             
             <div className="grid md:grid-cols-2 gap-12">
-              <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl relative overflow-hidden group`}>
-                <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-r from-pink-500/5 to-purple-500/5' : 'bg-gradient-to-r from-pink-500/0 to-purple-500/0'} transform group-hover:scale-105 transition-all duration-700 opacity-50`}></div>
+              <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-white/10 backdrop-blur-sm' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl relative overflow-hidden group`}>
+                <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-r from-pink-500/5 to-purple-500/5' : 'bg-gradient-to-r from-pink-100/0 to-purple-100/0'} transform group-hover:scale-105 transition-all duration-700 opacity-50`}></div>
                 <div className="relative z-10">
-                  <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-pink-500/20 to-purple-500/20 ring-pink-500/20' : 'bg-gradient-to-br from-pink-500/10 to-purple-500/10 ring-pink-500/10'} p-4 rounded-full inline-flex mb-6 ring-2`}>
+                  <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-pink-500/20 to-purple-500/20 ring-pink-500/20' : 'bg-gradient-to-br from-pink-100 to-purple-100 ring-pink-300'} p-4 rounded-full inline-flex mb-6 ring-2`}>
                     <Palette className="h-8 w-8 text-pink-500" />
                   </div>
                   <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Stunning Visuals</h3>
@@ -662,10 +672,10 @@ const Homepage = () => {
                 </div>
               </div>
               
-              <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl relative overflow-hidden group`}>
-                <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-r from-indigo-500/5 to-blue-500/5' : 'bg-gradient-to-r from-indigo-500/0 to-blue-500/0'} transform group-hover:scale-105 transition-all duration-700 opacity-50`}></div>
+              <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border-white/10 backdrop-blur-sm' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl relative overflow-hidden group`}>
+                <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-gradient-to-r from-indigo-500/5 to-blue-500/5' : 'bg-gradient-to-r from-indigo-100/0 to-blue-100/0'} transform group-hover:scale-105 transition-all duration-700 opacity-50`}></div>
                 <div className="relative z-10">
-                  <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-indigo-500/20 to-blue-500/20 ring-indigo-500/20' : 'bg-gradient-to-br from-indigo-500/10 to-blue-500/10 ring-indigo-500/10'} p-4 rounded-full inline-flex mb-6 ring-2`}>
+                  <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-indigo-500/20 to-blue-500/20 ring-indigo-500/20' : 'bg-gradient-to-br from-indigo-100 to-blue-100 ring-indigo-300'} p-4 rounded-full inline-flex mb-6 ring-2`}>
                     <Sparkles className="h-8 w-8 text-blue-500" />
                   </div>
                   <h3 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-4`}>Interactive Elements</h3>
@@ -693,7 +703,7 @@ const Homepage = () => {
           
           {/* "But, what are you building?" Section */}
           <div className="w-full max-w-5xl mx-auto py-24 px-4">
-            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 border-white/10' : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-slate-200'} rounded-2xl p-12 text-center border shadow-xl`}>
+            <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 border-white/10 backdrop-blur-sm' : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-slate-200'} rounded-2xl p-12 text-center border shadow-xl`}>
               <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${theme === 'dark' ? 'bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent' : 'text-slate-900'}`}>
                 But, what are you building?
               </h2>
@@ -701,12 +711,12 @@ const Homepage = () => {
                 It's time to transform your ideas into reality. Let's create something amazing together.
               </p>
               <Button 
-                size="lg" 
+                size="xl" 
                 onClick={scrollToTop} 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-6 rounded-lg font-bold text-lg group"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-7 rounded-xl font-bold text-lg group shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:-translate-y-1"
               >
                 Start Building
-                <ArrowUp className="ml-2 h-5 w-5 group-hover:-translate-y-1 transition-transform duration-300" />
+                <ArrowUp className="ml-3 h-6 w-6 group-hover:-translate-y-1 transition-transform duration-300" />
               </Button>
             </div>
           </div>
