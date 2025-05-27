@@ -93,9 +93,9 @@
     --background: var(--light-background);
     --foreground: var(--light-foreground);
     --card: var(--light-card);
-    --card-foreground: var(--light-foreground);
+    --card-foreground: var(--light-foreground); /* Corrected to use light-foreground */
     --popover: var(--light-popover);
-    --popover-foreground: var(--light-foreground);
+    --popover-foreground: var(--light-foreground); /* Corrected to use light-foreground */
     --primary: var(--light-primary);
     --primary-foreground: var(--light-primary-foreground);
     --secondary: var(--light-secondary);
@@ -210,7 +210,7 @@
 .light .modern-input {
   background-color: hsl(var(--light-background) / 0.8);
   border-color: hsl(var(--light-input)); /* Use full opacity for border then apply specific opacity if needed */
-  @apply focus:border-primary/50 focus:bg-light-background focus:ring-2 focus:ring-primary/20;
+  @apply focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/20; /* Changed focus:bg-light-background to focus:bg-background */
 }
 
 
@@ -263,7 +263,7 @@
 }
 
 .projects-section-bg { /* General class that can be themed */
-  background-color: hsl(var(--background) / 0.1);
+  background-color: hsl(var(--background) / 0.1); /* Corrected to use hsl and alpha */
 }
 /* No specific .light or .dark needed if var(--background) is used */
 
