@@ -85,7 +85,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
             </div>
             <div className="p-4 bg-white/5 rounded-md">
               <Users className="h-5 w-5 text-purple-400 mb-2" />
-              <h3 className="text-gray-400 text-sm">Total Storage Used</h3>
+              <h3 className="text-gray-400 text-sm">Total Storage Used (Avaible Soon)</h3>
               <p className="text-white text-xl font-semibold">{totalStorageUsed}</p>
             </div>
           </div>
