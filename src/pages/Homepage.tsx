@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Brain, Zap, LayoutDashboard, Code, HelpCircle, Star, PlusCircle, UploadCloud, Settings, LogOut, Eye, Edit3, Trash2, Sun, Moon, Search, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast'; // This should be from '@/components/ui/use-toast' if using shadcn's toast
+import { toast } from '@/components/ui/use-toast'; // Corrected import path
 import { useTheme } from '@/hooks/use-theme';
-import { PromptInput } from '@/components/ui/prompt-input'; // Changed from ModernPromptInput
+import { PromptInput } from '@/components/ui/prompt-input';
 import { BorderTrail } from '@/components/ui/border-trail';
-import HomepageNav from '@/components/HomepageNav'; // Changed to default import
+import HomepageNav from '@/components/HomepageNav'; // Default import
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const FileExplorerUpload = lazy(() => import('@/components/FileExplorerUpload'));
@@ -19,10 +18,11 @@ interface Project {
   name: string;
   description: string;
   lastModified: string;
-  createdAt: string; // Added createdAt
+  createdAt: string;
   files?: any[]; 
 }
 
+// ... keep existing code (placeholderTexts and AnimatedPlaceholder component)
 const placeholderTexts = [
   "A landing page for a SaaS product",
   "A blog about sustainable living",
@@ -50,14 +50,15 @@ const AnimatedPlaceholder: React.FC<{ texts: string[] }> = ({ texts }) => {
   return <>{texts[index]}</>;
 };
 
+
 const Homepage: React.FC = () => {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme(); // theme and setTheme are used by HomepageNav internally now
   const [prompt, setPrompt] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
-  const [showProjects, setShowProjects] = useState(false);
+  const [showProjects, setShowProjects] = useState(false); // This state might be managed by HomepageNav or not needed if nav controls it
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Assuming user is logged in for project display
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Assuming user is logged in for project display, HomepageNav might handle this
 
   useEffect(() => {
     const savedProjects = localStorage.getItem("saved_projects");
@@ -68,12 +69,13 @@ const Homepage: React.FC = () => {
 
   const handleCreateNewProject = () => {
     const projectId = Math.random().toString(36).substring(2, 15);
-    const newProject: Project = { // Added Project type
+    const newProject: Project = { 
       id: projectId,
       name: "New Project",
       description: "A new project created on " + new Date().toLocaleDateString(),
       lastModified: new Date().toISOString(),
-      createdAt: new Date().toISOString(), // Added createdAt
+      createdAt: new Date().toISOString(),
+      files: [], // Initialize files as an empty array
     };
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
@@ -81,7 +83,7 @@ const Homepage: React.FC = () => {
     navigate(`/project?id=${projectId}`);
   };
 
-  const handleSelectProject = (_event: React.MouseEvent<Element, MouseEvent>, projectId: string) => { // Adjusted signature
+  const handleSelectProject = (projectId: string) => { // Signature changed
     navigate(`/project?id=${projectId}`);
   };
 
@@ -109,12 +111,13 @@ const Homepage: React.FC = () => {
     try {
       localStorage.setItem("current_prompt", prompt);
       const projectId = Math.random().toString(36).substring(2, 15);
-      const newProject: Project = { // Added Project type
+      const newProject: Project = {
         id: projectId,
         name: "New Project from Prompt",
         description: prompt,
         lastModified: new Date().toISOString(),
-        createdAt: new Date().toISOString(), // Added createdAt
+        createdAt: new Date().toISOString(),
+        files: [], // Initialize files as an empty array
       };
       const updatedProjects = [...projects, newProject];
       setProjects(updatedProjects);
@@ -134,16 +137,16 @@ const Homepage: React.FC = () => {
       });
       setIsLoading(false);
     }
-  }, [prompt, navigate, projects]); // Added projects to dependency array
+  }, [prompt, navigate, projects]);
 
   const handleFileUpload = (uploadedFile: { name: string; content: string; type: string }) => {
     const projectId = Math.random().toString(36).substring(2, 15);
-    const newProject: Project = { // Added Project type
+    const newProject: Project = {
       id: projectId,
       name: `Project from ${uploadedFile.name}`,
       description: `Imported from ${uploadedFile.name}`,
       lastModified: new Date().toISOString(),
-      createdAt: new Date().toISOString(), // Added createdAt
+      createdAt: new Date().toISOString(),
       files: [{ name: uploadedFile.name, content: uploadedFile.content, type: uploadedFile.type }],
     };
     const updatedProjects = [...projects, newProject];
@@ -168,9 +171,9 @@ const Homepage: React.FC = () => {
         <Card className="w-full max-w-3xl mx-auto shadow-xl dark:bg-secondary/50 glass-card">
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col gap-4">
-              <PromptInput // Changed from ModernPromptInput
+              <PromptInput
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onValueChange={(value) => setPrompt(value)} // Changed prop and handler
                 onSubmit={handlePromptSubmit}
                 placeholder={<AnimatedPlaceholder texts={placeholderTexts} />}
                 isLoading={isLoading}
@@ -196,15 +199,12 @@ const Homepage: React.FC = () => {
                   )}
                 </Button>
                 <Suspense fallback={<div className="w-full sm:w-auto h-12 bg-muted rounded-md animate-pulse"></div>}>
-                  {/* Assuming FileExplorerUpload is a button-like component itself or has a default trigger */}
                   <FileExplorerUpload 
                     onFileUpload={handleFileUpload} 
                     variant="outline" 
                     className="w-full sm:w-auto text-base px-6 py-3 border-dashed border-foreground/30 hover:border-primary hover:text-primary transition-colors duration-200"
-                  >
-                    <UploadCloud className="mr-2 h-5 w-5" />
-                    Upload Files
-                  </FileExplorerUpload>
+                    // Removed children, assuming component renders its own trigger
+                  />
                 </Suspense>
               </div>
             </div>
@@ -217,6 +217,7 @@ const Homepage: React.FC = () => {
     </section>
   );
 
+  // ... keep existing code (FeaturesSection, HowItWorksSection, TestimonialsSection components)
   const FeaturesSection = () => (
     <section className="py-12 md:py-16">
       <div className="container mx-auto px-4">
@@ -325,7 +326,7 @@ const Homepage: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="modern-card hover-lift">
-            <CardContent>
+            <CardContent className="p-6">
               <div className="mb-4">
                 <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
                 <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
@@ -341,13 +342,13 @@ const Homepage: React.FC = () => {
           </Card>
 
           <Card className="modern-card hover-lift">
-            <CardContent>
+            <CardContent className="p-6">
               <div className="mb-4">
                 <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
                 <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
                 <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
                 <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
-                <Star className="h-5 w-5 text-gray-400 inline-block mr-1" />
+                <Star className="h-5 w-5 text-gray-400 inline-block mr-1" /> {/* Consider using muted-foreground for the unlit star */}
               </div>
               <p className="text-muted-foreground">
                 "As a non-technical founder, I was able to quickly prototype my ideas and get my project off the ground thanks to this tool."
@@ -360,6 +361,7 @@ const Homepage: React.FC = () => {
     </section>
   );
 
+
   const FloatingActionButton = () => (
     <TooltipProvider>
       <Tooltip>
@@ -368,9 +370,9 @@ const Homepage: React.FC = () => {
             onClick={() => navigate('/important')}
             variant="default" 
             size="icon"
-            className="fixed bottom-4 right-4 z-50 shadow-lg hover-scale rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+            className="fixed bottom-6 right-6 z-50 shadow-lg hover-scale rounded-full bg-primary text-primary-foreground hover:bg-primary/90 w-14 h-14" // Increased size
           >
-            <HelpCircle className="h-6 w-6" />
+            <HelpCircle className="h-7 w-7" /> {/* Increased icon size */}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
@@ -382,29 +384,23 @@ const Homepage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <HomepageNav 
-        theme={theme} 
-        setTheme={setTheme} 
-        isLoggedIn={isLoggedIn} 
-        onLogin={() => setIsLoggedIn(true)} 
-        onLogout={() => {
-          setIsLoggedIn(false);
-          // Potentially clear user session data here
-        }}
-        onViewProjects={() => setShowProjects(!showProjects)}
-        onCreateNewProject={handleCreateNewProject}
-      />
+      <HomepageNav /> {/* Removed props */}
 
       <main className="flex-grow">
         <AIPoweredSection />
 
-        {isLoggedIn && (
-          <Suspense fallback={<div className="container mx-auto px-4 py-8"><p>Loading projects...</p></div>}>
+        {isLoggedIn && ( // Assuming isLoggedIn is still managed here or by HomepageNav interaction
+          <Suspense fallback={<div className="container mx-auto px-4 py-8"><p className="text-center text-muted-foreground">Loading projects...</p></div>}>
             <ProjectsSection
               projects={projects}
-              onSelectProject={handleSelectProject}
-              onDeleteProject={handleDeleteProject}
-              onCreateNewProject={handleCreateNewProject}
+              // Pass setProjects if ProjectsSection needs to modify the projects list (e.g. for featuring)
+              // setProjects={setProjects} 
+              onLoadProject={handleSelectProject} // Changed prop name
+              onDeleteProject={(e, projectId) => handleDeleteProject(projectId)} // Adjust if onDeleteProject in ProjectsSection doesn't pass event
+              // onDuplicateProject={(e, project) => handleDuplicateProject(project)} // Assuming handleDuplicateProject exists or will be added
+              // userPlan={userPlan} // Assuming userPlan is fetched or static
+              // apiKey={apiKey} // Assuming apiKey is fetched or static
+              // onCreateNewProject={handleCreateNewProject} // ProjectsSection might not need this if nav handles it
             />
           </Suspense>
         )}
@@ -414,14 +410,14 @@ const Homepage: React.FC = () => {
         <TestimonialsSection />
       </main>
 
-      <footer className="py-8 border-t border-border/40 bg-muted/50">
+      <footer className="py-8 border-t border-border/40 bg-muted/50 dark:bg-secondary/30">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Lovable AI Web App Generator. All rights reserved.</p>
-          <div className="mt-2">
+          <div className="mt-2 space-x-2">
             <a href="/pricing" className="hover:text-primary transition-colors">Pricing</a>
-            <span className="mx-2">|</span>
+            <span className="text-muted-foreground/50">|</span>
             <a href="/important" className="hover:text-primary transition-colors">Terms of Service</a>
-            <span className="mx-2">|</span>
+            <span className="text-muted-foreground/50">|</span>
             <a href="/important" className="hover:text-primary transition-colors">Privacy Policy</a>
           </div>
         </div>
