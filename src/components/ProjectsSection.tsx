@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Home, LayoutGrid, Package, Star, Users, Activity, AlertTriangle, FileText, Eye, Trash2, Copy, Edit3, ExternalLink, Code, Search, Filter, SlidersHorizontal, PlusCircle } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Home, LayoutGrid, Package, Star, Users, Activity, AlertTriangle, FileText, Eye, Trash2, Copy, Edit3, ExternalLink, Code, Search, Filter, SlidersHorizontal, PlusCircle, Briefcase, CheckCircle } from 'lucide-react';
 import ProjectCard from './ProjectCard';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription as DialogDescriptionComponent, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ProjectFile {
   name: string;
@@ -17,8 +17,8 @@ interface ProjectFile {
 interface Project {
   id: string;
   name: string;
-  files: ProjectFile[]; // Ensure files is always an array
-  createdAt: string; // Ensure createdAt is always a string
+  files: ProjectFile[];
+  createdAt: string;
   lastModified: string;
   isFeatured?: boolean;
 }
@@ -45,13 +45,14 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   const [activeMainTab, setActiveMainTab] = useState("projects");
   const [activeProjectsSubTab, setActiveProjectsSubTab] = useState("all");
 
-  const handleToggleFeatured = (e: React.MouseEvent, project: Project) => {
-    e.stopPropagation(); // Prevent card click
-    const updatedProjects = projects.map(p => p.id === project.id ? {
-      ...p,
-      isFeatured: !p.isFeatured
-    } : p);
-    setProjects(updatedProjects); // This updates the state in Homepage
+  const handleToggleFeatured = (projectId: string) => {
+    const projectToToggle = projects.find(p => p.id === projectId);
+    if (!projectToToggle) return;
+
+    const updatedProjects = projects.map(p =>
+      p.id === projectId ? { ...p, isFeatured: !projectToToggle.isFeatured } : p
+    );
+    setProjects(updatedProjects);
     // localStorage update is handled in Homepage
   };
 
@@ -174,7 +175,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       onLoadProject={onLoadProject}
                       onDeleteProject={(e) => onDeleteProject(e, project.id)}
                       onDuplicateProject={(e) => onDuplicateProject(e, project)}
-                      onToggleFeatured={(e) => handleToggleFeatured(e, project)}
+                      onToggleFeatured={() => handleToggleFeatured(project.id)}
                       userPlan={userPlan}
                       projectCount={projects.length}
                     />
@@ -185,7 +186,6 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                     <LayoutGrid className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-foreground mb-2">No Projects Yet</h3>
                     <p className="text-muted-foreground mb-6">Start by creating a new project or exploring our templates.</p>
-                    {/* DialogTrigger for creating new project can be added here from Homepage if needed */}
                 </div>
               )}
             </TabsContent>
@@ -199,7 +199,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       onLoadProject={onLoadProject}
                       onDeleteProject={(e) => onDeleteProject(e, project.id)}
                       onDuplicateProject={(e) => onDuplicateProject(e, project)}
-                      onToggleFeatured={(e) => handleToggleFeatured(e, project)}
+                      onToggleFeatured={() => handleToggleFeatured(project.id)}
                       userPlan={userPlan}
                       projectCount={projects.length}
                     />
@@ -247,4 +247,3 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   );
 };
 export default ProjectsSection;
-

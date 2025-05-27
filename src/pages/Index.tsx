@@ -1,35 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import CodeEditor, { EditorFile } from '@/components/CodeEditor';
+import CodeEditor from '@/components/CodeEditor';
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
 import ModernPromptInput from '@/components/ModernPromptInput';
 import PreviewSettings from '@/components/PreviewSettings';
-import { useProjectFiles } from '@/hooks/use-project-files';
+import { useProjectFiles, FileType } from '@/hooks/use-project-files';
 import { toast } from '@/hooks/use-toast';
 import { CornerDownLeft, MessageSquare, Terminal, PanelLeftOpen, PanelRightOpen, Play, Save, UploadCloud, Share2, Settings2, Moon, Sun, Expand, Minimize, CodeIcon, Eye, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import ProjectConsole from '@/components/ProjectConsole'; // New import
+import ProjectConsole from '@/components/ProjectConsole';
 import GenerationStatus from '@/components/GenerationStatus';
 import { useTheme } from '@/hooks/use-theme';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClientComponentClient } from '@supabase/auth-helpers-react';
 import { Separator } from '@/components/ui/separator';
+import { v4 as uuidv4 } from 'uuid';
 
 const getSupabase = () => {
   return createClientComponentClient();
 };
 
-interface FileEntry {
-  id: string;
-  name: string;
-  content: string;
-  project_id: string;
-  type?: string; // Add type, assuming it comes from DB or can be inferred
-}
-
-const fetchFilesFromSupabase = async (projectId: string): Promise<EditorFile[]> => {
+const fetchFilesFromSupabase = async (projectId: string): Promise<FileType[]> => {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -46,8 +39,10 @@ const fetchFilesFromSupabase = async (projectId: string): Promise<EditorFile[]> 
       return data.map(file => ({
         name: file.name,
         content: file.content,
-        type: file.type || 'text', // Provide a default type if it's missing
-        path: file.name, // Assuming the name can be used as a path
+        type: file.type || 'text', 
+        path: file.name, 
+        isFolder: file.type === 'folder', 
+        children: file.type === 'folder' ? [] : undefined, 
       }));
     }
 
@@ -58,17 +53,19 @@ const fetchFilesFromSupabase = async (projectId: string): Promise<EditorFile[]> 
   }
 };
 
-const saveFileToSupabase = async (projectId: string, file: EditorFile) => {
+const saveFileToSupabase = async (projectId: string, file: FileType) => {
   try {
     const supabase = getSupabase();
+    const fileToSave = {
+      project_id: projectId,
+      name: file.path, 
+      content: file.isFolder ? '' : file.content || '', 
+      type: file.type || (file.isFolder ? 'folder' : 'text'), 
+    };
+    console.log("Attempting to save to Supabase:", fileToSave);
     const { data, error } = await supabase
       .from('project_files')
-      .upsert({
-        project_id: projectId,
-        name: file.name,
-        content: file.content,
-        type: file.type,
-      }, { onConflict: 'project_id, name' });
+      .upsert(fileToSave, { onConflict: 'project_id, name' });
 
     if (error) {
       console.error("Error saving file to Supabase:", error);
@@ -99,51 +96,114 @@ const deleteFileFromSupabase = async (projectId: string, fileName: string) => {
   }
 };
 
-
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [projectId, setProjectId] = useState<string | null>(null);
-  const {
-    files,
-    setFiles,
-    activeFile,
-    setActiveFile,
-    updateFileContent,
-    addFile,
-    deleteFile,
-    renameFile,
-    addDirectory,
-    tempFinalCodeRef,
-    isLoadingFiles,
-    hasUnsavedChanges,
-    setHasUnsavedChanges,
-    saveAllFilesToStorage,
-  } = useProjectFiles(projectId);
+
+  const [files, setFiles] = useState<FileType[]>([]);
+  const [currentFile, setCurrentFile] = useState<FileType | null>(null);
+  const [isLoadingFilesState, setIsLoadingFilesState] = useState(true);
+  const [hasUnsavedChangesState, setHasUnsavedChangesState] = useState(false);
+  const tempFinalCodeRef = useRef<string | null>(null);
+
+  const updateFileContent = (filePath: string, newCode: string) => {
+    setFiles(prevFiles =>
+      prevFiles.map(f => (f.path === filePath ? { ...f, content: newCode } : f))
+    );
+    if (currentFile?.path === filePath) {
+      setCurrentFile(prev => prev ? { ...prev, content: newCode } : null);
+    }
+    setHasUnsavedChangesState(true);
+  };
+
+  const addFile = (name: string, content: string, type: string, parentPath?: string) => {
+    const path = parentPath ? `${parentPath}/${name}` : name;
+    const newFile: FileType = { name, content, type, path, isFolder: false };
+    setFiles(prevFiles => [...prevFiles, newFile]);
+    setCurrentFile(newFile);
+    setHasUnsavedChangesState(true);
+    return newFile;
+  };
+  
+  const addDirectory = (name: string, parentPath?: string) => {
+    const path = parentPath ? `${parentPath}/${name}` : name;
+    const newDir: FileType = { name, content: '', type: 'folder', path, isFolder: true, children: [] };
+    setFiles(prevFiles => [...prevFiles, newDir]);
+    setHasUnsavedChangesState(true);
+    return newDir;
+  };
+
+  const deleteFile = (filePath: string) => {
+    setFiles(prevFiles => prevFiles.filter(f => f.path !== filePath && !f.path?.startsWith(`${filePath}/`)));
+    if (currentFile?.path === filePath) {
+      setCurrentFile(null);
+    }
+    setHasUnsavedChangesState(true);
+    if (projectId) deleteFileFromSupabase(projectId, filePath);
+  };
+  
+  const renameFile = (oldPath: string, newName: string) => {
+    setFiles(prevFiles =>
+      prevFiles.map(f => {
+        if (f.path === oldPath) {
+          const newPath = oldPath.substring(0, oldPath.lastIndexOf('/') + 1) + newName;
+          return { ...f, name: newName, path: newPath };
+        }
+        return f;
+      })
+    );
+    if (currentFile?.path === oldPath) {
+       const newPath = oldPath.substring(0, oldPath.lastIndexOf('/') + 1) + newName;
+       setCurrentFile(prev => prev ? { ...prev, name: newName, path: newPath } : null);
+    }
+    setHasUnsavedChangesState(true);
+  };
+
+  const saveAllFilesToStorage = async () => {
+    if (!projectId) return;
+    console.log("Saving all files to Supabase for project:", projectId);
+    for (const file of files) {
+      await saveFileToSupabase(projectId, file);
+    }
+    setHasUnsavedChangesState(false);
+    toast({ title: "Project Saved", description: "All changes have been saved." });
+  };
 
   const [iframeKey, setIframeKey] = useState(Date.now());
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState<'chat' | 'console'>('chat'); // New state for chat/console toggle
+  const [activeMainTab, setActiveMainTab] = useState<'chat' | 'console'>('chat');
   const { theme, setTheme } = useTheme();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const editorRef = useRef<any>(null); // For Monaco Editor instance
+  const editorRef = useRef<any>(null);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const id = queryParams.get('id');
     if (id) {
       setProjectId(id);
-      // Initial load from localStorage handled by useProjectFiles
+      setIsLoadingFilesState(true);
+      fetchFilesFromSupabase(id)
+        .then(dbFiles => {
+          setFiles(dbFiles);
+          if (dbFiles.length > 0) {
+            const initialFile = dbFiles.find(f => f.name === 'index.html' && !f.isFolder) || dbFiles.find(f => !f.isFolder);
+            setCurrentFile(initialFile || null);
+          } else {
+            setCurrentFile(null);
+          }
+        })
+        .catch(err => console.error("Failed to load files for project", id, err))
+        .finally(() => setIsLoadingFilesState(false));
     } else {
-      // If no ID, redirect or handle error
       const currentProjectId = localStorage.getItem("current_project_id");
       if (currentProjectId) {
         navigate(`/project?id=${currentProjectId}`, { replace: true });
-        setProjectId(currentProjectId);
+        // useEffect will re-run with new location.search
       } else {
         toast({ title: "Error", description: "No project ID found. Redirecting to home.", variant: "destructive" });
         navigate('/');
@@ -159,38 +219,37 @@ const Index = () => {
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
+      if (hasUnsavedChangesState) {
         event.preventDefault();
-        event.returnValue = ''; // Required for Chrome
+        event.returnValue = ''; 
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChangesState]);
 
   const handleCodeGeneration = async (prompt: string, currentCode?: string, currentFilePath?: string) => {
     setIsGenerating(true);
-    // Simulate AI response for now
     setTimeout(() => {
       const newCode = `// Generated code for: ${prompt}\n${currentCode || ''}\nconsole.log('AI generated update at ${new Date().toLocaleTimeString()}');`;
-      if (currentFilePath && files.find(f => f.name === currentFilePath)) {
+      if (currentFilePath && files.find(f => f.path === currentFilePath)) {
         updateFileContent(currentFilePath, newCode);
          toast({ title: "Code Updated", description: `${currentFilePath} updated by AI.` });
-      } else if (activeFile) {
-        updateFileContent(activeFile.name, newCode);
-        toast({ title: "Code Updated", description: `${activeFile.name} updated by AI.` });
+      } else if (currentFile) {
+        updateFileContent(currentFile.path, newCode);
+        toast({ title: "Code Updated", description: `${currentFile.name} updated by AI.` });
       } else {
          addFile("ai-generated.js", newCode, "javascript");
          toast({ title: "New File Added", description: `ai-generated.js created by AI.` });
       }
-      setIframeKey(Date.now()); // Refresh preview
+      setIframeKey(Date.now()); 
       setIsGenerating(false);
     }, 2000);
   };
   
   const handleRefreshPreview = () => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
-      saveAllFilesToStorage(); // Ensure latest changes are saved before reload
+      saveAllFilesToStorage(); 
       iframeRef.current.contentWindow.location.reload();
       toast({ title: "Preview Reloaded", description: "The preview has been refreshed." });
     }
@@ -200,27 +259,23 @@ const Index = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
   
-  const handleClearProjectFiles = () => { // Placeholder for boongle --clearproject
-    // This would typically involve clearing files array and localStorage for this project
-    // For now, it's just a placeholder.
-    const defaultFiles: EditorFile[] = [
-        { name: "index.html", content: "<!DOCTYPE html><html><body><h1>Project Cleared</h1></body></html>", type: "html", path: "index.html" },
+  const handleClearProjectFiles = () => { 
+    const defaultFiles: FileType[] = [
+        { name: "index.html", content: "<!DOCTYPE html><html><body><h1>Project Cleared</h1></body></html>", type: "html", path: "index.html", isFolder: false },
     ];
-    setFiles(defaultFiles); // Resets files in useProjectFiles
-    localStorage.setItem(`project_files_${projectId}`, JSON.stringify(defaultFiles)); // Directly update storage
-    setActiveFile(defaultFiles[0]);
+    setFiles(defaultFiles); 
+    if (projectId) localStorage.setItem(`project_files_${projectId}`, JSON.stringify(defaultFiles)); 
+    setCurrentFile(defaultFiles[0]);
     setIframeKey(Date.now());
     toast({ title: "Project Files Cleared (Simulation)", description: "The project has been reset to a blank state." });
   };
 
-
-  if (isLoadingFiles && !projectId) { // Show loading only if projectId is not yet set
+  if (isLoadingFilesState && !projectId) { 
     return <div className="flex items-center justify-center h-screen bg-background text-foreground"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mr-2"></div>Loading project...</div>;
   }
-  if (!projectId) { // If still no projectId after initial checks, this is an issue.
+  if (!projectId) { 
      return <div className="flex items-center justify-center h-screen bg-background text-foreground">Error: Project ID is missing. Cannot load editor.</div>;
   }
-
 
   const editorPane = (
     <ResizablePanel defaultSize={35} minSize={20} collapsible collapsedSize={4} onCollapse={() => setSidebarCollapsed(true)} onExpand={() => setSidebarCollapsed(false)} className="h-full flex flex-col">
@@ -228,10 +283,10 @@ const Index = () => {
         <>
           <FileExplorerEnhanced
             files={files}
-            activeFile={activeFile}
-            onSelectFile={(file) => setActiveFile(file)}
-            onAddFile={(name, type) => addFile(name, `// New ${type} file: ${name}`, type)}
-            onAddDirectory={(name) => addDirectory(name)}
+            activeFile={currentFile}
+            onSelectFile={(file) => setCurrentFile(file)}
+            onAddFile={(name, type, parentPath) => addFile(name, `// New ${type} file: ${name}`, type, parentPath)}
+            onAddDirectory={(name, parentPath) => addDirectory(name, parentPath)}
             onDelete={deleteFile}
             onRename={renameFile}
           />
@@ -249,26 +304,26 @@ const Index = () => {
                 <TooltipContent><p>{sidebarCollapsed ? "Expand File Explorer" : "Collapse File Explorer"}</p></TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <span className="text-xs font-medium text-muted-foreground truncate max-w-[150px]">{activeFile?.name || "No file selected"}</span>
-           <Button variant="ghost" size="icon" onClick={saveAllFilesToStorage} disabled={!hasUnsavedChanges} className={hasUnsavedChanges ? "text-primary" : ""}>
+          <span className="text-xs font-medium text-muted-foreground truncate max-w-[150px]">{currentFile?.name || "No file selected"}</span>
+           <Button variant="ghost" size="icon" onClick={saveAllFilesToStorage} disabled={!hasUnsavedChangesState} className={hasUnsavedChangesState ? "text-primary" : ""}>
               <Save className="h-4 w-4" />
-              {hasUnsavedChanges && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
+              {hasUnsavedChangesState && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
             </Button>
       </div>
       <div className="flex-grow overflow-auto relative">
-        {activeFile ? (
+        {currentFile && !currentFile.isFolder ? (
           <CodeEditor
-            key={activeFile.path} // Ensure re-render on file change
-            initialValue={activeFile.content}
-            filePath={activeFile.path}
-            onCodeChange={(newCode) => updateFileContent(activeFile.path, newCode)}
-            editorRef={editorRef} // Pass ref to CodeEditor
+            key={currentFile.path}
+            initialValue={currentFile.content}
+            filePath={currentFile.path}
+            onCodeChange={(newCode) => updateFileContent(currentFile.path, newCode)}
+            editorRef={editorRef}
             theme={theme}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
             <CodeIcon className="w-16 h-16 mb-4" />
-            <p>Select a file to start editing or create a new one.</p>
+            <p>{currentFile && currentFile.isFolder ? `${currentFile.name} is a folder.` : 'Select a file to start editing or create a new one.'}</p>
           </div>
         )}
       </div>
@@ -292,18 +347,17 @@ const Index = () => {
 
       {activeMainTab === 'chat' ? (
         <div className="flex-grow flex flex-col p-3 overflow-y-auto relative">
-          {/* Chat history would go here if implemented */}
           <div className="flex-grow"></div> 
           <GenerationStatus isGenerating={isGenerating} />
           <ModernPromptInput
             onGenerate={handleCodeGeneration}
             isGenerating={isGenerating}
-            currentCode={activeFile?.content}
-            currentFilePath={activeFile?.path}
+            currentCode={currentFile?.content}
+            currentFilePath={currentFile?.path}
           />
         </div>
       ) : (
-        <div className="flex-grow overflow-hidden h-full"> {/* Ensure ProjectConsole takes full height of this area */}
+        <div className="flex-grow overflow-hidden h-full">
           <ProjectConsole 
             projectId={projectId} 
             isAiThinking={isGenerating} 
