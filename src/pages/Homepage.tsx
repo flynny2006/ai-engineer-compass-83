@@ -1,59 +1,50 @@
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Brain, Zap, LayoutDashboard, Code, HelpCircle, Star, PlusCircle, UploadCloud, Settings, LogOut, Eye, Edit3, Trash2, Sun, Moon, Search } from 'lucide-react';
+import { ArrowRight, Brain, Zap, LayoutDashboard, Code, HelpCircle, Star, PlusCircle, UploadCloud, Settings, LogOut, Eye, Edit3, Trash2, Sun, Moon, Search, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // This should be from '@/components/ui/use-toast' if using shadcn's toast
 import { useTheme } from '@/hooks/use-theme';
-import { ModernPromptInput } from '@/components/ui/prompt-input'; // Assuming this is the correct path
-import { BorderTrail } from '@/components/ui/border-trail'; // Assuming this is the correct path
-import { HomepageNav } from '@/components/HomepageNav'; // Assuming this is the correct path
+import { PromptInput } from '@/components/ui/prompt-input'; // Changed from ModernPromptInput
+import { BorderTrail } from '@/components/ui/border-trail';
+import HomepageNav from '@/components/HomepageNav'; // Changed to default import
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const FileExplorerUpload = lazy(() => import('@/components/FileExplorerUpload'));
-const ProjectsSection = lazy(() => import('@/components/ProjectsSection')); // Assuming this is the correct path
+const ProjectsSection = lazy(() => import('@/components/ProjectsSection'));
 
 interface Project {
   id: string;
   name: string;
   description: string;
   lastModified: string;
-  files?: any[]; // Define a proper type if possible
+  createdAt: string; // Added createdAt
+  files?: any[]; 
 }
 
 const placeholderTexts = [
-  "Develop a sleek To-Do list application...",
-  "Create a modern weather dashboard with API integration...",
-  "Build an interactive portfolio website for a photographer...",
-  "Design a recipe sharing platform with user accounts...",
-  "Generate a landing page for a new SaaS product...",
-  "Craft a blog template with markdown support...",
-  "Develop a simple e-commerce storefront for handmade goods...",
-  "Create a personal finance tracker with charts...",
-  "Build a real-time chat application interface...",
-  "Design a booking system for a small hotel...",
-  "Generate a set of UI components for a design system...",
-  "Create a workout logger app with progress tracking...",
-  "Build a note-taking app with rich text editing...",
-  "Design an event management platform front-end...",
-  "Generate a survey form builder UI...",
-  "Craft a documentation site template...",
-  "Develop a simple CRM interface for small businesses...",
-  "Create a dashboard for IoT device monitoring...",
-  "Build a UI for a music streaming service...",
-  "Design a community forum interface..."
+  "A landing page for a SaaS product",
+  "A blog about sustainable living",
+  "An e-commerce site for handmade jewelry",
+  "A portfolio for a freelance photographer",
+  "A web app for tracking daily habits",
+  "A simple todo list application",
+  "A personal website with a blog",
+  "A recipe website with user accounts",
+  "A small business website with contact form",
+  "A landing page for a mobile app",
 ];
 
-const AnimatedPlaceholder = ({ texts }: { texts: string[] }) => {
+const AnimatedPlaceholder: React.FC<{ texts: string[] }> = ({ texts }) => {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
       setIndex((prevIndex) => (prevIndex + 1) % texts.length);
-    }, 3000); // Change every 3 seconds
+    }, 2000);
 
-    return () => clearInterval(intervalId); // Clear interval on unmount
+    return () => clearInterval(intervalId);
   }, [texts.length]);
 
   return <>{texts[index]}</>;
@@ -66,10 +57,9 @@ const Homepage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showProjects, setShowProjects] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Replace with actual auth logic
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Assuming user is logged in for project display
 
   useEffect(() => {
-    // Load projects from localStorage on component mount
     const savedProjects = localStorage.getItem("saved_projects");
     if (savedProjects) {
       setProjects(JSON.parse(savedProjects));
@@ -77,43 +67,28 @@ const Homepage: React.FC = () => {
   }, []);
 
   const handleCreateNewProject = () => {
-    // Generate a unique ID for the new project
     const projectId = Math.random().toString(36).substring(2, 15);
-  
-    // Create a new project object with a default name and description
-    const newProject = {
+    const newProject: Project = { // Added Project type
       id: projectId,
       name: "New Project",
       description: "A new project created on " + new Date().toLocaleDateString(),
       lastModified: new Date().toISOString(),
+      createdAt: new Date().toISOString(), // Added createdAt
     };
-  
-    // Update the projects state with the new project
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-  
-    // Save the updated projects to localStorage
     localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-  
-    // Navigate to the project editor with the new project's ID
     navigate(`/project?id=${projectId}`);
   };
 
-  const handleSelectProject = (projectId: string) => {
-    // Navigate to the project editor with the selected project's ID
+  const handleSelectProject = (_event: React.MouseEvent<Element, MouseEvent>, projectId: string) => { // Adjusted signature
     navigate(`/project?id=${projectId}`);
   };
 
   const handleDeleteProject = (projectId: string) => {
-    // Filter out the project to be deleted
     const updatedProjects = projects.filter((project) => project.id !== projectId);
-  
-    // Update the projects state
     setProjects(updatedProjects);
-  
-    // Save the updated projects to localStorage
     localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-  
     toast({
       title: "Project deleted",
       description: "The project was successfully deleted."
@@ -125,35 +100,27 @@ const Homepage: React.FC = () => {
       toast({
         title: "Error",
         description: "Please enter a prompt.",
+        variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
     try {
-      // Store the prompt in localStorage
       localStorage.setItem("current_prompt", prompt);
-
-      // Generate a unique ID for the new project
       const projectId = Math.random().toString(36).substring(2, 15);
-
-      // Create a new project object with a default name and description
-      const newProject = {
+      const newProject: Project = { // Added Project type
         id: projectId,
-        name: "New Project",
+        name: "New Project from Prompt",
         description: prompt,
         lastModified: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Added createdAt
       };
-
-      // Update the projects state with the new project
       const updatedProjects = [...projects, newProject];
       setProjects(updatedProjects);
-
-      // Save the updated projects to localStorage
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
       localStorage.setItem("current_project_id", projectId);
 
-      // Simulate a successful response
       setTimeout(() => {
         setIsLoading(false);
         navigate(`/project?id=${projectId}`);
@@ -163,33 +130,26 @@ const Homepage: React.FC = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to generate project.",
+        variant: "destructive",
       });
       setIsLoading(false);
     }
-  }, [prompt, navigate]);
+  }, [prompt, navigate, projects]); // Added projects to dependency array
 
   const handleFileUpload = (uploadedFile: { name: string; content: string; type: string }) => {
-    // Generate a unique ID for the new project
     const projectId = Math.random().toString(36).substring(2, 15);
-  
-    // Create a new project object with the uploaded file
-    const newProject = {
+    const newProject: Project = { // Added Project type
       id: projectId,
-      name: "New Project",
+      name: `Project from ${uploadedFile.name}`,
       description: `Imported from ${uploadedFile.name}`,
       lastModified: new Date().toISOString(),
-      files: [uploadedFile], // Store the uploaded file in the project
+      createdAt: new Date().toISOString(), // Added createdAt
+      files: [{ name: uploadedFile.name, content: uploadedFile.content, type: uploadedFile.type }],
     };
-  
-    // Update the projects state with the new project
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-  
-    // Save the updated projects to localStorage
     localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
     localStorage.setItem("current_project_id", projectId);
-  
-    // Navigate to the project editor with the new project's ID
     navigate(`/project?id=${projectId}`);
   };
   
@@ -208,7 +168,7 @@ const Homepage: React.FC = () => {
         <Card className="w-full max-w-3xl mx-auto shadow-xl dark:bg-secondary/50 glass-card">
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col gap-4">
-              <ModernPromptInput
+              <PromptInput // Changed from ModernPromptInput
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onSubmit={handlePromptSubmit}
@@ -236,11 +196,14 @@ const Homepage: React.FC = () => {
                   )}
                 </Button>
                 <Suspense fallback={<div className="w-full sm:w-auto h-12 bg-muted rounded-md animate-pulse"></div>}>
-                  <FileExplorerUpload onFileUpload={handleFileUpload}>
-                    <Button variant="outline" className="w-full sm:w-auto text-base px-6 py-3 border-dashed border-foreground/30 hover:border-primary hover:text-primary transition-colors duration-200">
-                      <UploadCloud className="mr-2 h-5 w-5" />
-                      Upload Files
-                    </Button>
+                  {/* Assuming FileExplorerUpload is a button-like component itself or has a default trigger */}
+                  <FileExplorerUpload 
+                    onFileUpload={handleFileUpload} 
+                    variant="outline" 
+                    className="w-full sm:w-auto text-base px-6 py-3 border-dashed border-foreground/30 hover:border-primary hover:text-primary transition-colors duration-200"
+                  >
+                    <UploadCloud className="mr-2 h-5 w-5" />
+                    Upload Files
                   </FileExplorerUpload>
                 </Suspense>
               </div>
@@ -257,73 +220,49 @@ const Homepage: React.FC = () => {
   const FeaturesSection = () => (
     <section className="py-12 md:py-16">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight text-foreground">
             Key Features
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Explore the powerful features that make our AI Web App Generator the perfect tool for your next project.
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Explore the powerful features that make our AI Web App Generator stand out.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="hover-lift">
+          <Card className="modern-card hover-lift">
             <CardHeader>
-              <Code className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle className="text-xl font-semibold">AI-Powered Code Generation</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+                Intuitive Interface
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground">
-              Describe your web app idea, and our AI will generate clean, efficient, and customizable code.
+              Our user-friendly interface makes it easy to describe your project and generate code.
             </CardContent>
           </Card>
 
-          <Card className="hover-lift">
+          <Card className="modern-card hover-lift">
             <CardHeader>
-              <Eye className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle className="text-xl font-semibold">Real-Time Preview</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                <Code className="h-5 w-5 text-primary" />
+                AI-Powered Code Generation
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground">
-              Instantly preview your web app as the AI generates the code, allowing you to visualize your project in real-time.
+              Leverage the power of AI to generate clean, efficient, and customizable code for your web apps.
             </CardContent>
           </Card>
 
-          <Card className="hover-lift">
+          <Card className="modern-card hover-lift">
             <CardHeader>
-              <Edit3 className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle className="text-xl font-semibold">Customizable Code Editor</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                <HelpCircle className="h-5 w-5 text-primary" />
+                Help and Documentation
+              </CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground">
-              Fine-tune the generated code with our built-in code editor, making it easy to customize and optimize your web app.
-            </CardContent>
-          </Card>
-
-          <Card className="hover-lift">
-            <CardHeader>
-              <UploadCloud className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle className="text-xl font-semibold">File Upload Support</CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground">
-              Upload your existing HTML, CSS, and JavaScript files to kickstart your project and enhance the AI-generated code.
-            </CardContent>
-          </Card>
-
-          <Card className="hover-lift">
-            <CardHeader>
-              <Settings className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle className="text-xl font-semibold">Theme Customization</CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground">
-              Customize the look and feel of your web app with a variety of themes and styling options.
-            </CardContent>
-          </Card>
-
-          <Card className="hover-lift">
-            <CardHeader>
-              <HelpCircle className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle className="text-xl font-semibold">Helpful Documentation</CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground">
-              Access comprehensive documentation and tutorials to guide you through every step of the web app generation process.
+              Access comprehensive documentation and helpful resources to guide you through the process.
             </CardContent>
           </Card>
         </div>
@@ -332,177 +271,93 @@ const Homepage: React.FC = () => {
   );
 
   const HowItWorksSection = () => (
-    <section className="py-12 md:py-16 bg-muted">
+    <section className="py-12 md:py-16 bg-muted/50 dark:bg-secondary/30">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight text-foreground">
             How It Works
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Unleash the power of AI to create stunning web applications in just a few simple steps.
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Learn how to quickly generate web applications using our AI-powered tool.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-              <Brain className="h-10 w-10" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <Brain className="h-8 w-8" />
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">Describe Your Idea</h3>
-            <p className="text-muted-foreground">
-              Enter a detailed prompt describing the web application you want to create.
-            </p>
+            <h3 className="text-xl font-semibold text-foreground">Describe Your Idea</h3>
+            <p className="text-muted-foreground">Enter a detailed prompt describing your desired web application.</p>
           </div>
 
           <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-              <Code className="h-10 w-10" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <Code className="h-8 w-8" />
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">AI Generates Code</h3>
-            <p className="text-muted-foreground">
-              Our AI algorithms will generate the code based on your prompt, creating a functional web app.
-            </p>
+            <h3 className="text-xl font-semibold text-foreground">Generate Code</h3>
+            <p className="text-muted-foreground">Our AI will generate the necessary code based on your prompt.</p>
           </div>
 
           <div className="text-center">
-            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-              <Eye className="h-10 w-10" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <Eye className="h-8 w-8" />
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">Preview and Customize</h3>
-            <p className="text-muted-foreground">
-              Preview your web app in real-time and customize the code to meet your specific needs.
-            </p>
+            <h3 className="text-xl font-semibold text-foreground">Preview and Customize</h3>
+            <p className="text-muted-foreground">Preview the generated app, customize the code, and deploy your project.</p>
           </div>
         </div>
       </div>
     </section>
   );
-  
+
   const TestimonialsSection = () => (
     <section className="py-12 md:py-16">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight text-foreground">
             What Our Users Say
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Read what our users have to say about their experience with our AI Web App Generator.
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Read what our users are saying about their experience with the AI Web App Generator.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="glass-card">
-            <CardContent className="p-6">
-              <div className="flex items-center mb-4">
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="modern-card hover-lift">
+            <CardContent>
+              <div className="mb-4">
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
               </div>
-              <p className="text-muted-foreground mb-4">
-                "I was amazed at how quickly and easily I could generate a fully functional web app with this tool. It's a game-changer!"
+              <p className="text-muted-foreground">
+                "The AI Web App Generator has revolutionized my workflow. I can now create web apps in a fraction of the time!"
               </p>
-              <p className="font-medium text-foreground">- Sarah M.</p>
+              <p className="mt-2 font-medium text-foreground">- John Doe, Web Developer</p>
             </CardContent>
           </Card>
 
-          <Card className="glass-card">
-            <CardContent className="p-6">
-              <div className="flex items-center mb-4">
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
-                <Star className="h-5 w-5 text-yellow-500 mr-1" />
+          <Card className="modern-card hover-lift">
+            <CardContent>
+              <div className="mb-4">
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-yellow-500 inline-block mr-1" />
+                <Star className="h-5 w-5 text-gray-400 inline-block mr-1" />
               </div>
-              <p className="text-muted-foreground mb-4">
-                "The AI-powered code generation is incredibly accurate, and the real-time preview feature is a huge time-saver. Highly recommended!"
+              <p className="text-muted-foreground">
+                "As a non-technical founder, I was able to quickly prototype my ideas and get my project off the ground thanks to this tool."
               </p>
-              <p className="font-medium text-foreground">- John K.</p>
+              <p className="mt-2 font-medium text-foreground">- Jane Smith, Entrepreneur</p>
             </CardContent>
           </Card>
         </div>
       </div>
     </section>
-  );
-
-  const FAQSection = () => (
-    <section className="py-12 md:py-16 bg-muted">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Find answers to common questions about our AI Web App Generator.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">
-              How accurate is the AI code generation?
-            </h3>
-            <p className="text-muted-foreground">
-              Our AI algorithms are trained on a vast dataset of web development code, resulting in highly accurate code generation.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">
-              Can I customize the generated code?
-            </h3>
-            <p className="text-muted-foreground">
-              Yes, our built-in code editor allows you to fine-tune the generated code to meet your specific needs.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">
-              What file types are supported for upload?
-            </h3>
-            <p className="text-muted-foreground">
-              We support HTML, CSS, and JavaScript files for upload, allowing you to enhance the AI-generated code.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-foreground">
-              Is there any documentation available?
-            </h3>
-            <p className="text-muted-foreground">
-              Yes, we provide comprehensive documentation and tutorials to guide you through every step of the process.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-
-  const CTABanner = () => (
-    <section className="py-12 md:py-16">
-      <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">
-          Ready to Get Started?
-        </h2>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-          Unleash the power of AI to create stunning web applications in just a few simple steps.
-        </p>
-        <Button onClick={handleCreateNewProject} className="btn-primary text-lg px-8 py-3">
-          Create Your First Project
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
-    </section>
-  );
-
-  const Footer = () => (
-    <footer className="py-6 md:py-8 border-t border-border">
-      <div className="container mx-auto px-4 text-center text-muted-foreground">
-        &copy; {new Date().getFullYear()} AI Web App Generator. All rights reserved.
-      </div>
-    </footer>
   );
 
   const FloatingActionButton = () => (
@@ -511,11 +366,11 @@ const Homepage: React.FC = () => {
         <TooltipTrigger asChild>
           <Button
             onClick={() => navigate('/important')}
-            variant="default"
+            variant="default" 
             size="icon"
-            className="fixed bottom-4 right-4 z-50 shadow-lg hover-scale rounded-full"
+            className="fixed bottom-4 right-4 z-50 shadow-lg hover-scale rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <HelpCircle className="h-4 w-4" />
+            <HelpCircle className="h-6 w-6" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>
@@ -526,67 +381,53 @@ const Homepage: React.FC = () => {
   );
 
   return (
-    <TooltipProvider>
-      <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${theme === 'light' ? 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 text-neutral-800' : 'bg-gradient-to-br from-slate-900 via-black to-slate-950 text-neutral-200'}`}>
-        <HomepageNav 
-          isLoggedIn={isLoggedIn} 
-          onLogin={() => setIsLoggedIn(true) /* Replace with actual login */} 
-          onLogout={() => setIsLoggedIn(false) /* Replace with actual logout */}
-          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          currentTheme={theme}
-        />
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <HomepageNav 
+        theme={theme} 
+        setTheme={setTheme} 
+        isLoggedIn={isLoggedIn} 
+        onLogin={() => setIsLoggedIn(true)} 
+        onLogout={() => {
+          setIsLoggedIn(false);
+          // Potentially clear user session data here
+        }}
+        onViewProjects={() => setShowProjects(!showProjects)}
+        onCreateNewProject={handleCreateNewProject}
+      />
 
-        <main className="flex-grow">
-          <AIPoweredSection />
-          
-          {isLoggedIn && (
-            <section id="projects" className={`py-12 md:py-16 ${theme === 'light' ? 'bg-amber-50' : 'bg-slate-900'}`}>
-              <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className={`text-3xl font-bold ${theme === 'light' ? 'text-neutral-800' : 'text-white'}`}>Your Projects</h2>
-                  <Button onClick={handleCreateNewProject} variant="outline" className={`${theme === 'light' ? 'text-neutral-700 border-neutral-400 hover:bg-amber-100 hover:border-amber-500' : 'text-neutral-300 border-neutral-700 hover:bg-slate-700 hover:border-slate-500'}`}>
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    New Project
-                  </Button>
-                </div>
-                <Suspense fallback={<div className={`p-8 rounded-lg text-center ${theme === 'light' ? 'bg-white text-neutral-600' : 'bg-slate-800 text-neutral-400'}`}>Loading projects...</div>}>
-                  <ProjectsSection 
-                    projects={projects} 
-                    onSelectProject={handleSelectProject}
-                    onDeleteProject={handleDeleteProject}
-                    onCreateNewProject={handleCreateNewProject}
-                  />
-                </Suspense>
-                {projects.length === 0 && !isLoading && (
-                  <Card className={`${theme === 'light' ? 'bg-white shadow-amber-100' : 'bg-slate-800 shadow-slate-950/50'} mt-6 text-center glass-card`}>
-                    <CardContent className="p-8">
-                      <LayoutDashboard className={`mx-auto h-12 w-12 mb-4 ${theme === 'light' ? 'text-amber-500' : 'text-primary'}`} />
-                      <h3 className={`text-xl font-semibold mb-2 ${theme === 'light' ? 'text-neutral-700' : 'text-white'}`}>No Projects Yet</h3>
-                      <p className={`${theme === 'light' ? 'text-neutral-600' : 'text-muted-foreground'} mb-4`}>
-                        Start by generating a new project or upload your existing files.
-                      </p>
-                      <Button onClick={handleCreateNewProject} className="btn-primary">
-                        <PlusCircle className="mr-2 h-5 w-5" />
-                        Create Your First Project
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </section>
-          )}
+      <main className="flex-grow">
+        <AIPoweredSection />
 
-          <FeaturesSection />
-          <HowItWorksSection />
-          <TestimonialsSection />
-          <FAQSection />
-          <CTABanner />
-        </main>
-        
-        <Footer />
-        <FloatingActionButton />
-      </div>
-    </TooltipProvider>
+        {isLoggedIn && (
+          <Suspense fallback={<div className="container mx-auto px-4 py-8"><p>Loading projects...</p></div>}>
+            <ProjectsSection
+              projects={projects}
+              onSelectProject={handleSelectProject}
+              onDeleteProject={handleDeleteProject}
+              onCreateNewProject={handleCreateNewProject}
+            />
+          </Suspense>
+        )}
+
+        <FeaturesSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+      </main>
+
+      <footer className="py-8 border-t border-border/40 bg-muted/50">
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
+          <p>&copy; {new Date().getFullYear()} Lovable AI Web App Generator. All rights reserved.</p>
+          <div className="mt-2">
+            <a href="/pricing" className="hover:text-primary transition-colors">Pricing</a>
+            <span className="mx-2">|</span>
+            <a href="/important" className="hover:text-primary transition-colors">Terms of Service</a>
+            <span className="mx-2">|</span>
+            <a href="/important" className="hover:text-primary transition-colors">Privacy Policy</a>
+          </div>
+        </div>
+      </footer>
+      <FloatingActionButton />
+    </div>
   );
 };
 

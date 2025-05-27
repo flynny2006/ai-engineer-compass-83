@@ -1,130 +1,118 @@
+import React from 'react';
+import { ShieldCheck, FileText, Users, Smartphone, AlertTriangle, ArrowLeft } from 'lucide-react'; // Changed Mobile to Smartphone
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Info, KeyRound, Rocket, MessageSquareQuote, Palette, Mobile } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTheme } from "@/hooks/use-theme"; // Import useTheme
+const ImportantPage: React.FC = () => {
+  const navigate = useNavigate();
 
-const ImportantPage = () => {
-  const { theme } = useTheme(); // Get current theme
-
-  const cardBaseClass = `transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1`;
-  const lightCardClass = "bg-white/80 backdrop-blur-md border-slate-200/80";
-  const darkCardClass = "bg-slate-800/70 backdrop-blur-md border-slate-700/60";
-  const cardClass = theme === 'light' ? `${lightCardClass} ${cardBaseClass}` : `${darkCardClass} ${cardBaseClass}`;
-  
-  const titleClass = theme === 'light' ? "text-slate-800" : "text-white";
-  const descriptionClass = theme === 'light' ? "text-slate-600" : "text-slate-400";
-  const contentTextClass = theme === 'light' ? "text-slate-700" : "text-slate-300";
+  const sections = [
+    {
+      icon: <ShieldCheck className="h-8 w-8 text-primary" />,
+      title: "Terms of Service",
+      content: "Please read our Terms of Service carefully before using the AI Web App Generator. By accessing or using the Service, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service. Our Terms of Service outline the rules and regulations for the use of Lovable's Website, located at lovable.dev.",
+      details: [
+        "User responsibilities and conduct.",
+        "Intellectual property rights.",
+        "Limitations of liability and disclaimers.",
+        "Governing law and dispute resolution.",
+      ]
+    },
+    {
+      icon: <FileText className="h-8 w-8 text-primary" />,
+      title: "Privacy Policy",
+      content: "Our Privacy Policy describes how we collect, use, and share your personal information when you use our Service. We are committed to protecting your privacy and ensuring that your personal data is handled responsibly. We encourage you to review our Privacy Policy to understand our practices.",
+      details: [
+        "Information we collect and how we use it.",
+        "Data sharing and third-party services.",
+        "Your data rights and choices.",
+        "Security measures to protect your information.",
+      ]
+    },
+    {
+      icon: <Users className="h-8 w-8 text-primary" />,
+      title: "Community Guidelines",
+      content: "Our Community Guidelines are designed to ensure a safe and respectful environment for all users. We expect all members of our community to adhere to these guidelines to foster a positive and collaborative atmosphere. Violations may result in account suspension or termination.",
+      details: [
+        "Respectful communication and behavior.",
+        "Prohibited content and activities.",
+        "Reporting violations and enforcement.",
+        "Contributing to a positive community.",
+      ]
+    },
+     {
+      icon: <Smartphone className="h-8 w-8 text-primary" />, // Changed Mobile to Smartphone
+      title: "Mobile Usage Policy",
+      content: "Our AI Web App Generator is primarily designed for desktop use, but can be accessed on mobile devices. This policy outlines best practices and limitations for mobile usage. Functionality may be limited on smaller screens, and performance can vary depending on the device and network conditions.",
+      details: [
+        "Supported mobile browsers and operating systems.",
+        "Known limitations and issues on mobile.",
+        "Recommendations for optimal mobile experience.",
+        "Reporting mobile-specific bugs or problems.",
+      ]
+    },
+    {
+      icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
+      title: "Disclaimers and Limitations",
+      content: "The AI Web App Generator is provided 'as is' without any warranties. While we strive for accuracy and reliability, we cannot guarantee that the service will be error-free or uninterrupted. Users should use their discretion and back up important data.",
+      details: [
+        "No guarantee of fitness for a particular purpose.",
+        "AI-generated content may require review and modification.",
+        "Lovable is not liable for any data loss or damages.",
+        "Service availability is not guaranteed.",
+      ]
+    }
+  ];
 
   return (
-    <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 ${theme === 'light' ? 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50' : 'bg-gradient-to-br from-slate-900 via-black to-slate-950'}`}>
-      <div className="container mx-auto max-w-5xl">
-        <div className="mb-8">
-          <Link to="/">
-            <Button variant="outline" className={`flex items-center gap-2 group ${theme === 'light' ? 'text-slate-700 border-slate-300 hover:bg-amber-100 hover:border-amber-300' : 'text-slate-300 border-slate-700 hover:bg-slate-700 hover:border-slate-500'}`}>
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-        
-        <header className="text-center mb-12 md:mb-16">
-          <Info className={`mx-auto h-16 w-16 mb-4 ${theme === 'light' ? 'text-amber-600' : 'text-primary'}`} />
-          <h1 className={`text-4xl sm:text-5xl font-bold tracking-tight mb-4 ${titleClass}`}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-100 to-stone-200 dark:from-slate-900 dark:via-gray-900 dark:to-neutral-950 p-4 sm:p-6 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)} 
+          className="mb-6 md:mb-8 group hover-lift"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-1" />
+          Back
+        </Button>
+
+        <header className="text-center mb-10 md:mb-12">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-500 dark:from-primary dark:via-purple-400 dark:to-pink-400">
             Important Information
           </h1>
-          <p className={`text-lg sm:text-xl ${descriptionClass} max-w-3xl mx-auto`}>
-            Key details and guides to help you make the most of our AI-powered platform.
+          <p className="mt-3 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+            Key policies, guidelines, and disclaimers for using the Lovable AI Web App Generator.
           </p>
         </header>
 
-        <div className="grid md:grid-cols-2 gap-6 lg:gap-8 mb-10">
-          <Card className={cardClass}>
-            <CardHeader>
-              <CardTitle className={`flex items-center gap-2 text-2xl ${titleClass}`}>
-                <Rocket className={`h-6 w-6 ${theme === 'light' ? 'text-amber-600' : 'text-primary'}`} />
-                How to Use
-              </CardTitle>
-            </CardHeader>
-            <CardContent className={`${contentTextClass}`}>
-              <ol className="list-decimal list-inside space-y-3 text-base">
-                <li>Clearly describe your project requirements in the chat.</li>
-                <li>Our AI will generate the code and show you a live preview.</li>
-                <li>Review, test, and request any changes or refinements.</li>
-                <li>Once satisfied, you can deploy your project.</li>
-              </ol>
-            </CardContent>
-          </Card>
-          
-          <Card className={cardClass}>
-            <CardHeader>
-              <CardTitle className={`flex items-center gap-2 text-2xl ${titleClass}`}>
-                <KeyRound className={`h-6 w-6 ${theme === 'light' ? 'text-amber-600' : 'text-primary'}`} />
-                Getting Your Gemini API Key
-              </CardTitle>
-            </CardHeader>
-            <CardContent className={`${contentTextClass}`}>
-              <ol className="list-decimal list-inside space-y-3 text-base">
-                <li>Navigate to the <a href="https://makersuite.google.com/app/apikey" className={`${theme === 'light' ? 'text-amber-700 hover:text-amber-800' : 'text-primary hover:text-primary/80'} font-medium underline`} target="_blank" rel="noopener noreferrer">Google AI Studio</a>.</li>
-                <li>Sign in using your Google account.</li>
-                <li>Follow the prompts to create a new API key.</li>
-                <li>Copy the generated key and paste it into your account settings on our platform.</li>
-              </ol>
-            </CardContent>
-          </Card>
+        <div className="space-y-8">
+          {sections.map((section, index) => (
+            <Card key={index} className="modern-card overflow-hidden shadow-xl hover-lift bg-card/80 backdrop-blur-sm border-border/30 dark:bg-secondary/40 dark:border-white/10">
+              <CardHeader className="bg-muted/30 dark:bg-muted/20 p-4 sm:p-6 border-b border-border/20 dark:border-white/5">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <span className="p-2 sm:p-3 bg-primary/10 dark:bg-primary/20 rounded-lg text-primary">
+                    {section.icon}
+                  </span>
+                  <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground dark:text-primary-foreground/90">{section.title}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 text-sm sm:text-base">
+                <p className="text-muted-foreground leading-relaxed mb-4">{section.content}</p>
+                {section.details && section.details.length > 0 && (
+                  <ul className="list-disc list-inside space-y-1.5 text-muted-foreground/90 marker:text-primary">
+                    {section.details.map((detail, i) => (
+                      <li key={i}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
-
-        <Card className={`${cardClass} mb-10`}>
-          <CardHeader>
-            <CardTitle className={`flex items-center gap-2 text-2xl ${titleClass}`}>
-              <Palette className={`h-6 w-6 ${theme === 'light' ? 'text-amber-600' : 'text-primary'}`} />
-              What We're Working On
-            </CardTitle>
-          </CardHeader>
-          <CardContent className={`${contentTextClass}`}>
-            <ul className="space-y-3 text-base">
-              {[
-                { icon: MessageSquareQuote, text: "Adding a 'Chat Mode' for credit-free conversations." },
-                { icon: Rocket, text: "Introducing many new features and capabilities." },
-                { icon: Mobile, text: "Enhancing the mobile interface for a better experience." },
-              ].map((item, index) => (
-                <li key={index} className="flex items-start">
-                  <div className={`h-2 w-2 rounded-full mt-1.5 mr-3 flex-shrink-0 ${theme === 'light' ? 'bg-amber-500' : 'bg-primary'}`}></div>
-                  <span>{item.text}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className={`${theme === 'light' ? 'border-amber-500 bg-amber-50/50' : 'border-primary bg-primary/10'} ${cardBaseClass} text-center`}>
-          <CardHeader>
-            <CardTitle className={`text-2xl sm:text-3xl font-bold ${titleClass}`}>Advertise With Us</CardTitle>
-            <CardDescription className={`${descriptionClass} text-md`}>
-              Showcase your service or product to our engaged user base.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className={`mb-6 text-base ${contentTextClass}`}>
-              Interested in featuring your webpage or service here? Reach out to us on Discord to connect with our community and potential customers!
-            </p>
-            <Button 
-              size="lg" 
-              className={`w-full max-w-xs mx-auto text-base ${theme === 'light' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'btn-primary'}`} 
-              asChild
-            >
-              <a href="https://discord.gg/hrq9cjXr27" target="_blank" rel="noopener noreferrer" className="w-full h-full flex items-center justify-center">
-                <ExternalLink className="h-5 w-5 mr-2" /> Join Our Discord
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
 };
 
 export default ImportantPage;
-
