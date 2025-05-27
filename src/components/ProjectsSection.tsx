@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
@@ -9,50 +8,36 @@ import ProjectCard from './ProjectCard'; // Assuming ProjectCard is correctly im
 interface Project {
   id: string;
   name: string;
-  createdAt: string;
-  files?: any[]; // Made files optional to match Homepage.tsx definition and typical project creation flow
+  files: any[]; // Made files required to align with ProjectCard expectations
   lastModified: string;
-  description?: string; // Added description as it's in Homepage.tsx Project
-  isFeatured?: boolean;
+  description?: string;
+  isFeatured?: boolean; // This is specific to ProjectsSection's view logic
 }
 
 interface ProjectsSectionProps {
   projects: Project[];
-  // setProjects?: React.Dispatch<React.SetStateAction<Project[]>>; // Uncomment if ProjectsSection needs to modify projects (e.g., toggle featured locally)
   onLoadProject: (projectId: string) => void;
-  onDeleteProject: (event: React.MouseEvent<Element, MouseEvent>, projectId: string) => void; // Keep event if ProjectCard passes it
-  // onDuplicateProject?: (event: React.MouseEvent<Element, MouseEvent>, project: Project) => void; // Optional
-  // userPlan?: string; // Optional
-  // apiKey?: string; // Optional for potential future use in overview
-  // onCreateNewProject?: () => void; // Optional
+  onDeleteProject: (event: React.MouseEvent<Element, MouseEvent>, projectId: string) => void;
+  // Add onToggleFeatured to props if this functionality is to be lifted up
+  // onToggleFeatured: (projectId: string) => void; 
 }
 
 const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   projects,
-  // setProjects,
   onLoadProject,
   onDeleteProject,
-  // onDuplicateProject,
-  // userPlan = "FREE", // Default or fetch
-  // apiKey = "" // Default or fetch
+  // onToggleFeatured, // Use this if passed from parent
 }) => {
   const [activeMainTab, setActiveMainTab] = useState("projects");
   const [activeProjectsSubTab, setActiveProjectsSubTab] = useState("all");
 
-  // This component probably shouldn't be modifying projects directly if they are passed as props.
-  // Feature toggling should ideally call a prop function passed from Homepage.
   const handleToggleFeatured = (projectId: string) => {
-    // If setProjects is passed, use it. Otherwise, this local feature toggle won't persist.
-    // Consider if this logic should be in Homepage.tsx
-    // if (setProjects) {
-    //   setProjects(prevProjects =>
-    //     prevProjects.map(p =>
-    //       p.id === projectId ? { ...p, isFeatured: !p.isFeatured } : p
-    //     )
-    //   );
-    //   // Also update localStorage if managed here, but better if Homepage does it
-    // }
-    console.warn("Toggling featured status directly in ProjectsSection. Consider lifting state or callback.");
+    // This function should ideally call a prop like `onToggleFeatured(projectId)`
+    // For now, it only logs, as direct state mutation of props is an anti-pattern.
+    // If you have a parent component (like Homepage.tsx) managing the `projects` state,
+    // it should provide a function to handle this update.
+    console.warn("Toggling featured status. Implement via parent component callback for persistence.", projectId);
+    // Example: if (onToggleFeatured) onToggleFeatured(projectId);
   };
 
   const featuredProjects = projects.filter(p => p.isFeatured);
@@ -130,10 +115,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       project={project}
                       onLoadProject={() => onLoadProject(project.id)}
                       onDeleteProject={(e) => onDeleteProject(e, project.id)}
-                      // onDuplicateProject={(e) => onDuplicateProject && onDuplicateProject(e, project)}
-                      onToggleFeatured={() => handleToggleFeatured(project.id)} // This needs proper state management hookup
-                      // userPlan={userPlan}
-                      // projectCount={projects.length}
+                      onToggleFeatured={() => handleToggleFeatured(project.id)}
                     />
                   ))}
                 </div>
@@ -142,7 +124,6 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   <LayoutGrid className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
                   <h3 className="text-xl font-semibold text-foreground mb-2">No Projects Yet</h3>
                   <p className="text-muted-foreground mb-4">Start by creating a new project or generating one with AI.</p>
-                  {/* Consider adding a create new project button here if appropriate */}
                 </div>
               )}
             </TabsContent>
@@ -155,10 +136,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       project={project}
                       onLoadProject={() => onLoadProject(project.id)}
                       onDeleteProject={(e) => onDeleteProject(e, project.id)}
-                      // onDuplicateProject={(e) => onDuplicateProject && onDuplicateProject(e, project)}
                       onToggleFeatured={() => handleToggleFeatured(project.id)}
-                      // userPlan={userPlan}
-                      // projectCount={projects.length}
                     />
                   ))}
                 </div>

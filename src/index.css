@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -159,7 +158,7 @@
 }
 
 .light .glass-card {
-  @apply bg-light-card/70 backdrop-blur-lg border-light-border/40 shadow-lg;
+  @apply bg-[hsl(var(--light-card))]/70 backdrop-blur-lg border-[hsl(var(--light-border))]/40 shadow-lg;
 }
 
 .dark .glass-card {
@@ -831,14 +830,5 @@
   --explorer-border: hsl(var(--border)); /* Dark border */
   --explorer-hover: hsl(var(--muted)); /* Dark muted */
   --explorer-active: hsl(var(--primary) / 0.2); /* Dark accent, e.g., primary with alpha */
-  --explorer-active-text: hsl(var(--primary));
-}
-/* Ensure the block for .dark .file-explorer is closed */
-.dark .file-explorer {
-  --explorer-bg: hsl(var(--secondary)); 
-  --explorer-text: hsl(var(--secondary-foreground));
-  --explorer-border: hsl(var(--border)); 
-  --explorer-hover: hsl(var(--muted)); 
-  --explorer-active: hsl(var(--primary) / 0.2); 
   --explorer-active-text: hsl(var(--primary));
 }
