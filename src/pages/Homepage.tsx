@@ -511,9 +511,9 @@ const Homepage: React.FC = () => {
         <TooltipTrigger asChild>
           <Button
             onClick={() => navigate('/important')}
-            variant="circle"
+            variant="default"
             size="icon"
-            className="fixed bottom-4 right-4 z-50 shadow-lg hover-scale"
+            className="fixed bottom-4 right-4 z-50 shadow-lg hover-scale rounded-full"
           >
             <HelpCircle className="h-4 w-4" />
           </Button>
@@ -521,7 +521,7 @@ const Homepage: React.FC = () => {
         <TooltipContent>
           <p>Need help?</p>
         </TooltipContent>
-      </TooltipProvider>
+      </Tooltip>
     </TooltipProvider>
   );
 
