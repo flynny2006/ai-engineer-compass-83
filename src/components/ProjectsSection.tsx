@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button'; // Added for potential use
 import { Home, LayoutGrid, Package, Star, Users, Activity } from 'lucide-react';
 import ProjectCard from './ProjectCard';
-
 interface Project {
   id: string;
   name: string;
@@ -14,7 +12,6 @@ interface Project {
   lastModified: string;
   isFeatured?: boolean;
 }
-
 interface ProjectsSectionProps {
   projects: Project[];
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
@@ -24,7 +21,6 @@ interface ProjectsSectionProps {
   userPlan: string;
   apiKey: string; // For potential future use in overview
 }
-
 const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   projects,
   setProjects,
@@ -36,24 +32,21 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 }) => {
   const [activeMainTab, setActiveMainTab] = useState("projects");
   const [activeProjectsSubTab, setActiveProjectsSubTab] = useState("all");
-
   const handleToggleFeatured = (projectId: string) => {
-    const updatedProjects = projects.map(p =>
-      p.id === projectId ? { ...p, isFeatured: !p.isFeatured } : p
-    );
+    const updatedProjects = projects.map(p => p.id === projectId ? {
+      ...p,
+      isFeatured: !p.isFeatured
+    } : p);
     setProjects(updatedProjects);
     localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
   };
-
   const featuredProjects = projects.filter(p => p.isFeatured);
   const allProjects = projects;
 
   // Dummy data for overview, replace with actual data fetching or props
   const aiRequestsThisMonth = 1234;
   const totalStorageUsed = "2.5 GB";
-
-  return (
-    <div className="w-full max-w-5xl mx-auto mt-12">
+  return <div className="w-full max-w-5xl mx-auto mt-12">
       <Tabs defaultValue="projects" value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10 p-1 rounded-lg">
           <TabsTrigger value="overview" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 hover:text-white transition-all">
@@ -87,7 +80,7 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
             </div>
              <div className="p-4 bg-white/5 rounded-md">
               <Activity className="h-5 w-5 text-blue-400 mb-2" />
-              <h3 className="text-gray-400 text-sm">AI Requests (Month)</h3>
+              <h3 className="text-gray-400 text-sm">AI Requests (Soon)</h3>
               <p className="text-white text-xl font-semibold">{aiRequestsThisMonth.toLocaleString()}</p>
             </div>
             <div className="p-4 bg-white/5 rounded-md">
@@ -110,44 +103,14 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               </TabsTrigger>
             </TabsList>
             <TabsContent value="all">
-              {allProjects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {allProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onLoadProject={onLoadProject}
-                      onDeleteProject={onDeleteProject}
-                      onDuplicateProject={onDuplicateProject}
-                      onToggleFeatured={handleToggleFeatured}
-                      userPlan={userPlan}
-                      projectCount={projects.length}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-center py-8">You have no projects yet. Start building something amazing!</p>
-              )}
+              {allProjects.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {allProjects.map(project => <ProjectCard key={project.id} project={project} onLoadProject={onLoadProject} onDeleteProject={onDeleteProject} onDuplicateProject={onDuplicateProject} onToggleFeatured={handleToggleFeatured} userPlan={userPlan} projectCount={projects.length} />)}
+                </div> : <p className="text-gray-400 text-center py-8">You have no projects yet. Start building something amazing!</p>}
             </TabsContent>
             <TabsContent value="featured">
-              {featuredProjects.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {featuredProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onLoadProject={onLoadProject}
-                      onDeleteProject={onDeleteProject}
-                      onDuplicateProject={onDuplicateProject}
-                      onToggleFeatured={handleToggleFeatured}
-                      userPlan={userPlan}
-                      projectCount={projects.length}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-center py-8">You have no featured projects yet. Star some projects to see them here!</p>
-              )}
+              {featuredProjects.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {featuredProjects.map(project => <ProjectCard key={project.id} project={project} onLoadProject={onLoadProject} onDeleteProject={onDeleteProject} onDuplicateProject={onDuplicateProject} onToggleFeatured={handleToggleFeatured} userPlan={userPlan} projectCount={projects.length} />)}
+                </div> : <p className="text-gray-400 text-center py-8">You have no featured projects yet. Star some projects to see them here!</p>}
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -159,8 +122,6 @@ const ProjectsSection: React.FC<ProjectsSectionProps> = ({
           </p>
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
-
 export default ProjectsSection;
