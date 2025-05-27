@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import CodeEditor, { EditorFile } from '@/components/CodeEditor';
 import FileExplorerEnhanced from '@/components/FileExplorerEnhanced';
-import ModernPromptInput from '@/components/ModernPromptInput'; // This should be the correct import
+import ModernPromptInput from '@/components/ModernPromptInput';
 import PreviewSettings from '@/components/PreviewSettings';
 import { useProjectFiles } from '@/hooks/use-project-files';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ import ProjectConsole from '@/components/ProjectConsole'; // New import
 import GenerationStatus from '@/components/GenerationStatus';
 import { useTheme } from '@/hooks/use-theme';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Separator } from '@/components/ui/separator';
 
 const getSupabase = () => {
   return createClientComponentClient();

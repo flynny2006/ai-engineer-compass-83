@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { PlusCircle, UploadCloud, LogIn, UserPlus, Info, Sun, Moon, Settings, LayoutGrid, Package, FileText, Trash2, Star, Copy, AlertTriangle, Search, Filter, CheckCircle, XCircle, ChevronDown, ExternalLink, BookOpen, Briefcase, Users2, Zap, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast'; // Corrected import path
-import ModernPromptInput from '@/components/ModernPromptInput'; // Corrected import path
-import HomepageNav from '@/components/HomepageNav'; // Corrected import path
+import { toast } from '@/hooks/use-toast';
+import ModernPromptInput from '@/components/ModernPromptInput';
+import HomepageNav from '@/components/HomepageNav';
 import ProjectsSection from '@/components/ProjectsSection';
 import { useTheme } from '@/hooks/use-theme';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,11 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import FileExplorerUpload from '@/components/FileExplorerUpload'; // Assuming default export
+import FileExplorerUpload from '@/components/FileExplorerUpload';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
 
 interface ProjectFile {
   name: string;
@@ -27,7 +26,7 @@ interface ProjectFile {
 
 interface Project {
   id: string;
-  name:string;
+  name: string;
   files: ProjectFile[];
   createdAt: string;
   lastModified: string;
@@ -222,7 +221,7 @@ const Homepage: React.FC = () => {
       <main className="w-full max-w-7xl mx-auto">
         <ProjectsSection
           projects={filteredProjects}
-          setProjects={setProjects} // Pass setProjects to allow ProjectsSection to update featured status
+          setProjects={setProjects}
           onLoadProject={onLoadProject}
           onDeleteProject={onDeleteProject}
           onDuplicateProject={handleDuplicateProject}
@@ -230,7 +229,6 @@ const Homepage: React.FC = () => {
           apiKey={apiKey}
         />
 
-        {/* ... Rest of the Homepage content, e.g., features, testimonials ... */}
         <section id="features" className="py-16 sm:py-20 lg:py-24">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Why Choose <span className="text-gradient-primary">Lovable</span>?</h2>
@@ -291,7 +289,6 @@ const Homepage: React.FC = () => {
         <div className="flex justify-center gap-4 mt-4">
           <Link to="/important" className="text-sm hover:text-primary transition-colors">Important Info</Link>
           <a href="https://discord.gg/hrq9cjXr27" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-primary transition-colors">Discord</a>
-          {/* <Link to="/pricing" className="text-sm hover:text-primary transition-colors">Pricing</Link> */}
         </div>
       </footer>
     </div>
