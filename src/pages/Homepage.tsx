@@ -532,7 +532,7 @@ const Homepage = () => {
                 </div>
               </BorderTrail>
               {/* Card 2 */}
-               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "secondary"} duration="slow" spacing="sm">
+               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "primary"} duration="slow" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-lg border border-gray-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-blue-400/20 transition-shadow duration-300`}>
                   <div className="bg-blue-500/20 p-4 rounded-full mb-6 ring-2 ring-blue-500/50">
                     <Code className="h-10 w-10 text-blue-400" />
