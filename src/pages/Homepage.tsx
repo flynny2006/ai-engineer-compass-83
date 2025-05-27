@@ -9,7 +9,7 @@ import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, 
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
-import AnimatedAIInput from "@/components/AnimatedAIInput";
+import ModernPromptInput from "@/components/ModernPromptInput";
 import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
 
 interface Project {
@@ -272,7 +272,6 @@ const Homepage = () => {
 
   // Handle attachment button click
   const handleAttachClick = () => {
-    // Trigger the file upload click
     document.getElementById('fileUpload')?.click();
   };
 
@@ -407,18 +406,16 @@ const Homepage = () => {
             </div>
             
             <div className="w-full max-w-3xl mt-4 md:mt-8">
-              <BorderTrail className="rounded-lg" variant="default" duration="slow">
-                <div className="bg-black rounded-lg p-4 space-y-4">
-                  <AnimatedAIInput
+              <BorderTrail className="rounded-3xl" variant="default" duration="slow">
+                <div className="bg-black rounded-3xl p-6 space-y-4">
+                  <ModernPromptInput
                     value={prompt}
                     onChange={setPrompt}
                     onSubmit={createNewProject}
-                    placeholder="Ask Boongle AI to build anything..."
                     isLoading={isLoading}
                     onAttach={handleAttachClick}
-                    className="min-h-[120px]"
-                    onModelChange={handleModelChange}
                     selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
                     userPlan={userPlan}
                   />
 
