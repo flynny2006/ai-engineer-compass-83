@@ -66,7 +66,7 @@ const ModernPromptInput: React.FC<ModernPromptInputProps> = ({
   const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [typingSpeed, setTypingSpeed] = useState(100);
+  const [typingSpeed, setTypingSpeed] = useState(60); // Made faster from 100
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -75,14 +75,14 @@ const ModernPromptInput: React.FC<ModernPromptInputProps> = ({
     const handleTyping = () => {
       if (isDeleting) {
         setAnimatedPlaceholder(prev => prev.substring(0, prev.length - 1));
-        setTypingSpeed(50);
+        setTypingSpeed(30); // Made faster from 50
       } else {
         setAnimatedPlaceholder(prev => currentFullPlaceholder.substring(0, prev.length + 1));
-        setTypingSpeed(100);
+        setTypingSpeed(60); // Made faster from 100
       }
 
       if (!isDeleting && animatedPlaceholder === currentFullPlaceholder) {
-        typingTimeoutRef.current = setTimeout(() => setIsDeleting(true), 2000);
+        typingTimeoutRef.current = setTimeout(() => setIsDeleting(true), 1500); // Reduced pause time
       } else if (isDeleting && animatedPlaceholder === "") {
         setIsDeleting(false);
         setPlaceholderIndex(prevIndex => (prevIndex + 1) % placeholdersList.length);

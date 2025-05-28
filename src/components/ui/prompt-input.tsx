@@ -51,6 +51,7 @@ type PromptInputProps = {
   onSubmit?: () => void
   children: React.ReactNode
   className?: string
+  modern?: boolean
 }
 
 function PromptInput({
@@ -61,6 +62,7 @@ function PromptInput({
   onValueChange,
   onSubmit,
   children,
+  modern = false,
 }: PromptInputProps) {
   const [internalValue, setInternalValue] = useState(value || "")
 
@@ -82,7 +84,9 @@ function PromptInput({
       >
         <div
           className={cn(
-            "border-input bg-background rounded-3xl border p-2 shadow-xs",
+            modern 
+              ? "border-input/30 bg-background/60 backdrop-blur-sm rounded-2xl border p-4 shadow-lg ring-1 ring-black/5 dark:ring-white/10"
+              : "border-input bg-background rounded-3xl border p-2 shadow-xs",
             className
           )}
         >
