@@ -30,6 +30,42 @@ interface Partner {
   logoUrl?: string; 
 }
 
+// 32 predefined suggestions
+const suggestions = [
+  "Modern & functional Todo App",
+  "AI-powered chat application",
+  "E-commerce product showcase",
+  "Personal portfolio website",
+  "Real-time weather dashboard",
+  "Music streaming interface",
+  "Recipe sharing platform",
+  "Fitness tracking dashboard",
+  "Social media feed clone",
+  "Project management tool",
+  "Online booking system",
+  "Interactive quiz game",
+  "Video streaming platform",
+  "Cryptocurrency tracker",
+  "Task automation dashboard",
+  "Event planning application",
+  "File sharing platform",
+  "Team collaboration workspace",
+  "Learning management system",
+  "Restaurant ordering app",
+  "Travel planning tool",
+  "Invoice generator app",
+  "Photo gallery with filters",
+  "News aggregator dashboard",
+  "Customer support chat",
+  "Expense tracking app",
+  "Blog with CMS features",
+  "Real estate listing site",
+  "Job board platform",
+  "Inventory management system",
+  "Survey creation tool",
+  "Digital art marketplace"
+];
+
 const Homepage = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -44,6 +80,7 @@ const Homepage = () => {
   const [showStatus, setShowStatus] = useState<boolean>(false);
   const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
   const [userPlan, setUserPlan] = useState<string>("FREE");
+  const [randomSuggestions, setRandomSuggestions] = useState<string[]>([]);
   const fileUploadRef = useRef<HTMLInputElement>(null);
 
   // Scroll to top function with smooth animation
@@ -52,6 +89,15 @@ const Homepage = () => {
   const scrollToTop = () => {
     topRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Generate 4 random suggestions on component mount
+  useEffect(() => {
+    const getRandomSuggestions = () => {
+      const shuffled = [...suggestions].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, 4);
+    };
+    setRandomSuggestions(getRandomSuggestions());
+  }, []);
 
   // Sample partners data
   const partners = [
@@ -287,6 +333,11 @@ const Homepage = () => {
     document.getElementById('fileUpload')?.click();
   };
 
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion: string) => {
+    setPrompt(suggestion);
+  };
+
   const loadProject = (projectId: string) => {
     // Set the current project ID BEFORE navigation 
     // This is critical for project isolation
@@ -433,11 +484,38 @@ const Homepage = () => {
                     isLoading={isLoading}
                     onAttach={handleAttachClick}
                     selectedModel={selectedModel}
-                    onModelChange={handleModelChange} // Pass handleModelChange here
+                    onModelChange={handleModelChange}
                     userPlan={userPlan}
-                    // Placeholder is now handled internally by ModernPromptInput
                   />
 
+                  {/* Suggestion buttons */}
+                  <div className="space-y-3">
+                    <p className={`text-sm ${theme === 'dark' ? 'text-white/70' : 'text-slate-600'}`}>
+                      Quick suggestions:
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {randomSuggestions.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className={`text-left justify-start h-auto p-3 rounded-lg transition-all duration-200 ${
+                            theme === 'dark' 
+                              ? 'bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 hover:border-white/20' 
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-purple-500" />
+                            <span className="text-sm font-medium">{suggestion}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* File upload section - moved down */}
                   <div>
                     {attachedImage ? (
                       <div className={`p-3 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-md`}>
