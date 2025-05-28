@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft, DollarSign, CheckCircle2, Sparkles, Shield, Zap, Globe, Star } from "lucide-react";
+import { Check, ArrowLeft, DollarSign, CheckCircle2, Sparkles, Shield, Zap, Globe, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 import { BorderTrail } from "@/components/ui/border-trail";
@@ -226,32 +226,49 @@ const PricingPage = () => {
         <div className="mt-24 mb-8">
           <h2 className="text-2xl font-bold text-center mb-8">What Our Users Say</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { name: "Jessica Miller", role: "UX Designer", stars: 5 },
-              { name: "David Chen", role: "Frontend Developer", stars: 4 },
-              { name: "Sophia Rodriguez", role: "Product Manager", stars: 5 }
-            ].map((user, i) => (
-              <div key={i} className={`p-6 rounded-xl ${theme === 'dark' ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-white'}`}>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500"></div>
-                  <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-muted-foreground">{user.role}</p>
+          <div className="relative max-w-2xl mx-auto mb-8">
+            <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="slow" spacing="sm">
+              <div className={`${theme === 'dark' ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl`}>
+                <div className="text-center">
+                  <div className="flex justify-center items-center mb-4">
+                    {[...Array(5)].map((_, idx) => (
+                      <Star key={idx} className="h-6 w-6 text-yellow-400 fill-yellow-400" />
+                    ))}
                   </div>
+                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>Piotr</h3>
+                  <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} text-lg leading-relaxed mb-6`}>
+                    "This is the best AI website generator I ever used. It's super simple and easy to use. I recommend!"
+                  </p>
                 </div>
-                <div className="flex items-center mb-2">
-                  {[...Array(5)].map((_, idx) => (
-                    <Star 
-                      key={idx} 
-                      className={`h-4 w-4 ${idx < user.stars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
-                    />
-                  ))}
-                  <span className="ml-2 text-sm text-muted-foreground">({35 + i} ratings)</span>
-                </div>
-                <p className="text-muted-foreground">"This platform has completely transformed how I build applications. What used to take days now takes minutes."</p>
               </div>
-            ))}
+            </BorderTrail>
+            
+            {/* Navigation arrows */}
+            <div className="flex justify-between items-center mt-6">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                disabled
+                className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              
+              <div className="flex gap-2">
+                <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white' : 'bg-slate-900'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
+              </div>
+              
+              <Button 
+                variant="ghost" 
+                size="icon"
+                disabled
+                className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
-import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp, Star, LayoutDashboard, FolderKanban, PackageSearch } from "lucide-react";
+import { Key, ArrowRight, Trash2, Copy, Building, Rocket, Code, Users, Compass, Zap, Timer, Eye, ChevronUp, Sparkles, Palette, ArrowUp, Star, LayoutDashboard, FolderKanban, PackageSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import { BorderTrail } from "@/components/ui/border-trail";
 import FileExplorerUpload from "@/components/FileExplorerUpload";
 import HomepageNav from "@/components/HomepageNav";
@@ -591,6 +591,59 @@ const Homepage = () => {
             apiKey={apiKey}
           />
 
+          {/* Reviews Section */}
+          <div className="w-full max-w-5xl mx-auto py-16 px-4">
+            <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} mb-16`} />
+            <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
+              What Our Users Say
+            </h2>
+            
+            <div className="relative max-w-2xl mx-auto">
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="slow" spacing="sm">
+                <div className={`${theme === 'dark' ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl`}>
+                  <div className="text-center">
+                    <div className="flex justify-center items-center mb-4">
+                      {[...Array(5)].map((_, idx) => (
+                        <Star key={idx} className="h-6 w-6 text-yellow-400 fill-yellow-400" />
+                      ))}
+                    </div>
+                    <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>Piotr</h3>
+                    <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} text-lg leading-relaxed mb-6`}>
+                      "This is the best AI website generator I ever used. It's super simple and easy to use. I recommend!"
+                    </p>
+                  </div>
+                </div>
+              </BorderTrail>
+              
+              {/* Navigation arrows */}
+              <div className="flex justify-between items-center mt-6">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  disabled
+                  className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                
+                <div className="flex gap-2">
+                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white' : 'bg-slate-900'}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
+                </div>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  disabled
+                  className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* How to get Started Section */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
             <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
@@ -598,7 +651,7 @@ const Homepage = () => {
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
               {/* Card 1 */}
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'outline'} duration="slow" spacing="sm">
+              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'default'} duration="slow" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-green-400/10 transition-shadow duration-300`}>
                   <div className={`${theme === 'dark' ? 'bg-green-500/20' : 'bg-green-500/10'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/50' : 'ring-green-500/30'}`}>
                     <Compass className="h-10 w-10 text-green-500" />
@@ -610,7 +663,7 @@ const Homepage = () => {
                 </div>
               </BorderTrail>
               {/* Card 2 */}
-               <BorderTrail className="rounded-xl" variant={theme === 'dark' ? "default" : "outline"} duration="slow" spacing="sm">
+               <BorderTrail className="rounded-xl" variant="default" duration="slow" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-blue-400/10 transition-shadow duration-300`}>
                   <div className={`${theme === 'dark' ? 'bg-blue-500/20' : 'bg-blue-500/10'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/50' : 'ring-blue-500/30'}`}>
                     <Code className="h-10 w-10 text-blue-500" />
@@ -622,7 +675,7 @@ const Homepage = () => {
                 </div>
               </BorderTrail>
               {/* Card 3 */}
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'outline'} duration="slow" spacing="sm">
+              <BorderTrail className="rounded-xl" variant="destructive" duration="slow" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-white/5' : 'bg-white shadow-xl border border-slate-200'} p-8 rounded-xl flex flex-col items-center hover:shadow-purple-400/10 transition-shadow duration-300`}>
                   <div className={`${theme === 'dark' ? 'bg-purple-500/20' : 'bg-purple-500/10'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/50' : 'ring-purple-500/30'}`}>
                     <Rocket className="h-10 w-10 text-purple-500" />
@@ -641,7 +694,7 @@ const Homepage = () => {
             <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} my-8`} />
             <h2 className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} text-2xl font-semibold mb-6`}>Our Partners</h2>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-              <BorderTrail className="rounded-lg" variant={theme === 'dark' ? 'destructive' : 'outline'} duration="default" spacing="sm">
+              <BorderTrail className="rounded-lg" variant="destructive" duration="default" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/20 to-blue-500/20' : 'bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-slate-200'} backdrop-blur-sm rounded-lg p-6 flex flex-col items-center text-center`}>
                   <Users className="h-10 w-10 text-green-500 mb-3" />
                   <h3 className={`${theme === 'dark' ? 'text-white' : 'text-slate-800'} font-medium`}>Become a Partner</h3>
@@ -667,7 +720,7 @@ const Homepage = () => {
               <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">20x Faster than Coding</span>
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'default' : 'outline'} duration="default" spacing="sm">
+              <BorderTrail className="rounded-xl" variant="default" duration="default" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-blue-500/10 to-green-500/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
                   <div className={`${theme === 'dark' ? 'bg-blue-500/10' : 'bg-blue-500/5'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-blue-500/20' : 'ring-blue-500/10'}`}>
                     <Zap className="h-10 w-10 text-yellow-400" />
@@ -679,7 +732,7 @@ const Homepage = () => {
                 </div>
               </BorderTrail>
 
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'primary' : 'outline'} duration="default" spacing="sm">
+              <BorderTrail className="rounded-xl" variant="primary" duration="default" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
                   <div className={`${theme === 'dark' ? 'bg-purple-500/10' : 'bg-purple-500/5'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-purple-500/20' : 'ring-purple-500/10'}`}>
                     <Timer className="h-10 w-10 text-purple-400" />
@@ -691,7 +744,7 @@ const Homepage = () => {
                 </div>
               </BorderTrail>
 
-              <BorderTrail className="rounded-xl" variant={theme === 'dark' ? 'destructive' : 'outline'} duration="default" spacing="sm">
+              <BorderTrail className="rounded-xl" variant="destructive" duration="default" spacing="sm">
                 <div className={`${theme === 'dark' ? 'bg-gradient-to-br from-green-500/10 to-teal-500/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl flex flex-col items-center transition-all duration-300 hover:-translate-y-1`}>
                   <div className={`${theme === 'dark' ? 'bg-green-500/10' : 'bg-green-500/5'} p-4 rounded-full mb-6 ring-2 ${theme === 'dark' ? 'ring-green-500/20' : 'ring-green-500/10'}`}>
                     <Eye className="h-10 w-10 text-green-400" />
