@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/prompt-input';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowUp, Square, ChevronDown } from 'lucide-react';
+import { ArrowUp, Square, ChevronDown, Paperclip } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTheme } from '@/hooks/use-theme';
 import ImageAttachment from './ImageAttachment';
