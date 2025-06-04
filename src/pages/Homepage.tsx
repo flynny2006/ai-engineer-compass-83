@@ -81,6 +81,7 @@ const Homepage = () => {
   const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
   const [userPlan, setUserPlan] = useState<string>("FREE");
   const [randomSuggestions, setRandomSuggestions] = useState<string[]>([]);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState<number>(0);
   const fileUploadRef = useRef<HTMLInputElement>(null);
 
   // Scroll to top function with smooth animation
@@ -104,6 +105,22 @@ const Homepage = () => {
     { id: 1, name: "Acme Tech", description: "Leading AI infrastructure provider", logoUrl: "placeholder.svg" },
     { id: 2, name: "DataFlow Inc.", description: "Enterprise data solutions", logoUrl: "placeholder.svg" },
     { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
+  ];
+
+  // Reviews data
+  const reviews = [
+    {
+      id: 1,
+      name: "Piotr",
+      rating: 5,
+      text: "This is the best AI website generator I ever used. It's super simple and easy to use. I recommend!"
+    },
+    {
+      id: 2,
+      name: "Fabian",
+      rating: 5,
+      text: "The best AI Software Engineer i ever used. This is just amazing. And 25 daily Credits are crazy! I highly recommend this instead of bolt.new and trickle!"
+    }
   ];
 
   // Load projects, API key, and plan from localStorage
@@ -451,6 +468,14 @@ const Homepage = () => {
     }
   };
 
+  const nextReview = () => {
+    setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
+  };
+
+  const prevReview = () => {
+    setCurrentReviewIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+  };
+
   return (
     <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-slate-900'}`}>
       <div ref={topRef}></div>
@@ -603,13 +628,15 @@ const Homepage = () => {
                 <div className={`${theme === 'dark' ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl`}>
                   <div className="text-center">
                     <div className="flex justify-center items-center mb-4">
-                      {[...Array(5)].map((_, idx) => (
+                      {[...Array(reviews[currentReviewIndex].rating)].map((_, idx) => (
                         <Star key={idx} className="h-6 w-6 text-yellow-400 fill-yellow-400" />
                       ))}
                     </div>
-                    <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>Piotr</h3>
+                    <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>
+                      {reviews[currentReviewIndex].name}
+                    </h3>
                     <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} text-lg leading-relaxed mb-6`}>
-                      "This is the best AI website generator I ever used. It's super simple and easy to use. I recommend!"
+                      "{reviews[currentReviewIndex].text}"
                     </p>
                   </div>
                 </div>
@@ -620,23 +647,30 @@ const Homepage = () => {
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  disabled
-                  className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
+                  onClick={prevReview}
+                  className={`${theme === 'dark' ? 'text-white/70 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 
                 <div className="flex gap-2">
-                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white' : 'bg-slate-900'}`}></div>
-                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
-                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
+                  {reviews.map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        idx === currentReviewIndex 
+                          ? (theme === 'dark' ? 'bg-white' : 'bg-slate-900')
+                          : (theme === 'dark' ? 'bg-white/20' : 'bg-slate-300')
+                      }`}
+                    ></div>
+                  ))}
                 </div>
                 
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  disabled
-                  className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
+                  onClick={nextReview}
+                  className={`${theme === 'dark' ? 'text-white/70 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   <ChevronRight className="h-5 w-5" />
                 </Button>
