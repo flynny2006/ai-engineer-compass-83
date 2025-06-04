@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,12 +9,30 @@ import ProjectsSection from '@/components/ProjectsSection';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
+interface Project {
+  id: string;
+  name: string;
+  createdAt: string;
+  files: any[];
+  lastModified: string;
+  isFeatured?: boolean;
+}
+
 const Homepage = () => {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('gemini-1.5');
   const [attachedImage, setAttachedImage] = useState<File | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  // Load projects from localStorage on component mount
+  useEffect(() => {
+    const savedProjects = localStorage.getItem("saved_projects");
+    if (savedProjects) {
+      setProjects(JSON.parse(savedProjects));
+    }
+  }, []);
 
   const handlePromptSubmit = () => {
     if (!prompt.trim()) return;
@@ -34,11 +51,13 @@ const Homepage = () => {
         name: prompt.slice(0, 50) + (prompt.length > 50 ? "..." : ""),
         description: `Project created from: ${prompt}`,
         lastModified: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        files: []
       };
       
       existingProjects.push(newProject);
       localStorage.setItem("saved_projects", JSON.stringify(existingProjects));
+      setProjects(existingProjects);
       
       setIsLoading(false);
       navigate(`/project?id=${projectId}`);
@@ -58,6 +77,40 @@ const Homepage = () => {
     toast({
       title: "Image removed",
       description: "The attached image has been removed.",
+    });
+  };
+
+  const handleLoadProject = (projectId: string) => {
+    navigate(`/project?id=${projectId}`);
+  };
+
+  const handleDeleteProject = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    toast({
+      title: "Project deleted",
+      description: "The project has been successfully deleted.",
+    });
+  };
+
+  const handleDuplicateProject = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    const duplicatedProject = {
+      ...project,
+      id: Math.random().toString(36).substring(2, 15),
+      name: `${project.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    };
+    
+    const updatedProjects = [...projects, duplicatedProject];
+    setProjects(updatedProjects);
+    localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
+    toast({
+      title: "Project duplicated",
+      description: "The project has been successfully duplicated.",
     });
   };
 
@@ -206,7 +259,15 @@ const Homepage = () => {
       </section>
 
       {/* Projects Section */}
-      <ProjectsSection />
+      <ProjectsSection 
+        projects={projects}
+        setProjects={setProjects}
+        onLoadProject={handleLoadProject}
+        onDeleteProject={handleDeleteProject}
+        onDuplicateProject={handleDuplicateProject}
+        userPlan="FREE"
+        apiKey=""
+      />
 
       {/* Stats Section */}
       <section className="py-20 px-4 relative">
