@@ -12,7 +12,9 @@ import HomepageNav from "@/components/HomepageNav";
 import ModernPromptInput from "@/components/ModernPromptInput";
 import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
 import ProjectsSection from "@/components/ProjectsSection";
+import RainbowCursorTrail from "@/components/RainbowCursorTrail";
 import { Badge } from "@/components/ui/badge";
+
 interface Project {
   id: string;
   name: string;
@@ -469,6 +471,7 @@ const Homepage = () => {
     setCurrentReviewIndex(prev => (prev - 1 + reviews.length) % reviews.length);
   };
   return <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-slate-900'}`}>
+      <RainbowCursorTrail />
       <div ref={topRef}></div>
       <HomepageNav />
       <main className="flex-1">
@@ -784,4 +787,5 @@ const Homepage = () => {
       </main>
     </div>;
 };
+
 export default Homepage;

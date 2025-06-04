@@ -1,10 +1,49 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Users, Compass } from 'lucide-react';
+import { ArrowLeft, Users, Compass, Crown, Shield, Code, Wrench, MessageSquare, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const OurTeam = () => {
+  const teamMembers = [
+    {
+      name: "Kevin Kovacs - Mr Matt",
+      role: "Main Owner",
+      icon: Crown,
+      description: "Visionary leader driving Boongle's mission forward"
+    },
+    {
+      name: "XENON",
+      role: "Suggestion giver + Main Admin",
+      icon: Shield,
+      description: "Strategic advisor and administrative excellence"
+    },
+    {
+      name: "Underlined",
+      role: "Main Developer & Admin",
+      icon: Code,
+      description: "Core development and system architecture"
+    },
+    {
+      name: "Wait What - Henrik",
+      role: "Main Developer",
+      icon: Wrench,
+      description: "Full-stack development and technical innovation"
+    },
+    {
+      name: "TeamVibeCode",
+      role: "Suggestion giver",
+      icon: MessageSquare,
+      description: "Product insights and user experience guidance"
+    },
+    {
+      name: "Tiger",
+      role: "Platform Moderator",
+      icon: UserCheck,
+      description: "Community management and platform oversight"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
       {/* Header */}
@@ -36,6 +75,27 @@ const OurTeam = () => {
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Meet the passionate team behind Boongle Development
           </p>
+        </div>
+
+        {/* Team Members Grid */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
+          {teamMembers.map((member, index) => {
+            const IconComponent = member.icon;
+            return (
+              <div key={index} className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="bg-gradient-to-r from-green-400 to-blue-400 p-3 rounded-lg">
+                    <IconComponent className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
+                    <p className="text-green-400 font-semibold mb-2">{member.role}</p>
+                    <p className="text-gray-300 text-sm">{member.description}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
