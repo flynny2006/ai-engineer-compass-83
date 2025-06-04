@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Database, Gift, Compass } from 'lucide-react';
+import { Database, Gift, Compass, Users } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -121,6 +121,12 @@ const HomepageNav = () => {
             {planDetails.name} - {typeof planDetails.maxProjects === 'number' ? `Maximum ${planDetails.maxProjects} Projects` : planDetails.maxProjects}
           </div>
           
+          <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild className="text-black dark:text-white">
+            <Link to="/our-team" className="flex items-center">
+              <Users className="h-4 w-4 mr-0 sm:mr-2" />
+              <span className="hidden sm:inline">Our Team</span>
+            </Link>
+          </Button>
           <Button variant={theme === 'light' ? 'modern' : 'ghost'} asChild className="text-black dark:text-white">
             <Link to="/supabase" className="flex items-center">
               <Database className="h-4 w-4 mr-0 sm:mr-2" />
