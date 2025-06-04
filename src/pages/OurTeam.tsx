@@ -1,49 +1,10 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Users, Compass, Crown, Shield, Code, Lightbulb, UserCheck } from 'lucide-react';
+import { ArrowLeft, Users, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const OurTeam = () => {
-  const teamMembers = [
-    {
-      name: "Kevin Kovacs - Mr Matt",
-      role: "Main Owner",
-      icon: Crown,
-      description: "Visionary leader driving Boongle's mission forward"
-    },
-    {
-      name: "XENON",
-      role: "Suggestion giver + Main Admin",
-      icon: Shield,
-      description: "Strategic advisor and administrative excellence"
-    },
-    {
-      name: "Underlined",
-      role: "Main Developer & Admin",
-      icon: Code,
-      description: "Core architecture and development leadership"
-    },
-    {
-      name: "Wait What - Henrik",
-      role: "Main Developer",
-      icon: Code,
-      description: "Full-stack development and technical innovation"
-    },
-    {
-      name: "TeamVibeCode",
-      role: "Suggestion giver",
-      icon: Lightbulb,
-      description: "Product insights and feature ideation"
-    },
-    {
-      name: "Tiger",
-      role: "Platform Moderator",
-      icon: UserCheck,
-      description: "Community management and platform excellence"
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
       {/* Header */}
@@ -75,29 +36,6 @@ const OurTeam = () => {
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
             Meet the passionate team behind Boongle Development
           </p>
-        </div>
-
-        {/* Team Members */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Meet Our Team
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {teamMembers.map((member, index) => (
-              <div key={index} className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-gradient-to-r from-green-400/20 to-blue-400/20 rounded-lg">
-                    <member.icon className="h-6 w-6 text-green-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-white">{member.name}</h3>
-                    <p className="text-green-400 font-medium">{member.role}</p>
-                  </div>
-                </div>
-                <p className="text-gray-300 text-sm">{member.description}</p>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
