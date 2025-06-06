@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -18,19 +19,24 @@ const Index = () => {
   const [statusItems, setStatusItems] = useState([]);
   const { toast } = useToast();
   
+  // Initialize with default files
+  const initialFiles = [
+    {
+      name: 'index.html',
+      content: '<!DOCTYPE html>\n<html>\n<head>\n    <title>My Project</title>\n</head>\n<body>\n    <h1>Hello World!</h1>\n</body>\n</html>',
+      type: 'html'
+    }
+  ];
+  
   const {
     files,
     currentFile,
     setCurrentFile,
-    createFile,
-    updateFile,
-    deleteFile,
-    mainFile,
-    setMainFile,
-    uploadFiles,
-    downloadProject,
-    previewUrl
-  } = useProjectFiles();
+    mainPreviewFile,
+    setMainPreviewFile,
+    updateFileContent,
+    handleFileUpload
+  } = useProjectFiles(initialFiles);
 
   const handleFileCreate = (name: string, content: string = '') => {
     if (!name.trim()) {
@@ -42,29 +48,45 @@ const Index = () => {
     }
 
     const newFile = {
-      id: uuidv4(),
       name: name,
       content: content,
-      lastModified: new Date().toISOString()
+      type: name.split('.').pop() || 'txt'
     };
 
-    createFile(newFile);
+    // Add to files array
+    const updatedFiles = [...files, newFile];
+    // This would need to be handled by the useProjectFiles hook
+    // For now, we'll use handleFileUpload
+    handleFileUpload(newFile);
   };
 
-  const handleFileDelete = (fileId: string) => {
-    deleteFile(fileId);
+  const handleFileDelete = (fileName: string) => {
+    // This functionality would need to be added to useProjectFiles hook
+    console.log('Delete file:', fileName);
   };
 
-  const handleFileUpdate = (fileId: string, newContent: string) => {
-    updateFile(fileId, newContent);
+  const handleFileUpdate = (fileName: string, newContent: string) => {
+    updateFileContent(fileName, newContent);
   };
 
-  const handleFileUpload = (acceptedFiles: File[]) => {
-    uploadFiles(acceptedFiles);
+  const handleFileUploadWrapper = (acceptedFiles: File[]) => {
+    acceptedFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        handleFileUpload({
+          name: file.name,
+          content: content,
+          type: file.type
+        });
+      };
+      reader.readAsText(file);
+    });
   };
 
   const handleProjectDownload = () => {
-    downloadProject();
+    // This functionality would need to be implemented
+    console.log('Download project');
   };
 
   const addStatusItem = (text: string, status: 'pending' | 'loading' | 'complete' | 'error') => {
@@ -89,6 +111,18 @@ const Index = () => {
     setStatusItems(prevItems => prevItems.filter(item => item.id !== id));
   };
 
+  // Get current file object
+  const getCurrentFileObject = () => {
+    return files.find(file => file.name === currentFile);
+  };
+
+  // Create preview URL (simplified)
+  const previewUrl = `data:text/html,${encodeURIComponent(
+    files.find(file => file.name === mainPreviewFile)?.content || 
+    files.find(file => file.name.endsWith('.html'))?.content ||
+    '<html><body><h1>No preview available</h1></body></html>'
+  )}`;
+
   const renderRightPanelContent = () => {
     switch (activeTab) {
       case 'preview':
@@ -98,8 +132,8 @@ const Index = () => {
               <h3 className="text-sm font-medium text-foreground">Preview</h3>
               <PreviewSettings
                 files={files}
-                mainFile={mainFile}
-                setMainFile={setMainFile}
+                mainFile={mainPreviewFile}
+                setMainFile={setMainPreviewFile}
               />
             </div>
             <div className="flex-1 bg-white">
@@ -120,13 +154,23 @@ const Index = () => {
             </div>
             <div className="flex-1 overflow-hidden">
               <FileExplorerEnhanced
-                files={files}
-                currentFile={currentFile}
-                onFileSelect={setCurrentFile}
-                onCreateFile={createFile}
-                onDeleteFile={deleteFile}
-                onUploadFiles={uploadFiles}
-                onDownloadProject={downloadProject}
+                files={files.map(file => ({
+                  id: file.name,
+                  name: file.name,
+                  content: file.content,
+                  lastModified: new Date().toISOString()
+                }))}
+                currentFile={getCurrentFileObject() ? {
+                  id: currentFile,
+                  name: currentFile,
+                  content: getCurrentFileObject()?.content || '',
+                  lastModified: new Date().toISOString()
+                } : null}
+                onFileSelect={(file) => setCurrentFile(file.name)}
+                onCreateFile={handleFileCreate}
+                onDeleteFile={handleFileDelete}
+                onUploadFiles={handleFileUploadWrapper}
+                onDownloadProject={handleProjectDownload}
               />
             </div>
           </div>
@@ -136,14 +180,14 @@ const Index = () => {
           <div className="flex flex-col h-full">
             <div className="p-2 border-b border-border bg-background">
               <h3 className="text-sm font-medium text-foreground">
-                {currentFile ? `Editing: ${currentFile.name}` : 'Code Editor'}
+                {currentFile ? `Editing: ${currentFile}` : 'Code Editor'}
               </h3>
             </div>
             <div className="flex-1 overflow-hidden">
               <CodeEditor
-                file={currentFile}
-                onChange={updateFile}
-                files={files}
+                value={getCurrentFileObject()?.content || ''}
+                onChange={(newContent) => handleFileUpdate(currentFile, newContent)}
+                language={currentFile?.split('.').pop() || 'html'}
               />
             </div>
           </div>
