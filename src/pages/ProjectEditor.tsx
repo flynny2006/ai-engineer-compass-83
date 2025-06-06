@@ -2,14 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Index from './Index';
-import NotFound from './NotFound';
 import { toast } from '@/hooks/use-toast';
 
 const ProjectEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [initializing, setInitializing] = useState(true);
-  const [projectNotFound, setProjectNotFound] = useState(false);
   
   useEffect(() => {
     // Get project ID from URL parameters
@@ -36,16 +34,16 @@ const ProjectEditor = () => {
           );
           localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
           
+          // No need to explicitly set project files here - the Index component
+          // will handle loading the correct files for the current project
+          
           setInitializing(false);
         } else {
-          // Project not found - show 404
-          setProjectNotFound(true);
-          setInitializing(false);
+          toast({
+            title: "Project not found",
+            description: "The requested project could not be found."
+          });
         }
-      } else {
-        // No projects saved at all
-        setProjectNotFound(true);
-        setInitializing(false);
       }
     } else {
       // Check if there's already a current project ID in localStorage
@@ -92,10 +90,6 @@ const ProjectEditor = () => {
         <div className="w-8 h-8 border-4 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
       </div>
     );
-  }
-
-  if (projectNotFound) {
-    return <NotFound />;
   }
 
   return <Index />;

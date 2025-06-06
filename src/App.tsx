@@ -12,7 +12,6 @@ import Important from "./pages/Important";
 import Supabase from "./pages/Supabase";
 import Homepage from "./pages/Homepage";
 import ProjectEditor from "./pages/ProjectEditor";
-import OurTeam from "./pages/OurTeam";
 import NavigationControls from "./components/NavigationControls";
 
 // Create a new QueryClient instance
@@ -39,7 +38,6 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/important" element={<Important />} />
             <Route path="/supabase" element={<Supabase />} />
-            <Route path="/our-team" element={<OurTeam />} />
             {/* Redirect old index route to new one */}
             <Route path="/index" element={<Navigate to="/project" replace />} />
             {/* Dynamic routes for pages that might be created by the AI */}
