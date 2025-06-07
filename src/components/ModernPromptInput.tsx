@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   PromptInput, 
@@ -7,20 +8,24 @@ import {
 } from '@/components/ui/prompt-input';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowUp, Square, Paperclip, ChevronDown } from 'lucide-react';
+import { ArrowUp, Square, ChevronDown, Paperclip } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTheme } from '@/hooks/use-theme';
+import ImageAttachment from './ImageAttachment';
 
 interface ModernPromptInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
   isLoading: boolean;
-  onAttach: () => void;
+  onAttach?: () => void;
   placeholder?: string;
   selectedModel: string;
   onModelChange: (model: string) => void;
   userPlan: string;
+  onImageAttach?: (file: File) => void;
+  attachedImage?: File | null;
+  onRemoveImage?: () => void;
 }
 
 const placeholdersList: string[] = [
@@ -60,13 +65,16 @@ const ModernPromptInput: React.FC<ModernPromptInputProps> = ({
   placeholder: initialPlaceholder = "Ask Boongle AI to build anything...",
   selectedModel,
   onModelChange,
-  userPlan
+  userPlan,
+  onImageAttach,
+  attachedImage,
+  onRemoveImage
 }) => {
   const { theme } = useTheme();
   const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [typingSpeed, setTypingSpeed] = useState(60); // Made faster from 100
+  const [typingSpeed, setTypingSpeed] = useState(60);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -75,14 +83,14 @@ const ModernPromptInput: React.FC<ModernPromptInputProps> = ({
     const handleTyping = () => {
       if (isDeleting) {
         setAnimatedPlaceholder(prev => prev.substring(0, prev.length - 1));
-        setTypingSpeed(30); // Made faster from 50
+        setTypingSpeed(30);
       } else {
         setAnimatedPlaceholder(prev => currentFullPlaceholder.substring(0, prev.length + 1));
-        setTypingSpeed(60); // Made faster from 100
+        setTypingSpeed(60);
       }
 
       if (!isDeleting && animatedPlaceholder === currentFullPlaceholder) {
-        typingTimeoutRef.current = setTimeout(() => setIsDeleting(true), 1500); // Reduced pause time
+        typingTimeoutRef.current = setTimeout(() => setIsDeleting(true), 1500);
       } else if (isDeleting && animatedPlaceholder === "") {
         setIsDeleting(false);
         setPlaceholderIndex(prevIndex => (prevIndex + 1) % placeholdersList.length);
@@ -196,21 +204,31 @@ const ModernPromptInput: React.FC<ModernPromptInputProps> = ({
           className="text-foreground dark:text-white placeholder:text-foreground/50 dark:placeholder:text-white/50 min-h-[60px]"
         />
         <PromptInputActions className="justify-between pt-2">
-          <PromptInputAction tooltip="Attach file">
-            <Button
-              variant={theme === 'light' ? 'attach-gradient' : 'ghost'}
-              size="icon"
-              className={`h-8 w-8 rounded-full 
-                ${theme === 'light' 
-                  ? 'text-white' 
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              onClick={onAttach}
-              disabled={isLoading}
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-          </PromptInputAction>
+          <div className="flex items-center">
+            {onImageAttach && onRemoveImage ? (
+              <ImageAttachment
+                onImageSelect={onImageAttach}
+                attachedImage={attachedImage}
+                onRemoveImage={onRemoveImage}
+              />
+            ) : (
+              <PromptInputAction tooltip="Attach file">
+                <Button
+                  variant={theme === 'light' ? 'attach-gradient' : 'ghost'}
+                  size="icon"
+                  className={`h-8 w-8 rounded-full 
+                    ${theme === 'light' 
+                      ? 'text-white' 
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  onClick={onAttach}
+                  disabled={isLoading}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </PromptInputAction>
+            )}
+          </div>
           
           <PromptInputAction
             tooltip={isLoading ? "Stop generation" : "Send message"}

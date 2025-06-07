@@ -12,6 +12,7 @@ import HomepageNav from "@/components/HomepageNav";
 import ModernPromptInput from "@/components/ModernPromptInput";
 import GenerationStatus, { StatusItem } from "@/components/GenerationStatus";
 import ProjectsSection from "@/components/ProjectsSection";
+import RainbowCursorTrail from "@/components/RainbowCursorTrail";
 import { Badge } from "@/components/ui/badge";
 
 interface Project {
@@ -20,54 +21,21 @@ interface Project {
   createdAt: string;
   files: any[];
   lastModified: string;
-  isFeatured?: boolean; 
+  isFeatured?: boolean;
 }
-
 interface Partner {
   id: number;
   name: string;
   description: string;
-  logoUrl?: string; 
+  logoUrl?: string;
 }
 
 // 32 predefined suggestions
-const suggestions = [
-  "Modern & functional Todo App",
-  "AI-powered chat application",
-  "E-commerce product showcase",
-  "Personal portfolio website",
-  "Real-time weather dashboard",
-  "Music streaming interface",
-  "Recipe sharing platform",
-  "Fitness tracking dashboard",
-  "Social media feed clone",
-  "Project management tool",
-  "Online booking system",
-  "Interactive quiz game",
-  "Video streaming platform",
-  "Cryptocurrency tracker",
-  "Task automation dashboard",
-  "Event planning application",
-  "File sharing platform",
-  "Team collaboration workspace",
-  "Learning management system",
-  "Restaurant ordering app",
-  "Travel planning tool",
-  "Invoice generator app",
-  "Photo gallery with filters",
-  "News aggregator dashboard",
-  "Customer support chat",
-  "Expense tracking app",
-  "Blog with CMS features",
-  "Real estate listing site",
-  "Job board platform",
-  "Inventory management system",
-  "Survey creation tool",
-  "Digital art marketplace"
-];
-
+const suggestions = ["Modern & functional Todo App", "AI-powered chat application", "E-commerce product showcase", "Personal portfolio website", "Real-time weather dashboard", "Music streaming interface", "Recipe sharing platform", "Fitness tracking dashboard", "Social media feed clone", "Project management tool", "Online booking system", "Interactive quiz game", "Video streaming platform", "Cryptocurrency tracker", "Task automation dashboard", "Event planning application", "File sharing platform", "Team collaboration workspace", "Learning management system", "Restaurant ordering app", "Travel planning tool", "Invoice generator app", "Photo gallery with filters", "News aggregator dashboard", "Customer support chat", "Expense tracking app", "Blog with CMS features", "Real estate listing site", "Job board platform", "Inventory management system", "Survey creation tool", "Digital art marketplace"];
 const Homepage = () => {
-  const { theme } = useTheme();
+  const {
+    theme
+  } = useTheme();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState<string>("");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -81,13 +49,15 @@ const Homepage = () => {
   const [selectedModel, setSelectedModel] = useState<string>("gemini-1.5");
   const [userPlan, setUserPlan] = useState<string>("FREE");
   const [randomSuggestions, setRandomSuggestions] = useState<string[]>([]);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState<number>(0);
   const fileUploadRef = useRef<HTMLInputElement>(null);
 
   // Scroll to top function with smooth animation
   const topRef = useRef<HTMLDivElement>(null);
-  
   const scrollToTop = () => {
-    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+    topRef.current?.scrollIntoView({
+      behavior: 'smooth'
+    });
   };
 
   // Generate 4 random suggestions on component mount
@@ -100,11 +70,35 @@ const Homepage = () => {
   }, []);
 
   // Sample partners data
-  const partners = [
-    { id: 1, name: "Acme Tech", description: "Leading AI infrastructure provider", logoUrl: "placeholder.svg" },
-    { id: 2, name: "DataFlow Inc.", description: "Enterprise data solutions", logoUrl: "placeholder.svg" },
-    { id: 3, name: "CloudNine", description: "Serverless architecture experts", logoUrl: "placeholder.svg" },
-  ];
+  const partners = [{
+    id: 1,
+    name: "Acme Tech",
+    description: "Leading AI infrastructure provider",
+    logoUrl: "placeholder.svg"
+  }, {
+    id: 2,
+    name: "DataFlow Inc.",
+    description: "Enterprise data solutions",
+    logoUrl: "placeholder.svg"
+  }, {
+    id: 3,
+    name: "CloudNine",
+    description: "Serverless architecture experts",
+    logoUrl: "placeholder.svg"
+  }];
+
+  // Reviews data
+  const reviews = [{
+    id: 1,
+    name: "Piotr",
+    rating: 5,
+    text: "This is the best AI website generator I ever used. It's super simple and easy to use. I recommend!"
+  }, {
+    id: 2,
+    name: "Fabian",
+    rating: 5,
+    text: "The best AI Software Engineer i ever used. This is just amazing. And 25 daily Credits are crazy! I highly recommend this instead of bolt.new and trickle!"
+  }];
 
   // Load projects, API key, and plan from localStorage
   useEffect(() => {
@@ -115,22 +109,21 @@ const Homepage = () => {
         // Ensure isFeatured is boolean or undefined
         const validatedProjects = parsedProjects.map(p => ({
           ...p,
-          isFeatured: typeof p.isFeatured === 'boolean' ? p.isFeatured : false,
+          isFeatured: typeof p.isFeatured === 'boolean' ? p.isFeatured : false
         }));
         setProjects(validatedProjects);
       }
-      
       const savedApiKey = localStorage.getItem("api_key");
       if (savedApiKey) {
         setApiKey(savedApiKey);
       }
-      
+
       // Get user plan from localStorage
       const claimedPlan = localStorage.getItem("claimed_plan");
       if (claimedPlan) {
         setUserPlan(claimedPlan);
       }
-      
+
       // Get saved model preference
       const savedModel = localStorage.getItem("selected_model");
       if (savedModel) {
@@ -139,67 +132,99 @@ const Homepage = () => {
     } catch (error) {
       console.error("Error loading data from localStorage:", error);
       // If parsing fails, it might be due to old format, try to clear or handle gracefully
-      localStorage.removeItem("saved_projects"); 
+      localStorage.removeItem("saved_projects");
       setProjects([]);
     }
   }, []);
-
   const simulateGeneration = () => {
     // Clear any existing status
     setGenerationStatus([]);
     setShowStatus(true);
-    
+
     // Simulate the generation process with real-time updates
-    const steps: StatusItem[] = [
-      { id: '1', text: 'Analyzing prompt...', status: 'loading', timestamp: Date.now() },
-      { id: '2', text: 'Creating project structure', status: 'loading', timestamp: Date.now() + 100 },
-      { id: '3', text: 'Generating index.html', status: 'pending', timestamp: Date.now() + 200 },
-      { id: '4', text: 'Generating styles.css', status: 'pending', timestamp: Date.now() + 300 },
-      { id: '5', text: 'Generating app.js', status: 'pending', timestamp: Date.now() + 400 },
-      { id: '6', text: 'Building React components', status: 'pending', timestamp: Date.now() + 500 },
-    ];
-    
+    const steps: StatusItem[] = [{
+      id: '1',
+      text: 'Analyzing prompt...',
+      status: 'loading',
+      timestamp: Date.now()
+    }, {
+      id: '2',
+      text: 'Creating project structure',
+      status: 'loading',
+      timestamp: Date.now() + 100
+    }, {
+      id: '3',
+      text: 'Generating index.html',
+      status: 'pending',
+      timestamp: Date.now() + 200
+    }, {
+      id: '4',
+      text: 'Generating styles.css',
+      status: 'pending',
+      timestamp: Date.now() + 300
+    }, {
+      id: '5',
+      text: 'Generating app.js',
+      status: 'pending',
+      timestamp: Date.now() + 400
+    }, {
+      id: '6',
+      text: 'Building React components',
+      status: 'pending',
+      timestamp: Date.now() + 500
+    }];
+
     // Add initial step
     setGenerationStatus([steps[0]]);
-    
+
     // Update steps with simulated timing
     setTimeout(() => {
-      setGenerationStatus([
-        { ...steps[0], status: 'complete' },
-        { ...steps[1] }
-      ]);
-      
+      setGenerationStatus([{
+        ...steps[0],
+        status: 'complete'
+      }, {
+        ...steps[1]
+      }]);
       setTimeout(() => {
-        setGenerationStatus(prev => [
-          ...prev,
-          { ...steps[2], status: 'loading' }
-        ]);
-        
+        setGenerationStatus(prev => [...prev, {
+          ...steps[2],
+          status: 'loading'
+        }]);
         setTimeout(() => {
-          setGenerationStatus(prev => prev.map(item => 
-            item.id === '2' ? { ...item, status: 'complete' as const } : item
-          ));
-          
+          setGenerationStatus(prev => prev.map(item => item.id === '2' ? {
+            ...item,
+            status: 'complete' as const
+          } : item));
           setTimeout(() => {
-            setGenerationStatus(prev => prev.map(item => 
-              item.id === '3' ? { ...item, status: 'complete' as const } : item
-            ).concat({ ...steps[3], status: 'loading' as const }));
-            
+            setGenerationStatus(prev => prev.map(item => item.id === '3' ? {
+              ...item,
+              status: 'complete' as const
+            } : item).concat({
+              ...steps[3],
+              status: 'loading' as const
+            }));
             setTimeout(() => {
-              setGenerationStatus(prev => prev.map(item => 
-                item.id === '4' ? { ...item, status: 'complete' as const } : item
-              ).concat({ ...steps[4], status: 'loading' as const }));
-              
+              setGenerationStatus(prev => prev.map(item => item.id === '4' ? {
+                ...item,
+                status: 'complete' as const
+              } : item).concat({
+                ...steps[4],
+                status: 'loading' as const
+              }));
               setTimeout(() => {
-                setGenerationStatus(prev => prev.map(item => 
-                  item.id === '5' ? { ...item, status: 'complete' as const } : item
-                ).concat({ ...steps[5], status: 'loading' as const }));
-                
+                setGenerationStatus(prev => prev.map(item => item.id === '5' ? {
+                  ...item,
+                  status: 'complete' as const
+                } : item).concat({
+                  ...steps[5],
+                  status: 'loading' as const
+                }));
                 setTimeout(() => {
-                  setGenerationStatus(prev => prev.map(item => 
-                    item.id === '6' ? { ...item, status: 'complete' as const } : item
-                  ));
-                  
+                  setGenerationStatus(prev => prev.map(item => item.id === '6' ? {
+                    ...item,
+                    status: 'complete' as const
+                  } : item));
+
                   // Hide status and navigate after completion
                   setTimeout(() => {
                     setShowStatus(false);
@@ -213,17 +238,15 @@ const Homepage = () => {
       }, 600);
     }, 500);
   };
-
   const createNewProject = () => {
     if (projects.length >= 5 && userPlan === "FREE") {
       toast({
         title: "Project Limit Reached",
         description: "You have reached the maximum of 5 projects for the free plan. Please upgrade for more projects.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     if (!prompt.trim()) {
       toast({
         title: "Empty prompt",
@@ -232,53 +255,53 @@ const Homepage = () => {
       });
       return;
     }
-
     setIsLoading(true);
 
     // Generate a unique ID
     const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Create new project
     const newProject: Project = {
       id: projectId,
       name: prompt.length > 30 ? `${prompt.substring(0, 30)}...` : prompt,
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
-      files: [], // Will be populated in the project editor
-      isFeatured: false, // Default for new projects
+      files: [],
+      // Will be populated in the project editor
+      isFeatured: false // Default for new projects
     };
 
     // Add to existing projects
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
-    
+
     // Save to localStorage
     try {
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
+
       // Store current prompt as "last_prompt" for the project page
       localStorage.setItem("last_prompt", prompt);
       localStorage.setItem("selected_model", selectedModel);
-      
+
       // Set the current project ID BEFORE navigation
       // This is important for project-specific storage
       localStorage.setItem("current_project_id", projectId);
-      
+
       // Save the API key if entered
       if (apiKey) {
         localStorage.setItem("api_key", apiKey);
         localStorage.setItem("gemini_api_key", apiKey); // Also save for the editor
       }
-      
+
       // Save attached image if present
       if (attachedImage) {
         localStorage.setItem(`${projectId}_attached_image`, attachedImage);
         localStorage.setItem(`${projectId}_image_filename`, imageFileName || "attached_image.png");
       }
-      
+
       // Start the simulated generation process
       simulateGeneration();
-      
+
       // Navigate to project page after a delay
       setTimeout(() => {
         setIsLoading(false);
@@ -301,29 +324,30 @@ const Homepage = () => {
     localStorage.setItem("selected_model", modelId);
     toast({
       title: "Model Changed",
-      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : modelId === "gemini-2.0" ? "Gemini 2.0 Flash" : "Gemini 2.0 Pro"}`,
+      description: `Switched to ${modelId === "gemini-1.5" ? "Gemini 1.5 Flash" : modelId === "gemini-2.0" ? "Gemini 2.0 Flash" : "Gemini 2.0 Pro"}`
     });
   };
 
   // Handler for image upload
-  const handleImageUpload = (uploadedFile: { name: string, content: string, type: string }) => {
+  const handleImageUpload = (uploadedFile: {
+    name: string;
+    content: string;
+    type: string;
+  }) => {
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     // The 'type' from FileExplorerUpload is the file extension.
-    if (
-      typeof uploadedFile.content === 'string' &&
-      (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))
-    ) {
+    if (typeof uploadedFile.content === 'string' && (uploadedFile.content.startsWith('data:image/') || imageExtensions.includes(uploadedFile.type.toLowerCase()))) {
       setAttachedImage(uploadedFile.content);
       setImageFileName(uploadedFile.name);
       toast({
         title: "Image Attached",
-        description: `${uploadedFile.name} has been attached.`,
+        description: `${uploadedFile.name} has been attached.`
       });
     } else {
       toast({
         title: "Unsupported File Type",
         description: "Please upload a valid image (PNG, JPG, GIF, SVG, WebP).",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -337,40 +361,36 @@ const Homepage = () => {
   const handleSuggestionClick = (suggestion: string) => {
     setPrompt(suggestion);
   };
-
   const loadProject = (projectId: string) => {
     // Set the current project ID BEFORE navigation 
     // This is critical for project isolation
     localStorage.setItem("current_project_id", projectId);
-    
+
     // Save the API key if entered, to sync between homepage and editor
     if (apiKey) {
       localStorage.setItem("api_key", apiKey);
       localStorage.setItem("gemini_api_key", apiKey);
     }
-    
+
     // Navigate to the project with the ID in the URL
     navigate(`/project?id=${projectId}`);
   };
-
   const deleteProject = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    
     try {
       const updatedProjects = projects.filter(project => project.id !== projectId);
       setProjects(updatedProjects);
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
+
       // Also remove project-specific storage items
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith(`${projectId}_`)) {
           localStorage.removeItem(key);
         }
       });
-      
       toast({
         title: "Project deleted",
-        description: "The project has been successfully deleted.",
+        description: "The project has been successfully deleted."
       });
     } catch (error) {
       toast({
@@ -380,36 +400,32 @@ const Homepage = () => {
       });
     }
   };
-
-  const duplicateProject = (e: React.MouseEvent, projectToDuplicate: Project) => { // Ensure type is Project
+  const duplicateProject = (e: React.MouseEvent, projectToDuplicate: Project) => {
+    // Ensure type is Project
     e.stopPropagation();
-
     const projectLimit = userPlan === "FREE" ? 5 : userPlan === "PRO" ? 12 : userPlan === "TEAMS" ? 20 : Infinity;
     if (projects.length >= projectLimit) {
-        toast({
-            title: "Project Limit Reached",
-            description: `Cannot duplicate project. You have reached the maximum of ${projectLimit} projects for the ${userPlan} plan.`,
-            variant: "destructive",
-        });
-        return;
+      toast({
+        title: "Project Limit Reached",
+        description: `Cannot duplicate project. You have reached the maximum of ${projectLimit} projects for the ${userPlan} plan.`,
+        variant: "destructive"
+      });
+      return;
     }
-    
     try {
       const projectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const duplicatedProject: Project = { // Ensure type is Project
+      const duplicatedProject: Project = {
+        // Ensure type is Project
         ...projectToDuplicate,
         id: projectId,
         name: `Copy of ${projectToDuplicate.name}`,
         createdAt: new Date().toISOString(),
         lastModified: new Date().toISOString(),
-        isFeatured: projectToDuplicate.isFeatured || false, // Carry over featured status
+        isFeatured: projectToDuplicate.isFeatured || false // Carry over featured status
       };
-      
       const updatedProjects = [...projects, duplicatedProject];
       setProjects(updatedProjects);
       localStorage.setItem("saved_projects", JSON.stringify(updatedProjects));
-      
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith(`${projectToDuplicate.id}_`)) {
           const newKey = key.replace(projectToDuplicate.id, projectId);
@@ -419,10 +435,9 @@ const Homepage = () => {
           }
         }
       });
-      
       toast({
         title: "Project duplicated",
-        description: "A copy of the project has been created.",
+        description: "A copy of the project has been created."
       });
     } catch (error) {
       toast({
@@ -432,14 +447,13 @@ const Homepage = () => {
       });
     }
   };
-
   const saveApiKey = () => {
     try {
       localStorage.setItem("api_key", apiKey);
       localStorage.setItem("gemini_api_key", apiKey); // Sync with editor
       toast({
         title: "API Key saved",
-        description: "Your API key has been saved successfully.",
+        description: "Your API key has been saved successfully."
       });
       setShowApiKeyInput(false);
     } catch (error) {
@@ -450,9 +464,14 @@ const Homepage = () => {
       });
     }
   };
-
-  return (
-    <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-slate-900'}`}>
+  const nextReview = () => {
+    setCurrentReviewIndex(prev => (prev + 1) % reviews.length);
+  };
+  const prevReview = () => {
+    setCurrentReviewIndex(prev => (prev - 1 + reviews.length) % reviews.length);
+  };
+  return <div className={`flex flex-col min-h-screen ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-slate-900'}`}>
+      <RainbowCursorTrail />
       <div ref={topRef}></div>
       <HomepageNav />
       <main className="flex-1">
@@ -471,22 +490,9 @@ const Homepage = () => {
             </div>
             
             <div className="w-full max-w-3xl mt-4 md:mt-8">
-              <BorderTrail 
-                className="rounded-3xl" 
-                variant={theme === 'dark' ? "default" : "primary"} 
-                duration="slow"
-              >
+              <BorderTrail className="rounded-3xl" variant={theme === 'dark' ? "default" : "primary"} duration="slow">
                 <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white shadow-2xl border border-slate-200'} rounded-3xl p-6 space-y-4`}>
-                  <ModernPromptInput
-                    value={prompt}
-                    onChange={setPrompt}
-                    onSubmit={createNewProject}
-                    isLoading={isLoading}
-                    onAttach={handleAttachClick}
-                    selectedModel={selectedModel}
-                    onModelChange={handleModelChange}
-                    userPlan={userPlan}
-                  />
+                  <ModernPromptInput value={prompt} onChange={setPrompt} onSubmit={createNewProject} isLoading={isLoading} onAttach={handleAttachClick} selectedModel={selectedModel} onModelChange={handleModelChange} userPlan={userPlan} />
 
                   {/* Suggestion buttons */}
                   <div className="space-y-3">
@@ -494,102 +500,58 @@ const Homepage = () => {
                       Quick suggestions:
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {randomSuggestions.map((suggestion, index) => (
-                        <Button
-                          key={index}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className={`text-left justify-start h-auto p-3 rounded-lg transition-all duration-200 ${
-                            theme === 'dark' 
-                              ? 'bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 hover:border-white/20' 
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
+                      {randomSuggestions.map((suggestion, index) => <Button key={index} variant="ghost" size="sm" onClick={() => handleSuggestionClick(suggestion)} className={`text-left justify-start h-auto p-3 rounded-lg transition-all duration-200 ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 hover:border-white/20' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300'}`}>
                           <div className="flex items-center gap-2">
                             <Sparkles className="h-4 w-4 text-purple-500" />
                             <span className="text-sm font-medium">{suggestion}</span>
                           </div>
-                        </Button>
-                      ))}
+                        </Button>)}
                     </div>
                   </div>
 
                   {/* File upload section - moved down */}
                   <div>
-                    {attachedImage ? (
-                      <div className={`p-3 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-md`}>
+                    {attachedImage ? <div className={`p-3 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-md`}>
                         <div className="flex justify-between items-center mb-2">
                           <p className={`text-sm ${theme === 'dark' ? 'text-white/80' : 'text-slate-700'} truncate pr-2`}>Attached: {imageFileName}</p>
-                          <Button 
-                            onClick={() => { setAttachedImage(null); setImageFileName(null); }} 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-red-500 hover:text-red-400 h-7 w-7 flex-shrink-0"
-                          >
+                          <Button onClick={() => {
+                        setAttachedImage(null);
+                        setImageFileName(null);
+                      }} variant="ghost" size="icon" className="text-red-500 hover:text-red-400 h-7 w-7 flex-shrink-0">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                        <img 
-                          src={attachedImage} 
-                          alt="Attached preview" 
-                          className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" 
-                        />
-                      </div>
-                    ) : (
-                      <div id="fileUpload">
+                        <img src={attachedImage} alt="Attached preview" className="max-w-full h-auto max-h-40 rounded-md object-contain mx-auto" />
+                      </div> : <div id="fileUpload">
                         <FileExplorerUpload onFileUpload={handleImageUpload} />
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </div>
               </BorderTrail>
               
               <div className="flex flex-col sm:flex-row justify-end items-center mt-6 gap-4">
-                <Button
-                  onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                  variant={theme === 'dark' ? 'default' : 'outline'}
-                  className={`
-                    ${theme === 'dark' 
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white' 
-                      : 'border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400'} 
+                <Button onClick={() => setShowApiKeyInput(!showApiKeyInput)} variant={theme === 'dark' ? 'default' : 'outline'} className={`
+                    ${theme === 'dark' ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400'} 
                     font-semibold py-2 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 w-full sm:w-auto
-                  `}
-                >
+                  `}>
                   <Key className="h-4 w-4 mr-2" />
                   {apiKey ? "Change API Key" : "Set API Key"}
                 </Button>
               </div>
 
-              {showApiKeyInput && (
-                <div className={`mt-4 p-4 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-lg animate-fade-in`}>
+              {showApiKeyInput && <div className={`mt-4 p-4 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border border-slate-200'} rounded-lg animate-fade-in`}>
                   <label className={`block ${theme === 'dark' ? 'text-white' : 'text-slate-800'} text-sm mb-2`}>API Key</label>
                   <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="Enter your API key"
-                      className={`${theme === 'dark' ? 'bg-black text-white border-white/20' : 'bg-white text-slate-900 border-slate-300 focus:border-primary focus:ring-primary/20'}`}
-                    />
+                    <Input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Enter your API key" className={`${theme === 'dark' ? 'bg-black text-white border-white/20' : 'bg-white text-slate-900 border-slate-300 focus:border-primary focus:ring-primary/20'}`} />
                     <Button onClick={saveApiKey} variant={theme === 'dark' ? 'default' : 'modern'} className={`${theme === 'light' && 'bg-primary text-primary-foreground hover:bg-primary/90'}`}>Save</Button>
                   </div>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
 
           {/* Projects Section using new Tabs component */}
           {projects.length > 0 && <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} my-8`} />}
-          <ProjectsSection
-            projects={projects}
-            setProjects={setProjects}
-            onLoadProject={loadProject}
-            onDeleteProject={deleteProject}
-            onDuplicateProject={duplicateProject}
-            userPlan={userPlan}
-            apiKey={apiKey}
-          />
+          <ProjectsSection projects={projects} setProjects={setProjects} onLoadProject={loadProject} onDeleteProject={deleteProject} onDuplicateProject={duplicateProject} userPlan={userPlan} apiKey={apiKey} />
 
           {/* Reviews Section */}
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
@@ -603,13 +565,13 @@ const Homepage = () => {
                 <div className={`${theme === 'dark' ? 'bg-white/5 backdrop-blur-md border border-white/10' : 'bg-white border border-slate-200 shadow-lg'} p-8 rounded-xl`}>
                   <div className="text-center">
                     <div className="flex justify-center items-center mb-4">
-                      {[...Array(5)].map((_, idx) => (
-                        <Star key={idx} className="h-6 w-6 text-yellow-400 fill-yellow-400" />
-                      ))}
+                      {[...Array(reviews[currentReviewIndex].rating)].map((_, idx) => <Star key={idx} className="h-6 w-6 text-yellow-400 fill-yellow-400" />)}
                     </div>
-                    <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>Piotr</h3>
+                    <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-2`}>
+                      {reviews[currentReviewIndex].name}
+                    </h3>
                     <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-slate-600'} text-lg leading-relaxed mb-6`}>
-                      "This is the best AI website generator I ever used. It's super simple and easy to use. I recommend!"
+                      "{reviews[currentReviewIndex].text}"
                     </p>
                   </div>
                 </div>
@@ -617,27 +579,15 @@ const Homepage = () => {
               
               {/* Navigation arrows */}
               <div className="flex justify-between items-center mt-6">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  disabled
-                  className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
-                >
+                <Button variant="ghost" size="icon" onClick={prevReview} className={`${theme === 'dark' ? 'text-white/70 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 
                 <div className="flex gap-2">
-                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white' : 'bg-slate-900'}`}></div>
-                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
-                  <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>
+                  {reviews.map((_, idx) => <div key={idx} className={`w-2 h-2 rounded-full transition-colors ${idx === currentReviewIndex ? theme === 'dark' ? 'bg-white' : 'bg-slate-900' : theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'}`}></div>)}
                 </div>
                 
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  disabled
-                  className={`${theme === 'dark' ? 'text-white/30' : 'text-slate-300'} cursor-not-allowed`}
-                >
+                <Button variant="ghost" size="icon" onClick={nextReview} className={`${theme === 'dark' ? 'text-white/70 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
                   <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>
@@ -701,11 +651,7 @@ const Homepage = () => {
                   <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'} text-sm mt-2`}>
                     Contact us to become our first official partner and get featured here!
                   </p>
-                  <Button 
-                    className="mt-4" 
-                    variant={theme === 'light' ? 'modern' : 'default'}
-                    onClick={() => navigate('/important')}
-                  >
+                  <Button className="mt-4" variant={theme === 'light' ? 'modern' : 'default'} onClick={() => navigate('/important')}>
                     Contact Us
                   </Button>
                 </div>
@@ -717,7 +663,7 @@ const Homepage = () => {
           <div className="w-full max-w-5xl mx-auto py-16 px-4">
             <Separator className={`${theme === 'dark' ? 'bg-white/20' : 'bg-slate-300'} mb-16`} />
             <h2 className={`text-3xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-slate-900'} mb-12`}>
-              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">20x Faster than Coding</span>
+              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">25x Faster than Coding</span>
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <BorderTrail className="rounded-xl" variant="default" duration="default" spacing="sm">
@@ -831,11 +777,7 @@ const Homepage = () => {
               <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-slate-700'} max-w-2xl mx-auto mb-8`}>
                 It's time to transform your ideas into reality. Let's create something amazing together.
               </p>
-              <Button 
-                size="lg" 
-                onClick={scrollToTop} 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-6 rounded-lg font-bold text-lg group"
-              >
+              <Button size="lg" onClick={scrollToTop} className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-6 rounded-lg font-bold text-lg group">
                 Start Building
                 <ArrowUp className="ml-2 h-5 w-5 group-hover:-translate-y-1 transition-transform duration-300" />
               </Button>
@@ -843,8 +785,7 @@ const Homepage = () => {
           </div>
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
 
 export default Homepage;
